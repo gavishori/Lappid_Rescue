@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>חפ"ק לפיד</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <link rel="stylesheet" href="style.css" />
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div id="login-page" class="login-overlay hidden">
+    <div class="login-box">
+        <h2>התחברות ליומן חפ"ק</h2>
+        <input type="email" id="loginEmail" placeholder="אימייל" />
+        <input type="password" id="loginPassword" placeholder="סיסמה" />
+        <button id="loginBtn">התחבר</button>
+        <p id="loginErrorMessage" class="login-error"></p>
+    </div>
+</div>
+
+<div id="screen-report" class="screen active">
+    <header class="rc-header">
+        <h1>דיווח חירום לחפ"ק</h1>
+        <p>מלא/י את הפרטים — הנתונים מועברים בזמן אמת</p>
+    </header>
+    <main class="rc-main">
+
+        <div class="rc-section">
+            <span class="rc-label">מיקום</span>
+            <div class="rc-toggle-group">
+                <button class="rc-pill active" id="locAddressBtn" type="button">כתובת ידנית</button>
+                <button class="rc-pill" id="locGpsBtn" type="button">GPS נוכחי</button>
+            </div>
+            <div id="manualAddressFields" class="rc-addr">
+                <label class="rc-field">
+                    <span>יישוב</span>
+                    <input id="city" type="text" value="לפיד" readonly class="rc-readonly" />
+                </label>
+                <label class="rc-field rc-field-grow">
+                    <span>רחוב</span>
+                    <select id="street" class="rc-select" onchange="updateHouseOptions()">
+                        <option value="">בחר רחוב...</option>
+                    </select>
+                </label>
+                <label class="rc-field rc-field-sm">
+                    <span>מספר</span>
+                    <select id="house" class="rc-select">
+                        <option value="">מס׳</option>
+                    </select>
+                </label>
+            </div>
+            <div id="gpsBox" class="rc-gps hidden">מאתר מיקום...</div>
+        </div>
+
+        <div class="rc-row2">
+            <div class="rc-section rc-section-status">
+                <span class="rc-label">מצב</span>
+                <div class="rc-status-btns">
+                    <button type="button" class="status-btn ok"     data-status="ok">תקין</button>
+                    <button type="button" class="status-btn warn"   data-status="property">נזק לרכוש</button>
+                    <button type="button" class="status-btn danger" data-status="injury">פגיעה בנפש</button>
+                </div>
+                <div id="statusHint" class="hint-line"></div>
+            </div>
+            <div class="rc-section rc-section-souls">
+                <span class="rc-label">נפשות בבית</span>
+                <div class="rc-counter">
+                    <button type="button" class="rc-cnt-btn" id="minusSouls">−</button>
+                    <input id="soulsCount" type="number" value="0" min="0" max="30" />
+                    <button type="button" class="rc-cnt-btn" id="plusSouls">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="rc-section">
+            <span class="rc-label">פרטים נוספים</span>
+            <textarea id="freeText" class="rc-textarea" placeholder="תיאור קצר של המצב" rows="2"></textarea>
+        </div>
+
+        <div id="formError" class="error-box hidden"></div>
+        <button id="submitBtn" class="rc-submit" type="button">שלח דיווח</button>
+        <div id="successBox" class="rc-success hidden">
+            ✓ הדיווח נשלח בהצלחה — אפשר לעדכן שוב בכל עת.
+        </div>
+    </main>
+</div>
+
+<div id="screen-admin" class="screen">
+    <header class="app-header admin-header">
+        <div class="header-chip-wrap">
+            <div class="header-chip">חפ"ק לפיד</div>
+        </div>
+        <div class="header-center">
+            <div class="header-clock-chip header-clock-time">
+                <span id="currentTimeDisplay" class="hclock-val">00:00:00</span>
+            </div>
+            <div class="header-clock-chip">
+                <span class="hclock-label">הערכת מצב</span>
+                <div class="hclock-row">
+                    <button id="assessmentTimeMinusBtn" class="hclock-btn">−</button>
+                    <span id="assessmentTimeDisplay" class="hclock-val">טרם נקבע</span>
+                    <button id="assessmentTimePlusBtn" class="hclock-btn">+</button>
+                </div>
+            </div>
+        </div>
+        <div class="header-user-area">
+            <span id="headerUserEmail" class="header-user-email"></span>
+            <button id="logoutBtn" class="header-logout-btn" type="button">התנתק</button>
+        </div>
+    </header>
+
+    <main class="admin-shell">
+        <section class="main-stage">
+
+            <section id="view-reports" class="view active">
+                <div class="map-journal-split">
+
+                    <div class="map-col">
+                        <div class="map-wrap">
+                            <div id="map"></div>
+                            <div class="map-overlay-controls">
+                                <div class="map-filter-wrap" id="mapFilterWrap">
+                                    <button id="mapFilterBtn" class="map-ctrl-btn map-filter-toggle" type="button">
+                                        סינון ▾
+                                    </button>
+                                    <div id="mapFilterDropdown" class="map-filter-dropdown hidden">
+                                        <label class="mfd-item"><input type="checkbox" id="filterOk" checked /> <span class="mfd-dot ok"></span> תקין</label>
+                                        <label class="mfd-item"><input type="checkbox" id="filterProperty" checked /> <span class="mfd-dot warn"></span> נזק לרכוש</label>
+                                        <label class="mfd-item"><input type="checkbox" id="filterInjury" checked /> <span class="mfd-dot danger"></span> פגיעה בנפש</label>
+                                        <div class="mfd-divider"></div>
+                                        <label class="mfd-item"><input type="checkbox" id="filterNoReport" /> <span class="mfd-dot noReport"></span> לא דיווחו</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- hidden controls kept for JS compatibility -->
+                            <input id="searchReports" type="text" style="display:none" />
+                            <button id="toggleSortBtn" style="display:none" type="button"></button>
+                            <button id="lockEventBtn" style="display:none" type="button"></button>
+                        </div>
+                    </div>
+
+                    <div class="journal-col">
+                        <div class="journal-top-bar">
+                            <div id="taskButtonsContainer" class="task-btns-row"></div>
+                        </div>
+
+                        <div class="journal-input-box">
+                            <div class="journal-entry-top">
+                                <textarea id="generalTextInput" class="journal-textarea" rows="2" placeholder="פרטי דיווח..."></textarea>
+                                <div class="journal-side-stack">
+                                    <select id="filterLogType" class="journal-select compact-stack-select">
+                                        <option value="">שיוך</option>
+                                    </select>
+                                    <select id="filterReporter" class="journal-select compact-stack-select">
+                                        <option value="">מדווח</option>
+                                    </select>
+                                    <button id="mainActionBtn" class="journal-submit-btn compact-stack-btn">הזן</button>
+                                    <button id="cancelEditBtn" class="journal-cancel-btn compact-stack-btn hidden">ביטול</button>
+                                </div>
+                            </div>
+                            <div class="journal-options-row">
+                                <label id="dateTimeToggleLabel" class="journal-dt-toggle hidden">
+                                    <input type="checkbox" id="showDateTimeToggle" />
+                                    שנה תאריך/שעה
+                                </label>
+                                <div id="dateTimeInputsWrapper" class="journal-datetime hidden">
+                                    <input type="date" id="newDate" class="journal-dt-input" />
+                                    <input type="text" id="newTime" class="journal-dt-input" placeholder="HH:MM" />
+                                </div>
+                            </div>
+                            <div id="inputErrorMessage" class="journal-error"></div>
+                        </div>
+
+                        <div class="journal-table-wrap">
+                            <table class="journal-table">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <div class="th-report-content">
+                                                <button id="toggleAllGroupsBtn" class="header-toggle-btn" title="פתח/צמצם הכל"><i class="fas fa-sort"></i></button>
+                                                <span>דיווח</span>
+                                                <div class="th-search-wrap">
+                                                    <button id="searchLogBtn" class="jt-btn header-search-btn" title="חיפוש"><i class="fas fa-search"></i></button>
+                                                    <input type="text" id="searchInput" class="journal-search hidden" placeholder="חיפוש..." />
+                                                </div>
+                                            </div>
+                                        </th>
+                                        <th>שעה</th>
+                                        <th class="jt-hide-sm">מדווח</th>
+                                        <th class="jt-hide-sm">שיוך</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTableBody">
+                                    <tr id="empty-state">
+                                        <td colspan="5" class="journal-empty">לא נוספו דיווחים עדיין.</td>
+                                    </tr>
+                                    <tr id="loading-state" class="hidden">
+                                        <td colspan="5" class="journal-empty">טוען דיווחים...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div></div></section>
+
+            <section id="view-info" class="view">
+                <div class="view-title">מידע</div>
+                <div id="infoButtonsView" class="cards-grid info-grid"></div>
+            </section>
+
+            <section id="view-management" class="view">
+                <div class="view-title">ניהול</div>
+                <div class="manage-grid">
+                    <button class="manage-card" id="openLinksManagerBtn" type="button"><strong>קישורים</strong><span>שיתוף מפה וקישור דיווח לתושב</span></button>
+                    <button class="manage-card" id="openUploadsManagerBtn" type="button"><strong>העלאת קבצים</strong><span>קבצי GPX לשכבות המפה</span></button>
+                    <button class="manage-card" id="openHousesManagerBtn" type="button"><strong>ניהול בתים</strong><span>הוספה ועריכת מיקומים</span></button>
+                    <button class="manage-card" id="openLayersManagerBtn" type="button"><strong>שכבות מידע</strong><span>סדר שכבות והפעלה</span></button>
+                    <button class="manage-card" id="openInfoManagerBtn" type="button"><strong>מידע</strong><span>ניהול כפתורי קישור</span></button>
+                    <button class="manage-card" id="openEventTypesManagerBtn" type="button"><strong>סוגי אירוע</strong><span>ניהול סוגי אירועים</span></button>
+                    <button class="manage-card" id="openJournalManagerBtn" type="button"><strong>נהל יומן</strong><span>מדווחים, שיוכים ומשימות</span></button>
+                </div>
+            </section>
+
+        </section><aside class="side-rail">
+            <button class="rail-btn active" data-view="reports" type="button">דיווחים</button>
+            <button class="rail-btn" data-view="layers" type="button">שכבות</button>
+            <button class="rail-btn" data-view="info" type="button">מידע</button>
+            <button class="rail-btn" data-view="management" type="button">ניהול</button>
+        </aside>
+    </main>
+</div>
+
+<div id="tasksPanel" class="tasks-panel hidden">
+    <div class="tasks-panel-header">
+        <h3>משימות — <span id="tasksLogTypeDisplay"></span></h3>
+        <button id="closeTasksPanelBtn" type="button">✕</button>
+    </div>
+    <div id="tasksList" class="tasks-list-inner"></div>
+    <p id="allTasksCompletedMessage" class="tasks-done hidden">✓ כל המשימות הושלמו!</p>
+</div>
+
+<div id="layersPanel" class="overlay hidden">
+    <div class="modal-box compact-box live-layers-box">
+        <button class="modal-close" data-close="#layersPanel" type="button">×</button>
+        <h2>שכבות</h2>
+        <p>סימון או ביטול של שכבה מתעדכן מיידית על גבי המפה.</p>
+        <div id="layersOptions" class="stack-list"></div>
+    </div>
+</div>
+
+<div id="sharePanel" class="overlay hidden">
+    <div class="modal-box">
+        <button class="modal-close" data-close="#sharePanel" type="button">×</button>
+        <h2>קישורים</h2>
+        <div class="modal-section">
+            <h3>צור קישור לשיתוף המפה בלבד</h3>
+            <div class="grid-2">
+                <input id="shareDateInput" type="date" />
+                <input id="shareTimeInput" type="time" />
+            </div>
+            <div class="inline-actions">
+                <button id="createShareBtn" class="primary-btn" type="button">צור קישור</button>
+                <button id="copyShareBtn" class="ghost-btn" type="button">העתק קישור</button>
+            </div>
+            <div id="generatedShareUrl" class="value-box">עדיין לא נוצר קישור</div>
+        </div>
+        <div class="modal-section">
+            <h3>קישור לתושב לדיווח מצב</h3>
+            <div id="residentReportUrl" class="value-box"></div>
+            <div class="inline-actions">
+                <button id="copyResidentLinkBtn" class="primary-btn secondary" type="button">העתק</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="uploadsPanel" class="overlay hidden">
+    <div class="modal-box">
+        <button class="modal-close" data-close="#uploadsPanel" type="button">×</button>
+        <h2>העלאת קבצים</h2>
+        <div class="grid-2">
+            <select id="gpxLayerType">
+                <option value="נקודות דיווח">נקודות דיווח</option>
+                <option value="מצלמות">מצלמות</option>
+                <option value="הידרנטים">הידרנטים</option>
+            </select>
+            <input id="gpxFileInput" type="file" accept=".gpx,.xml" />
+        </div>
+        <div class="inline-actions"><button id="saveGpxBtn" class="primary-btn" type="button">שמור קובץ</button></div>
+        <div id="gpxList" class="stack-list compact-list"></div>
+    </div>
+</div>
+
+<div id="housesPanel" class="overlay hidden">
+    <div class="modal-box houses-modal-box">
+        <button class="modal-close" data-close="#housesPanel" type="button">×</button>
+        <div class="houses-modal-head">
+            <div>
+                <h2>ניהול בתים</h2>
+                <p>הוספה ידנית או ייבוא מאקסל של רחוב, מספר, קו רוחב וקו אורך.</p>
+            </div>
+            <div class="houses-stats">
+                <span id="housesCountChip" class="stat-chip">0 בתים</span>
+                <span id="streetsCountChip" class="stat-chip">0 רחובות</span>
+                <span id="coordsCountChip" class="stat-chip">0 עם קואורדינטות</span>
+            </div>
+        </div>
+        <div class="houses-panel-grid">
+            <section class="modal-section houses-card">
+                <div class="section-title-row">
+                    <div>
+                        <h3 id="housesFormTitle">הוספת בית ידנית</h3>
+                        <p id="housesFormHint">הקלד רחוב, מספר וקואורדינטות או ייבא מאקסל.</p>
+                    </div>
+                </div>
+                <div class="grid-4 houses-form-grid">
+                    <input id="houseStreetInput" type="text" placeholder="רחוב" />
+                    <input id="houseNumberInput" type="text" placeholder="מספר" />
+                    <input id="houseLatInput" type="text" placeholder="קו רוחב" />
+                    <input id="houseLngInput" type="text" placeholder="קו אורך" />
+                </div>
+                <div class="inline-actions house-form-actions">
+                    <button id="addHouseBtn" class="primary-btn" type="button">הוסף בית</button>
+                    <button id="pickOnMapBtn" class="ghost-btn" type="button">📍 סמן במפה</button>
+                    <button id="cancelHouseEditBtn" class="ghost-btn" type="button">נקה</button>
+                </div>
+                <div id="pickMapContainer" class="pick-map-container hidden">
+                    <p class="pick-map-hint">לחץ על המפה לבחירת מיקום. קואורדינאטות יועברו לטופס אוטומטית.</p>
+                    <div id="pickMap" style="width:100%;height:260px;border-radius:14px;overflow:hidden;"></div>
+                    <button id="closePickMapBtn" class="ghost-btn" style="margin-top:8px;width:100%" type="button">סגור מפה</button>
+                </div>
+            </section>
+            <section class="modal-section houses-card import-card">
+                <div class="section-title-row">
+                    <div>
+                        <h3>ייבוא קובץ אקסל</h3>
+                        <p>עמודות נתמכות: רחוב, מספר, lat, lng.</p>
+                    </div>
+                </div>
+                <div class="excel-upload-box">
+                    <input id="housesExcelInput" type="file" accept=".xlsx,.xls,.csv" />
+                    <div class="excel-upload-meta">
+                        <strong>קובץ כתובות</strong>
+                        <span id="housesSelectedFileName">לא נבחר קובץ</span>
+                    </div>
+                    <button id="importHousesBtn" class="primary-btn" type="button">ייבא אקסל</button>
+                </div>
+                <div id="housesImportStatus" class="import-status">לא בוצע ייבוא עדיין.</div>
+            </section>
+        </div>
+        <section class="modal-section houses-card houses-list-card">
+            <div class="section-title-row">
+                <div>
+                    <h3>רשימת בתים</h3>
+                    <p>עריכה או מחיקה מתעדכנות מיידית במפה ובטופס הדיווח.</p>
+                </div>
+            </div>
+            <div class="houses-search-row">
+                <input type="text" id="housesSearchInput" placeholder="חיפוש לפי רחוב או מספר..." />
+            </div>
+            <div id="housesList" class="stack-list compact-list houses-list-scroll"></div>
+        </section>
+    </div>
+</div>
+
+<div id="layersManagerPanel" class="overlay hidden">
+    <div class="modal-box">
+        <button class="modal-close" data-close="#layersManagerPanel" type="button">×</button>
+        <h2>שכבות מידע</h2>
+        <div class="grid-2">
+            <input id="newLayerName" type="text" placeholder="שם שכבה חדשה" />
+            <button id="addLayerBtn" class="primary-btn" type="button">הוסף שכבה</button>
+        </div>
+        <div id="managedLayersList" class="stack-list compact-list"></div>
+    </div>
+</div>
+
+<div id="infoManagerPanel" class="overlay hidden">
+    <div class="modal-box">
+        <button class="modal-close" data-close="#infoManagerPanel" type="button">×</button>
+        <h2>מידע</h2>
+        <div class="grid-2">
+            <input id="infoTitleInput" type="text" placeholder="כותרת כפתור" />
+            <input id="infoUrlInput" type="url" placeholder="https://example.com" />
+        </div>
+        <div class="inline-actions"><button id="addInfoBtn" class="primary-btn" type="button">הוסף כפתור</button></div>
+        <div id="infoAdminList" class="stack-list compact-list"></div>
+    </div>
+</div>
+
+<div id="eventTypesPanel" class="overlay hidden">
+    <div class="modal-box">
+        <button class="modal-close" data-close="#eventTypesPanel" type="button">×</button>
+        <h2>סוגי אירוע</h2>
+        <div class="grid-2">
+            <input id="newEventTypeInput" type="text" placeholder="סוג אירוע חדש" />
+            <button id="addEventTypeBtn" class="primary-btn" type="button">הוסף</button>
+        </div>
+        <div id="eventTypesList" class="stack-list compact-list"></div>
+    </div>
+</div>
+
+<div id="lockPanel" class="overlay hidden">
+    <div class="modal-box compact-box">
+        <button class="modal-close" data-close="#lockPanel" type="button">×</button>
+        <h2>נעילת אירוע</h2>
+        <p>לאחר הנעילה, דיווח חדש יפתח אירוע חדש.</p>
+        <div class="modal-actions">
+            <button id="confirmLockBtn" class="primary-btn" type="button">כן, נעל</button>
+            <button class="ghost-btn" data-close="#lockPanel" type="button">ביטול</button>
+        </div>
+    </div>
+</div>
+
+<div id="journalManagerPanel" class="overlay hidden">
+    <div class="modal-box">
+        <button class="modal-close" data-close="#journalManagerPanel" type="button">×</button>
+        <h2>ניהול יומן חפ"ק</h2>
+        <div class="jm-tabs">
+            <button class="jm-tab active" data-tab="reporters">מדווחים</button>
+            <button class="jm-tab" data-tab="logtypes">שיוכים ומשימות</button>
+            <button class="jm-tab" data-tab="export">ייצוא / ייבוא</button>
+        </div>
+
+        <div id="jm-tab-reporters" class="jm-tab-content active">
+            <div class="grid-2" style="margin-bottom:12px">
+                <input type="text" id="newReporterName" placeholder="שם מדווח חדש" />
+                <button id="addReporterBtn" class="primary-btn" type="button">הוסף מדווח</button>
+            </div>
+            <p id="reporterErrorMessage" class="jm-error"></p>
+            <ul id="reportersList" class="jm-list"></ul>
+        </div>
+
+        <div id="jm-tab-logtypes" class="jm-tab-content hidden">
+            <div class="grid-2" style="margin-bottom:12px">
+                <input type="text" id="newTaskTypeInput" placeholder="שם שיוך חדש" />
+                <button id="addNewTaskTypeBtn" class="primary-btn" type="button">הוסף שיוך</button>
+            </div>
+            <select id="selectTaskTypeForSettings" class="jm-select" style="margin-bottom:10px">
+                <option value="">בחר שיוך לניהול משימות</option>
+            </select>
+            <div id="currentTasksForSettings" class="jm-tasks-box">
+                <p class="jm-hint">בחר שיוך כדי לראות משימות.</p>
+            </div>
+            <div id="jm-add-task-row" class="grid-2 hidden" style="margin-top:10px">
+                <input type="text" id="newTaskItemInput" placeholder="משימה חדשה" />
+                <button id="addTaskItemBtn" class="primary-btn" type="button">הוסף משימה</button>
+            </div>
+        </div>
+
+        <div id="jm-tab-export" class="jm-tab-content hidden">
+            <div class="jm-export-grid">
+                <button id="exportExcelBtn" class="primary-btn" type="button">ייצא לאקסל (CSV)</button>
+                <button id="exportWordBtn" class="primary-btn" type="button">ייצא ל-Word</button>
+                <label class="primary-btn jm-import-label" style="text-align:center;cursor:pointer">
+                    ייבא מאקסל
+                    <input type="file" id="importExcelInput" accept=".xlsx,.xls,.csv" style="display:none" />
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="reportersModal" class="hidden"></div>
+<div id="taskSettingsModal" class="hidden"></div>
+<input type="file" id="importExcelBtn" style="display:none" />
+
+<div id="customAlert" class="overlay hidden">
+    <div class="modal-box compact-box" style="text-align:center">
+        <p id="customAlertMessage" style="font-size:18px;margin-bottom:16px"></p>
+        <button id="customAlertCloseBtn" class="primary-btn" type="button">אישור</button>
+        <button id="customAlertCancelBtn" class="ghost-btn" style="margin-right:10px" type="button">ביטול</button>
+    </div>
+</div>
+
+<script type="module" src="firebase.js"></script>
+<script type="module" src="script.js"></script>
+</body>
+</html>
