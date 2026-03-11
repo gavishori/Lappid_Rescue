@@ -4,7 +4,7 @@
 
 import {
   db, auth, appId, initialAuthToken,
-  onAuthStateChanged, signInAnonymously, signInWithCustomToken,
+  onAuthStateChanged, signInWithCustomToken,
   signInWithEmailAndPassword, signOut,
   collection, doc, addDoc, setDoc, getDoc, getDocs, updateDoc, deleteDoc,
   onSnapshot, query, where, writeBatch, serverTimestamp, Timestamp
@@ -2079,9 +2079,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(!auth.currentUser && initialAuthToken) {
     try { await signInWithCustomToken(auth, initialAuthToken); } catch(e) { console.error('Auto sign-in error:', e); }
   }
+
+  // For public modes (report form / shared map), skip auth entirely —
+  // anonymous sign-in is disabled; Firestore public paths are accessible without auth.
   const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY);
-  if(!auth.currentUser && !initialAuthToken && needsPublicSession) {
-    try { await signInAnonymously(auth); } catch(e) { console.error('Anonymous sign-in error:', e); }
+  if (needsPublicSession && !auth.currentUser) {
+    // Initialize Firestore collection refs so public reads/writes work without auth
+    if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+    // Resolve auth-ready immediately so we don't wait 5 seconds
+    firebaseAuthReadyResolve();
   }
 
   // Login form listener
