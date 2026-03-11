@@ -134,6 +134,7 @@
                 <div class="mobile-clock-row">
                     <span class="mobile-clock-icon"><i class="fas fa-clock"></i></span>
                     <span id="mobileTimeDisplay" class="mobile-clock-val">00:00:00</span>
+                    <button id="mobileRefreshBtn" class="mobile-refresh-btn" type="button" title="רענן"><i class="fas fa-sync-alt"></i></button>
                 </div>
                 <div class="mobile-clock-row mobile-assessment-row">
                     <span class="mobile-clock-label">הערכת מצב</span>
@@ -168,11 +169,24 @@
                                     </div>
                                 </div>
                                 <div id="statusBarWrap" class="map-status-bar hidden">
-                                    <span class="msb-item"><span id="sbNoReply"  class="msb-num msb-gray">0</span> לא השיבו</span>
-                                    <span class="msb-item"><span id="sbReplied"  class="msb-num msb-blue">0</span> השיבו</span>
-                                    <span class="msb-item"><span id="sbOk"       class="msb-num msb-green">0</span> תקין</span>
-                                    <span class="msb-item"><span id="sbProperty" class="msb-num msb-yellow">0</span> נזק לרכוש</span>
-                                    <span class="msb-item"><span id="sbInjury"   class="msb-num msb-red">0</span> פגיעה בגוף</span>
+                                    <button id="statusBarToggleBtn" class="msb-toggle-btn" type="button">
+                                        <span class="msb-toggle-icon">📊</span>
+                                        <span id="sbSummaryText" class="msb-summary">סטטוס דיווחים</span>
+                                    </button>
+                                </div>
+                                <!-- Status popup modal -->
+                                <div id="statusPopup" class="status-popup hidden">
+                                    <div class="status-popup-header">
+                                        <span class="status-popup-title">סטטוס דיווחים</span>
+                                        <button id="statusPopupCloseBtn" class="status-popup-close" type="button">×</button>
+                                    </div>
+                                    <div class="status-popup-grid">
+                                        <div class="spg-item spg-gray"><span id="sbNoReply" class="spg-num">0</span><span class="spg-label">לא השיבו</span></div>
+                                        <div class="spg-item spg-blue"><span id="sbReplied" class="spg-num">0</span><span class="spg-label">השיבו</span></div>
+                                        <div class="spg-item spg-green"><span id="sbOk" class="spg-num">0</span><span class="spg-label">תקין</span></div>
+                                        <div class="spg-item spg-yellow"><span id="sbProperty" class="spg-num">0</span><span class="spg-label">נזק לרכוש</span></div>
+                                        <div class="spg-item spg-red"><span id="sbInjury" class="spg-num">0</span><span class="spg-label">פגיעה בגוף</span></div>
+                                    </div>
                                 </div>
                                 <button id="showSnapshotOnMapBtn" style="display:none" type="button"></button>
                             </div>

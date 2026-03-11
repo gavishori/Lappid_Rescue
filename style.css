@@ -620,6 +620,120 @@ textarea { min-height: 100px; resize: vertical; }
 .mobile-header-top { display: none; }
 .mobile-ham { display: none; }
 
+/* ── Refresh button ── */
+.mobile-refresh-btn {
+  background: transparent;
+  border: none;
+  color: var(--blue2);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  opacity: 0.75;
+  transition: opacity .2s, transform .3s;
+}
+.mobile-refresh-btn:hover { opacity: 1; }
+.mobile-refresh-btn.spinning i { animation: spin .6s linear infinite; }
+
+/* ── Status bar toggle button ── */
+.msb-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(20, 40, 70, 0.88);
+  border: 1px solid rgba(40,147,255,.3);
+  border-radius: 20px;
+  padding: 7px 16px;
+  color: #d0dff0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+  transition: background .15s;
+}
+.msb-toggle-btn:hover { background: rgba(30,60,100,.9); }
+.msb-toggle-icon { font-size: 15px; }
+.msb-summary { direction: rtl; }
+
+/* ── Status popup ── */
+.status-popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: linear-gradient(160deg, #0e2d4e, #152e4d);
+  border: 1px solid rgba(40,147,255,.3);
+  border-radius: 18px;
+  padding: 14px 16px;
+  z-index: 500;
+  min-width: 220px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  backdrop-filter: blur(12px);
+  direction: rtl;
+}
+.status-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.status-popup-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+}
+.status-popup-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+.status-popup-close:hover { color: #fff; }
+.status-popup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.spg-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.spg-num {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+.spg-label {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 3px;
+  color: rgba(255,255,255,.7);
+  text-align: center;
+}
+.spg-gray   { background: rgba(154,170,187,.1); }
+.spg-gray .spg-num   { color: #9aaabb; }
+.spg-blue   { background: rgba(91,155,213,.1); }
+.spg-blue .spg-num   { color: #5b9bd5; }
+.spg-green  { background: rgba(111,191,122,.1); }
+.spg-green .spg-num  { color: #6fbf7a; }
+.spg-yellow { background: rgba(232,200,74,.1); }
+.spg-yellow .spg-num { color: #e8c84a; }
+.spg-red    { background: rgba(232,112,112,.1); }
+.spg-red .spg-num    { color: #e87070; }
+/* last item (5th) spans full width */
+.status-popup-grid .spg-item:nth-child(5) { grid-column: 1 / -1; }
+
+/* ── Map overlay needs position:relative for popup positioning ── */
+.map-overlay-controls { position: relative; }
+
 /* ════════════════════════════════════════════
    HAMBURGER MENU & MOBILE LAYOUT FIXES
 ════════════════════════════════════════════ */
@@ -644,8 +758,10 @@ textarea { min-height: 100px; resize: vertical; }
 @media (max-width: 800px) {
   /* מניעת גלילה אופקית לחלוטין */
   html, body { height: auto; overflow-x: hidden; width: 100vw; position: relative; }
+  * { max-width: 100%; }
   .screen { height: auto; }
   .screen.active { height: auto; min-height: 100vh; overflow-x: hidden; width: 100vw; }
+  .overlay, .modal-box, .side-rail, .journal-col, .map-journal-split { overflow-x: hidden; }
 
   .admin-shell { grid-template-columns: 1fr; height: auto; overflow: visible; }
   

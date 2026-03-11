@@ -59,6 +59,13 @@ function persistAll() {
   storage.set('hamal_info_buttons',   managedInfoButtons);
   storage.set('hamal_houses',         managedHouses);
   storage.set('hamal_gpx_items',      gpxItems);
+  // Sync houses to Firestore so the resident report form can load them via shared link
+  syncHousesToFirestore();
+}
+
+function syncHousesToFirestore() {
+  if (!db || !managedHouses.length) return;
+  try { setDoc(getHousesDoc(), { houses: managedHouses }); } catch(e) {}
 }
 
 // ════════════════════════════════════════════════════════
@@ -138,6 +145,7 @@ const getSharesCol = () => collection(db, `${publicDataRoot}/shares`);
 const getReportDoc = (reportId) => doc(getReportsCol(), reportId);
 const getEventDoc = (eventId) => doc(getEventsCol(), eventId);
 const getShareDoc = (shareId) => doc(getSharesCol(), shareId);
+const getHousesDoc = () => doc(db, `${publicDataRoot}/config`, 'houses');
 const hasJournalAccess = (user) => Boolean(user?.email && !user?.isAnonymous);
 
 // ════════════════════════════════════════════════════════
@@ -763,6 +771,30 @@ function setupModals() {
   safe('openJournalManagerBtn')?.addEventListener('click',()=>openModal('#journalManagerPanel'));
   safe('openResidentReportsManagerBtn')?.addEventListener('click',()=>{ openModal('#residentReportsManagerPanel'); updateRrmStats(); renderRrmSnapshots(); });
   safe('lockEventBtn')?.addEventListener('click',()=>openModal('#lockPanel'));
+
+  // ── Status popup toggle ──
+  const statusToggleBtn = safe('statusBarToggleBtn');
+  const statusPopup = safe('statusPopup');
+  const statusPopupClose = safe('statusPopupCloseBtn');
+  if(statusToggleBtn && statusPopup) {
+    statusToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      statusPopup.classList.toggle('hidden');
+    });
+    if(statusPopupClose) statusPopupClose.addEventListener('click', () => statusPopup.classList.add('hidden'));
+    document.addEventListener('click', (e) => {
+      if(!statusPopup.classList.contains('hidden') && !statusPopup.contains(e.target) && e.target !== statusToggleBtn) {
+        statusPopup.classList.add('hidden');
+      }
+    });
+  }
+
+  // ── Mobile refresh button ──
+  safe('mobileRefreshBtn')?.addEventListener('click', () => {
+    const btn = safe('mobileRefreshBtn');
+    if(btn) { btn.classList.add('spinning'); setTimeout(()=>btn.classList.remove('spinning'), 700); }
+    location.reload();
+  });
 
   // ── Resident Reports Manager ──
   ['#residentReportsManagerPanel'].forEach(sel=>{
@@ -2082,11 +2114,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (MODE==='report'||REPORT_KEY) {
     safe('screen-report')?.classList.add('active');
     safe('screen-admin')?.classList.remove('active');
+    // Load houses from Firestore so street/house dropdowns work via shared link
+    try {
+      const housesSnap = await getDoc(getHousesDoc());
+      if (housesSnap.exists()) {
+        const data = housesSnap.data();
+        if (Array.isArray(data.houses) && data.houses.length) {
+          managedHouses = data.houses;
+          syncStreetOptions();
+        }
+      }
+    } catch(e) { console.warn('Could not load houses from Firestore:', e); }
     if (existingReportId) {
       const snap=await getDoc(getReportDoc(existingReportId));
       if(snap.exists()) {
         const d=snap.data();
-        safe('city').value=d.city||'לפיד'; safe('street').value=d.street||''; safe('house').value=d.house||'';
+        safe('city').value=d.city||'לפיד';
+        // Restore street + house selections after dropdown is populated
+        if (d.street) {
+          const streetSel = safe('street');
+          if(streetSel) { streetSel.value=d.street; window.updateHouseOptions(); }
+        }
+        if (d.house) { const houseSel=safe('house'); if(houseSel) houseSel.value=d.house; }
         safe('soulsCount').value=d.souls||0; safe('freeText').value=d.note||'';
         currentStatus=Array.isArray(d.statuses)?d.statuses:[];
         $$('.status-btn').forEach(b=>b.classList.toggle('active',currentStatus.includes(b.dataset.status)));
@@ -2113,6 +2162,9 @@ function updateMapStatusBar() {
   set('sbOk',       ok);
   set('sbProperty', property);
   set('sbInjury',   injury);
+  // Update summary button text
+  const summaryEl = safe('sbSummaryText');
+  if(summaryEl) summaryEl.textContent = `${total} השיבו · ${noReply} לא השיבו`;
   const bar = safe('statusBarWrap');
   if (bar) bar.classList.remove('hidden');
 }
