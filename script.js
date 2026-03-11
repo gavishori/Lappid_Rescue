@@ -84,6 +84,44 @@ let unsubReporters          = null;
 let unsubTasksCompletion    = null;
 let unsubLogTypes           = null;
 
+function teardownJournalAccess() {
+  journalReports = [];
+  currentReporters = [];
+  definedLogTypes = [];
+  completedTasks = {};
+  renderTable();
+  populateReportersDropdown([]);
+  populateLogTypesDropdowns([]);
+  updateTasksButtonStates();
+  renderLogtypesList();
+  renderCurrentTasksForSettings('');
+  if(unsubJournalReports){unsubJournalReports();unsubJournalReports=null;}
+  if(unsubReporters){unsubReporters();unsubReporters=null;}
+  if(unsubTasksCompletion){unsubTasksCompletion();unsubTasksCompletion=null;}
+  if(unsubLogTypes){unsubLogTypes();unsubLogTypes=null;}
+}
+
+function setJournalLockedState(locked) {
+  const loginPage = safe('login-page');
+  const shouldShowGate = !SHARE_TOKEN && MODE !== 'report' && !REPORT_KEY;
+  if (safe('screen-admin')?.classList.contains('active') && shouldShowGate) {
+    loginPage?.classList.toggle('hidden', !locked);
+  }
+  const journalControls = [
+    'generalTextInput','filterLogType','filterReporter','mainActionBtn','cancelEditBtn',
+    'showDateTimeToggle','newDate','newTime','searchLogBtn','searchInput','toggleAllGroupsBtn'
+  ];
+  journalControls.forEach(id => {
+    const el = safe(id);
+    if (!el) return;
+    if ('disabled' in el) el.disabled = locked;
+  });
+  const inputError = safe('inputErrorMessage');
+  if (inputError) {
+    inputError.textContent = locked ? 'יש להתחבר כדי לגשת ליומן.' : '';
+  }
+}
+
 // auth-ready promise
 let firebaseAuthReadyResolve;
 const firebaseAuthReady = new Promise(r => { firebaseAuthReadyResolve = r; });
@@ -100,6 +138,7 @@ const getSharesCol = () => collection(db, `${publicDataRoot}/shares`);
 const getReportDoc = (reportId) => doc(getReportsCol(), reportId);
 const getEventDoc = (eventId) => doc(getEventsCol(), eventId);
 const getShareDoc = (shareId) => doc(getSharesCol(), shareId);
+const hasJournalAccess = (user) => Boolean(user?.email && !user?.isAnonymous);
 
 // ════════════════════════════════════════════════════════
 //  VILLAGE HELPERS
@@ -694,11 +733,6 @@ function setupNavigation() {
           toggleMenu();
         }
       });
-    });
-
-    // כפתור ניתוק במובייל (בתחתית תפריט המבורגר)
-    safe('mobileLogoutBtn')?.addEventListener('click', async () => {
-      try { await signOut(auth); } catch(e) { console.error(e); }
     });
   }
 }
@@ -1705,15 +1739,19 @@ const handleAuthState = async (user) => {
   if(user) {
     currentUserId=user.uid;
     const em=safe('headerUserEmail'); if(em) em.textContent=user.email||'';
-    safe('login-page')?.classList.add('hidden');
-
-    const allowed='gavishori@gmail.com';
-    const isAdmin=user.email===allowed;
+    const canUseJournal = hasJournalAccess(user);
+    setJournalLockedState(!canUseJournal);
 
     if(!reportsColRef)         reportsColRef        = collection(db,`${publicDataRoot}/reports`);
     if(!reportersColRef)       reportersColRef      = collection(db,`artifacts/${appId}/public/data/reporters`);
     if(!tasksCompletionDocRef) tasksCompletionDocRef= doc(db,`artifacts/${appId}/users/${currentUserId}/tasks_completion`,'status');
     if(!logTypesColRef)        logTypesColRef       = collection(db,`${publicDataRoot}/log_types`);
+
+    if(!canUseJournal) {
+      teardownJournalAccess();
+      firebaseAuthReadyResolve();
+      return;
+    }
 
     if(!unsubJournalReports) {
       unsubJournalReports=onSnapshot(reportsColRef,snap=>{
@@ -1748,13 +1786,9 @@ const handleAuthState = async (user) => {
     }
   } else {
     currentUserId=null;
-    journalReports=[]; renderTable();
-    if(unsubJournalReports){unsubJournalReports();unsubJournalReports=null;}
-    if(unsubReporters){unsubReporters();unsubReporters=null;}
-    if(unsubTasksCompletion){unsubTasksCompletion();unsubTasksCompletion=null;}
-    if(unsubLogTypes){unsubLogTypes();unsubLogTypes=null;}
-    // Show login overlay if we're in admin mode
-    if(safe('screen-admin')?.classList.contains('active')) safe('login-page')?.classList.remove('hidden');
+    const em=safe('headerUserEmail'); if(em) em.textContent='';
+    teardownJournalAccess();
+    setJournalLockedState(true);
   }
   firebaseAuthReadyResolve();
 };
@@ -1895,7 +1929,9 @@ function setupJournalInlineListeners() {
   });
   
   // logout
-  safe('logoutBtn')?.addEventListener('click',async()=>{ try{ await signOut(auth); }catch(e){} });
+  const logoutHandler = async () => { try{ await signOut(auth); }catch(e){} };
+  safe('logoutBtn')?.addEventListener('click', logoutHandler);
+  safe('mobileLogoutBtn')?.addEventListener('click', logoutHandler);
 
   // custom alert cancel btn
   safe('customAlertCancelBtn')?.addEventListener('click',()=>{
@@ -1925,6 +1961,7 @@ function setupJournalInlineListeners() {
 async function bootAdmin(sharedOnly=false) {
   safe('screen-report')?.classList.remove('active');
   safe('screen-admin')?.classList.add('active');
+  if (!sharedOnly) setJournalLockedState(!hasJournalAccess(auth?.currentUser));
   initMap();
   setupNavigation();
   setupModals();
@@ -1993,7 +2030,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(!auth.currentUser && initialAuthToken) {
     try { await signInWithCustomToken(auth, initialAuthToken); } catch(e) { console.error('Auto sign-in error:', e); }
   }
-  if(!auth.currentUser && !initialAuthToken) {
+  const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY);
+  if(!auth.currentUser && !initialAuthToken && needsPublicSession) {
     try { await signInAnonymously(auth); } catch(e) { console.error('Anonymous sign-in error:', e); }
   }
 

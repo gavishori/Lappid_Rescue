@@ -124,7 +124,7 @@ body {
   align-items: center;
 }
 .header-chip {
-  display: inline-block;
+  display: inline-flex;
   text-align: center;
   padding: 8px 20px;
   border-radius: 16px;
@@ -133,6 +133,9 @@ body {
   font-size: clamp(16px,1.3vw,22px);
   font-weight: 900;
   white-space: nowrap;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
 }
 .header-user-area {
   display: flex;
@@ -518,12 +521,12 @@ textarea { min-height: 100px; resize: vertical; }
 /* Header re-layout: clocks center, chip left, user right */
 .header-center { flex: 1; display: flex; justify-content: center; gap: 12px; align-items: center; }
 .header-chip-wrap { display: flex; align-items: center; min-width: unset; }
-.header-clock-chip { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 18px; border-radius: 16px; border: 3px solid var(--blue); background: #12355c; white-space: nowrap; }
+.header-clock-chip { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 18px; border-radius: 16px; border: 3px solid var(--blue); background: #12355c; white-space: nowrap; min-height: 72px; }
 .header-clock-time { padding: 6px 18px; min-width: unset; justify-content: center; }
 .header-clock-time .hclock-val { font-size: 20px; font-weight: 900; letter-spacing: .04em; font-family: monospace; color: #fff; }
-.header-clock-chip .hclock-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .05em; }
-.header-clock-chip .hclock-val { font-size: 20px; font-weight: 900; color: #fff; font-family: monospace; }
-.header-clock-chip .hclock-row { display: flex; align-items: center; gap: 6px; }
+.header-clock-chip .hclock-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .05em; line-height: 1.1; }
+.header-clock-chip .hclock-val { font-size: 20px; font-weight: 900; color: #fff; font-family: monospace; line-height: 1; }
+.header-clock-chip .hclock-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .hclock-box { display: none; }
 @keyframes blinker-red { 50% { opacity: 0; } }
 .blinking-red { color: #ef4444 !important; animation: blinker-red 1s linear infinite; }
@@ -620,6 +623,20 @@ textarea { min-height: 100px; resize: vertical; }
 .hamburger-btn { display: none; background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px 8px; }
 .mobile-menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 900; opacity: 0; transition: opacity 0.3s ease; }
 .mobile-menu-overlay.is-open { display: block; opacity: 1; }
+.side-rail-actions { display: none; }
+.mobile-logout-btn {
+  width: 100%;
+  background: #233f64;
+  color: var(--text);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 14px 18px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.mobile-logout-btn:hover { background: #2d4f7a; }
 
 @media (max-width: 800px) {
   /* מניעת גלילה אופקית לחלוטין */
@@ -637,19 +654,12 @@ textarea { min-height: 100px; resize: vertical; }
   #openJournalManagerBtn,
   #openResidentReportsManagerBtn { display: none !important; }
 
-  /* סידור מחדש של הסרגל העליון שיתמוך בהמבורגר — שורה אחת בלבד */
-  .admin-header { flex-wrap: nowrap; padding: 8px 12px; gap: 8px; align-items: center; }
-  .header-chip-wrap { flex: 0 0 auto; order: 1; }
-  .header-center { flex: 1; order: 2; width: auto; margin-top: 0; justify-content: flex-end; gap: 8px; }
-  .hamburger-btn { display: flex; align-items: center; justify-content: center; order: 3; flex-shrink: 0; margin-left: 0; }
-  /* גובה אחיד לכל שדות הכותרת — כגובה chip של חפ"ק לפיד */
-  .header-chip { height: 46px; display: inline-flex; align-items: center; box-sizing: border-box; }
-  .header-clock-chip { height: 46px; box-sizing: border-box; justify-content: center; padding: 0 12px; }
-  /* הסתרת כפתורי +/− של הערכת מצב במובייל בלבד */
-  #assessmentTimeMinusBtn,
-  #assessmentTimePlusBtn { display: none !important; }
-  /* הסתרת אזור המשתמש (כפתור ניתוק) מהכותרת — עובר לתפריט המבורגר */
-  .header-user-area { display: none !important; }
+  /* סידור מחדש של הסרגל העליון שיתמוך בהמבורגר */
+  .admin-header { flex-wrap: wrap; padding: 10px 14px; align-items: flex-start; }
+  .hamburger-btn { display: block; order: -1; margin-left: 10px; }
+  .header-chip-wrap { flex: 1; }
+  .header-center { width: 100%; order: 3; margin-top: 12px; }
+  .header-user-area { display: none; }
 
   /* הפיכת תפריט הניווט למגירת צד נשלפת */
   .side-rail {
@@ -662,6 +672,7 @@ textarea { min-height: 100px; resize: vertical; }
   .side-rail.is-open { right: 0; }
   .rail-btn { width: 100%; text-align: right; padding: 16px 20px; font-size: 18px; border-radius: 12px; margin-bottom: 10px; background: transparent; min-width: unset; white-space: nowrap;}
   .rail-btn.active { background: #163d66; }
+  .side-rail-actions { display: block; margin-top: auto; padding-top: 12px; }
 
   .map-journal-split { grid-template-columns: 1fr; grid-template-rows: 300px 1fr; overflow: visible; }
   .journal-col { min-height: 400px; overflow: visible; }
@@ -671,11 +682,12 @@ textarea { min-height: 100px; resize: vertical; }
   .manage-grid { grid-template-columns: 1fr; }
   .main-stage { overflow: visible; }
   .modal-box { width: min(92vw, 840px); padding: 14px; }
-  .header-clock-chip .hclock-val { font-size: 15px; }
+  .header-chip { font-size: 14px; padding: 4px 12px; min-height: 58px; }
+  .header-clock-chip { padding: 4px 10px; min-height: 58px; }
+  .header-clock-chip .hclock-val { font-size: 16px; }
+  .header-clock-time .hclock-val { font-size: 16px; }
+  .hclock-btn { display: none; }
   .rrm-stats-row { gap: 5px; }
   .rrm-stat-chip { font-size: 12px; padding: 4px 10px; }
   .houses-panel-grid { grid-template-columns: 1fr !important; }
-  /* כפתור ניתוק בתפריט המבורגר */
-  .rail-btn-logout { color: #ff6b6b; border-top: 1px solid rgba(255,255,255,0.12); margin-top: 12px; padding-top: 20px; }
-  .rail-btn-logout:hover { background: rgba(255,107,107,0.12) !important; }
 }
