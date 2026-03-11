@@ -711,19 +711,23 @@ function setupNavigation() {
 
   // לוגיקת תפריט המבורגר (מובייל)
   const hamBtn = safe('hamburgerMenuBtn');
+  const hamBtnMobile = safe('hamburgerMenuBtnMobile');
   const sideRail = document.querySelector('.side-rail');
   const overlay = safe('mobileMenuOverlay');
 
-  if(hamBtn && sideRail && overlay) {
+  if(sideRail && overlay) {
     const toggleMenu = () => {
       sideRail.classList.toggle('is-open');
       overlay.classList.toggle('is-open');
       const isOpen = sideRail.classList.contains('is-open');
       // שינוי אייקון מ-X לתפריט ולהפך
-      hamBtn.innerHTML = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+      const icon = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+      if(hamBtn) hamBtn.innerHTML = icon;
+      if(hamBtnMobile) hamBtnMobile.innerHTML = icon;
     };
 
-    hamBtn.addEventListener('click', toggleMenu);
+    if(hamBtn) hamBtn.addEventListener('click', toggleMenu);
+    if(hamBtnMobile) hamBtnMobile.addEventListener('click', toggleMenu);
     overlay.addEventListener('click', toggleMenu);
 
     // סגירת התפריט בלחיצה על אחד מכפתורי הניווט (רק במובייל)
@@ -1670,16 +1674,27 @@ function updateTasksButtonStates() {
 // ── clocks ────────────────────────────────────────────
 function updateCurrentTime() {
   const now=new Date();
+  const timeStr=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
   const el=safe('currentTimeDisplay');
-  if(el) el.textContent=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  if(el) el.textContent=timeStr;
+  const mob=safe('mobileTimeDisplay');
+  if(mob) mob.textContent=timeStr;
   return now;
 }
 function updateAssessmentDisplay() {
   const el=safe('assessmentTimeDisplay'); if(!el) return;
-  if(!assessmentTimeIsManual){ el.textContent='טרם נקבע'; el.classList.remove('blinking-red'); return; }
-  el.textContent=`${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}`;
+  const mob=safe('mobileAssessmentDisplay');
+  if(!assessmentTimeIsManual){
+    el.textContent='טרם נקבע'; el.classList.remove('blinking-red');
+    if(mob){ mob.textContent='טרם נקבע'; mob.classList.remove('blinking-red'); }
+    return;
+  }
+  const val=`${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}`;
+  el.textContent=val;
+  if(mob) mob.textContent=val;
   const diff=(assessmentTime-new Date())/(1000*60);
-  if(diff>0&&diff<=5) el.classList.add('blinking-red'); else el.classList.remove('blinking-red');
+  if(diff>0&&diff<=5){ el.classList.add('blinking-red'); if(mob) mob.classList.add('blinking-red'); }
+  else { el.classList.remove('blinking-red'); if(mob) mob.classList.remove('blinking-red'); }
 }
 
 // ── export ────────────────────────────────────────────

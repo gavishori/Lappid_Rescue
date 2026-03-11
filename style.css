@@ -617,6 +617,9 @@ textarea { min-height: 100px; resize: vertical; }
 .share-create-btn, .share-copy-btn { font-size: 14px; padding: 8px 12px; min-height: 38px; border-radius: 10px; }
 .share-url-box { background: rgba(4,25,45,.8); border: 1px solid rgba(40,147,255,.25); padding: 10px 12px; font-size: 12px; min-height: 36px; margin-top: 6px; border-radius: 10px; word-break: break-all; color: #7ec9ff; font-family: monospace; letter-spacing: .02em; line-height: 1.5; }
 
+.mobile-header-top { display: none; }
+.mobile-ham { display: none; }
+
 /* ════════════════════════════════════════════
    HAMBURGER MENU & MOBILE LAYOUT FIXES
 ════════════════════════════════════════════ */
@@ -682,11 +685,117 @@ textarea { min-height: 100px; resize: vertical; }
   .manage-grid { grid-template-columns: 1fr; }
   .main-stage { overflow: visible; }
   .modal-box { width: min(92vw, 840px); padding: 14px; }
+  /* ── Mobile header redesign ── */
+  .admin-header {
+    padding: 0;
+    border-bottom: none;
+    background: none;
+    display: block;
+  }
+
+  .mobile-header-top {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px 8px;
+    background: linear-gradient(135deg, #062040 0%, #0a2d50 50%, #062040 100%);
+    border-bottom: 2px solid var(--blue);
+    gap: 10px;
+  }
+
+  .mobile-header-brand {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mobile-brand-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+    text-shadow: 0 0 18px rgba(40,147,255,0.5);
+  }
+
+  .mobile-brand-subtitle {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mobile-header-clocks {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .mobile-clock-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(40, 147, 255, 0.08);
+    border: 1px solid rgba(40, 147, 255, 0.22);
+    border-radius: 10px;
+    padding: 4px 10px;
+    min-width: 88px;
+    justify-content: flex-end;
+  }
+
+  .mobile-clock-icon {
+    font-size: 11px;
+    color: var(--blue2);
+    opacity: 0.8;
+  }
+
+  .mobile-clock-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .mobile-clock-val {
+    font-size: 17px;
+    font-weight: 900;
+    color: #fff;
+    font-family: monospace;
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .mobile-assessment-row {
+    background: rgba(244, 194, 70, 0.07);
+    border-color: rgba(244, 194, 70, 0.25);
+  }
+
+  .mobile-assessment-row .mobile-clock-val {
+    color: var(--warn);
+  }
+
+  .mobile-assessment-row .mobile-clock-label {
+    color: rgba(244, 194, 70, 0.7);
+  }
+
+  /* Override default header layout for mobile — hide desktop elements */
+  .header-chip-wrap { display: none !important; }
+  .header-center { display: none !important; }
+  .header-user-area { display: none !important; }
+  .desktop-ham { display: none !important; }
+  .mobile-header-top { display: flex; }
+
+  /* Assessment time buttons hidden on mobile (read-only) */
+  .hclock-btn { display: none; }
+
+  /* Legacy chip sizing (fallback) */
   .header-chip { font-size: 14px; padding: 4px 12px; min-height: 58px; }
   .header-clock-chip { padding: 4px 10px; min-height: 58px; }
   .header-clock-chip .hclock-val { font-size: 16px; }
   .header-clock-time .hclock-val { font-size: 16px; }
-  .hclock-btn { display: none; }
   .rrm-stats-row { gap: 5px; }
   .rrm-stat-chip { font-size: 12px; padding: 4px 10px; }
   .houses-panel-grid { grid-template-columns: 1fr !important; }
