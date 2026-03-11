@@ -93,6 +93,14 @@ let assessmentTime          = new Date();
 let assessmentTimeIsManual  = false;
 let isSearchInputVisible    = false;
 
+const publicDataRoot = `artifacts/${appId}/public/data`;
+const getEventsCol = () => collection(db, `${publicDataRoot}/events`);
+const getReportsCol = () => reportsColRef || collection(db, `${publicDataRoot}/reports`);
+const getSharesCol = () => collection(db, `${publicDataRoot}/shares`);
+const getReportDoc = (reportId) => doc(getReportsCol(), reportId);
+const getEventDoc = (eventId) => doc(getEventsCol(), eventId);
+const getShareDoc = (shareId) => doc(getSharesCol(), shareId);
+
 // ════════════════════════════════════════════════════════
 //  VILLAGE HELPERS
 // ════════════════════════════════════════════════════════
@@ -200,17 +208,17 @@ async function reverseGeocode(lat, lng) {
 }
 
 async function getOrCreateActiveEvent() {
-  const qy   = query(collection(db,'events'), where('locked','==',false));
+  const qy   = query(getEventsCol(), where('locked','==',false));
   const snap = await getDocs(qy);
   if (!snap.empty) {
     const sorted = snap.docs.sort((a,b)=>(b.data().createdAt?.toMillis?.()||0)-(a.data().createdAt?.toMillis?.()||0));
     activeEventId = sorted[0].id; return activeEventId;
   }
-  const ref = await addDoc(collection(db,'events'),{createdAt:serverTimestamp(),locked:false,category:eventTypes[0]||'נפילת טיל'});
+  const ref = await addDoc(getEventsCol(), {createdAt:serverTimestamp(),locked:false,category:eventTypes[0]||'נפילת טיל'});
   activeEventId = ref.id; return activeEventId;
 }
 async function verifyShareToken(token) {
-  const snap = await getDoc(doc(db,'shares',token));
+  const snap = await getDoc(getShareDoc(token));
   if (!snap.exists()) return null;
   const d = snap.data();
   if (d.expiresAt?.toDate && d.expiresAt.toDate()<new Date()) return null;
@@ -219,7 +227,7 @@ async function verifyShareToken(token) {
 async function createTimedShare(untilDate) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
-  await setDoc(doc(db,'shares',token),{eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
+  await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
 function getResidentReportUrl() { return `${location.origin}${location.pathname}?mode=report`; }
@@ -228,13 +236,13 @@ async function submitVillageReport(data) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const payload = {...data, eventId:activeEventId, updatedAt:serverTimestamp()};
   if (existingReportId) {
-    const snap = await getDoc(doc(db,'reports',existingReportId));
+    const snap = await getDoc(getReportDoc(existingReportId));
     if (snap.exists() && snap.data().createdAt) payload.createdAt = snap.data().createdAt;
     else payload.createdAt = serverTimestamp();
-    await setDoc(doc(db,'reports',existingReportId), payload, {merge:true});
+    await setDoc(getReportDoc(existingReportId), payload, {merge:true});
   } else {
     payload.createdAt = serverTimestamp();
-    const ref = await addDoc(collection(db,'reports'), payload);
+    const ref = await addDoc(getReportsCol(), payload);
     existingReportId = ref.id;
     const u = new URL(location.href);
     u.searchParams.set('rkey', ref.id);
@@ -467,7 +475,7 @@ async function renderResidentMarkers() {
         if (local) {
           lat=local.lat; lng=local.lng;
           if (local.lat !== r.lat || local.lng !== r.lng) {
-            updateDoc(doc(db,'reports',r.id),{lat,lng}).catch(()=>{});
+            updateDoc(getReportDoc(r.id), {lat,lng}).catch(()=>{});
           }
         } else if (r.locationType === 'gps' && lat && lng) {
           // GPS — use as-is
@@ -747,10 +755,10 @@ function setupModals() {
         confirmBtn.removeEventListener('click',handler);
         if(!activeEventId) return;
         try {
-          const snap=await getDocs(query(collection(db,'reports'),where('eventId','==',activeEventId)));
+          const snap=await getDocs(query(getReportsCol(), where('eventId','==',activeEventId)));
           if(!snap.empty){
             const batch=writeBatch(db);
-            snap.docs.forEach(d=>batch.delete(doc(db,'reports',d.id)));
+            snap.docs.forEach(d=>batch.delete(getReportDoc(d.id)));
             await batch.commit();
           }
           reportCache=[];
@@ -929,7 +937,7 @@ function setupControls() {
 
   safe('confirmLockBtn')?.addEventListener('click',async()=>{
     if(!activeEventId) return;
-    await updateDoc(doc(db,'events',activeEventId),{locked:true});
+    await updateDoc(getEventDoc(activeEventId), {locked:true});
     closeModal('#lockPanel'); showCustomAlert('האירוע ננעל');
   });
 }
@@ -966,7 +974,7 @@ function setupShareUi() {
 async function subscribeVillageReports() {
   if (unsubReports) unsubReports();
   if (!activeEventId) return;
-  const qy=query(collection(db,'reports'),where('eventId','==',activeEventId));
+  const qy=query(getReportsCol(), where('eventId','==',activeEventId));
   unsubReports=onSnapshot(qy,async snap=>{
     reportCache=snap.docs.map(d=>({id:d.id,...d.data()}));
     await renderResidentMarkers();
@@ -1189,7 +1197,7 @@ async function addJournalReport() {
       if(!existing){ showCustomAlert('דיווח לא נמצא'); resetForm(); return; }
       const diff=(new Date()-new Date(existing.timestamp))/(1000*60*60);
       if(diff>=48){ showCustomAlert('לא ניתן לערוך דיווחים בני יותר מ-48 שעות'); resetForm(); return; }
-      await setDoc(doc(db,`artifacts/${appId}/public/data/reports`,editingReportId),{description:desc,date,time,reporter:rep,logType:lt},{merge:true});
+      await setDoc(getReportDoc(editingReportId), {description:desc,date,time,reporter:rep,logType:lt}, {merge:true});
       lastAddedReportId=editingReportId;
       collapsedGroups.delete(date);
     } else {
@@ -1205,7 +1213,7 @@ async function addJournalReport() {
 }
 async function deleteJournalReport(id) {
   try { 
-      await deleteDoc(doc(db,`artifacts/${appId}/public/data/reports`,id)); 
+      await deleteDoc(getReportDoc(id)); 
   } catch(e){ 
       showCustomAlert('שגיאה במחיקה: '+e.message); 
   }
@@ -1214,7 +1222,7 @@ async function deleteDayReports(dateKey) {
   const toDelete=journalReports.filter(r=>r.date===dateKey);
   try {
     const batch=writeBatch(db);
-    toDelete.forEach(r=>batch.delete(doc(db,`artifacts/${appId}/public/data/reports`,r.id)));
+    toDelete.forEach(r=>batch.delete(getReportDoc(r.id)));
     await batch.commit();
   } catch(e){ showCustomAlert('שגיאה במחיקת יום: '+e.message); }
 }
@@ -1322,7 +1330,7 @@ async function removeTaskFromLogType(ltName, taskId) {
     const prefix=`task-${ltName}-${taskId}`;
     const q2=query(reportsColRef,where('isTaskReport','==',true),where('taskReportId','==',prefix));
     const qs=await getDocs(q2);
-    if(!qs.empty){ const batch=writeBatch(db); qs.docs.forEach(d=>batch.delete(doc(db,`artifacts/${appId}/public/data/reports`,d.id))); await batch.commit(); }
+    if(!qs.empty){ const batch=writeBatch(db); qs.docs.forEach(d=>batch.delete(getReportDoc(d.id))); await batch.commit(); }
     showCustomAlert('משימה הוסרה');
   } catch(e){ showCustomAlert('שגיאה: '+e.message); }
 }
@@ -1592,7 +1600,7 @@ async function handleTaskCheck(taskId, logType, taskText, checked) {
   if(checked&&!todayRep) {
     try { await addDoc(reportsColRef,{description:`משימת "${taskText}" עבור "${logType}" הושלמה`,date,time,reporter:safe('filterReporter')?.value||'מערכת',logType,creatorId:currentUserId,timestamp:new Date().toISOString(),isTaskReport:true,taskReportId:prefix}); } catch(e){ console.error(e); }
   } else if(!checked&&todayRep) {
-    try { await deleteDoc(doc(db,`artifacts/${appId}/public/data/reports`,todayRep.id)); } catch(e){ console.error(e); }
+    try { await deleteDoc(getReportDoc(todayRep.id)); } catch(e){ console.error(e); }
   }
   renderTasksPanel(logType);
 }
@@ -1697,10 +1705,10 @@ const handleAuthState = async (user) => {
     const allowed='gavishori@gmail.com';
     const isAdmin=user.email===allowed;
 
-    if(!reportsColRef)         reportsColRef        = collection(db,`artifacts/${appId}/public/data/reports`);
+    if(!reportsColRef)         reportsColRef        = collection(db,`${publicDataRoot}/reports`);
     if(!reportersColRef)       reportersColRef      = collection(db,`artifacts/${appId}/public/data/reporters`);
     if(!tasksCompletionDocRef) tasksCompletionDocRef= doc(db,`artifacts/${appId}/users/${currentUserId}/tasks_completion`,'status');
-    if(!logTypesColRef)        logTypesColRef       = collection(db,`artifacts/${appId}/public/data/log_types`);
+    if(!logTypesColRef)        logTypesColRef       = collection(db,`${publicDataRoot}/log_types`);
 
     if(!unsubJournalReports) {
       unsubJournalReports=onSnapshot(reportsColRef,snap=>{
@@ -1980,6 +1988,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if(!auth.currentUser && initialAuthToken) {
     try { await signInWithCustomToken(auth, initialAuthToken); } catch(e) { console.error('Auto sign-in error:', e); }
   }
+  if(!auth.currentUser && !initialAuthToken) {
+    try { await signInAnonymously(auth); } catch(e) { console.error('Anonymous sign-in error:', e); }
+  }
 
   // Login form listener
   safe('loginBtn')?.addEventListener('click', async () => {
@@ -2014,7 +2025,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     safe('screen-report')?.classList.add('active');
     safe('screen-admin')?.classList.remove('active');
     if (existingReportId) {
-      const snap=await getDoc(doc(db,'reports',existingReportId));
+      const snap=await getDoc(getReportDoc(existingReportId));
       if(snap.exists()) {
         const d=snap.data();
         safe('city').value=d.city||'לפיד'; safe('street').value=d.street||''; safe('house').value=d.house||'';
