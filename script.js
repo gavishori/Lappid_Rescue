@@ -107,9 +107,12 @@ function dotClass(statuses=[]) {
   return 'ok';
 }
 function statusLabel(statuses=[]) {
-  if (statuses.includes('injury'))   return 'פגיעה בנפש';
-  if (statuses.includes('property')) return 'נזק לרכוש';
-  return 'תקין';
+  const labels = [];
+  if (statuses.includes('injury'))   labels.push('פגיעה בגוף');
+  if (statuses.includes('property')) labels.push('נזק לרכוש');
+  if (statuses.includes('ok') && !statuses.includes('injury') && !statuses.includes('property')) labels.push('תקין');
+  if (!labels.length) labels.push('תקין');
+  return labels.join(' + ');
 }
 function iconColor(kind) {
   if (kind==='danger')     return '#ff5d66';
@@ -448,6 +451,7 @@ function lookupHouseCoords(street, house) {
 
 async function renderResidentMarkers() {
   if (!map) return;
+  updateMapStatusBar();
   const reps = reportCache.filter(passesFilters);
   const f    = getFilterFlags();
 
@@ -647,6 +651,7 @@ function renderEventTypes() {
 }
 
 function setupNavigation() {
+  // ניהול ניווט הטאבים הקיים
   $$('.rail-btn').forEach(btn=>btn.addEventListener('click',()=>{
     const view=btn.dataset.view;
     if (view==='layers') { openLayersModal(); return; }
@@ -656,6 +661,33 @@ function setupNavigation() {
     safe(`view-${view}`)?.classList.add('active');
     if (view==='reports') setTimeout(()=>map?.invalidateSize(),80);
   }));
+
+  // לוגיקת תפריט המבורגר (מובייל)
+  const hamBtn = safe('hamburgerMenuBtn');
+  const sideRail = document.querySelector('.side-rail');
+  const overlay = safe('mobileMenuOverlay');
+
+  if(hamBtn && sideRail && overlay) {
+    const toggleMenu = () => {
+      sideRail.classList.toggle('is-open');
+      overlay.classList.toggle('is-open');
+      const isOpen = sideRail.classList.contains('is-open');
+      // שינוי אייקון מ-X לתפריט ולהפך
+      hamBtn.innerHTML = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+    };
+
+    hamBtn.addEventListener('click', toggleMenu);
+    overlay.addEventListener('click', toggleMenu);
+
+    // סגירת התפריט בלחיצה על אחד מכפתורי הניווט (רק במובייל)
+    $$('.rail-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(window.innerWidth <= 800 && sideRail.classList.contains('is-open')) {
+          toggleMenu();
+        }
+      });
+    });
+  }
 }
 
 const openModal  = sel => $(sel)?.classList.remove('hidden');
@@ -678,7 +710,68 @@ function setupModals() {
   safe('openInfoManagerBtn')?.addEventListener('click',()=>openModal('#infoManagerPanel'));
   safe('openEventTypesManagerBtn')?.addEventListener('click',()=>openModal('#eventTypesPanel'));
   safe('openJournalManagerBtn')?.addEventListener('click',()=>openModal('#journalManagerPanel'));
+  safe('openResidentReportsManagerBtn')?.addEventListener('click',()=>{ openModal('#residentReportsManagerPanel'); updateRrmStats(); renderRrmSnapshots(); });
   safe('lockEventBtn')?.addEventListener('click',()=>openModal('#lockPanel'));
+
+  // ── Resident Reports Manager ──
+  ['#residentReportsManagerPanel'].forEach(sel=>{
+    $(sel)?.addEventListener('click',e=>{ if(e.target===$(sel)) closeModal(sel); });
+  });
+
+  safe('rrmSaveBtn')?.addEventListener('click', async ()=>{
+    if(!reportCache||reportCache.length===0){ showCustomAlert('אין דיווחים לשמירה.'); return; }
+    const now=new Date();
+    const dateLabel=`${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const ok=reportCache.filter(r=>(r.statuses||[]).includes('ok')||(r.statuses||[]).length===0&&!r.statuses).length;
+    const injury=reportCache.filter(r=>(r.statuses||[]).includes('injury')).length;
+    const property=reportCache.filter(r=>(r.statuses||[]).includes('property')).length;
+    const snapshot={ dateLabel, total:reportCache.length, ok, injury, property, ts:now.getTime(), reports: reportCache.map(r=>({...r})) };
+    const existing=JSON.parse(localStorage.getItem('rrmSnapshots')||'[]');
+    existing.unshift(snapshot);
+    localStorage.setItem('rrmSnapshots', JSON.stringify(existing.slice(0,20)));
+    renderRrmSnapshots();
+    showCustomAlert('הדיווחים נשמרו בהצלחה ✓');
+  });
+
+  safe('rrmResetBtn')?.addEventListener('click',()=>{
+    const el=safe('customAlert'); const mel=safe('customAlertMessage');
+    if(el&&mel){
+      mel.textContent='האם אתה בטוח שברצונך לאפס את כל דיווחי התושבים?';
+      el.classList.remove('hidden');
+      safe('customAlertCancelBtn')?.classList.remove('hidden');
+      const confirmBtn=safe('customAlertCloseBtn');
+      const orig=confirmBtn.textContent;
+      confirmBtn.textContent='אפס';
+      const handler=async()=>{
+        confirmBtn.textContent=orig;
+        confirmBtn.removeEventListener('click',handler);
+        if(!activeEventId) return;
+        try {
+          const snap=await getDocs(query(collection(db,'reports'),where('eventId','==',activeEventId)));
+          if(!snap.empty){
+            const batch=writeBatch(db);
+            snap.docs.forEach(d=>batch.delete(doc(db,'reports',d.id)));
+            await batch.commit();
+          }
+          reportCache=[];
+          await renderResidentMarkers();
+          closeModal('#residentReportsManagerPanel');
+          showCustomAlert('הדיווחים אופסו ✓');
+        } catch(e){ console.error(e); showCustomAlert('שגיאה באיפוס הדיווחים'); }
+      };
+      confirmBtn.addEventListener('click',handler);
+    }
+  });
+
+  safe('showSnapshotOnMapBtn')?.addEventListener('click',()=>{
+    const btn=safe('showSnapshotOnMapBtn');
+    if(btn.dataset.snapshotActive==='1'){
+      btn.dataset.snapshotActive='0'; btn.classList.remove('active-snapshot');
+      btn.textContent='📍 הצג על המפה';
+      // restore live data
+      renderResidentMarkers();
+    }
+  });
 }
 
 function normalizeHouseItem(item) {
@@ -1233,21 +1326,231 @@ async function removeTaskFromLogType(ltName, taskId) {
     showCustomAlert('משימה הוסרה');
   } catch(e){ showCustomAlert('שגיאה: '+e.message); }
 }
-function renderCurrentTasksForSettings(ltName) {
-  const box=safe('currentTasksForSettings'); const addRow=safe('jm-add-task-row');
-  if(!box) return;
-  if(!ltName){ box.innerHTML='<p class="jm-hint">בחר שיוך כדי לראות משימות.</p>'; if(addRow) addRow.classList.add('hidden'); return; }
-  const obj=definedLogTypes.find(l=>l.name===ltName);
-  if(!obj){ box.innerHTML='<p class="jm-hint">שיוך לא נמצא.</p>'; return; }
-  if(!obj.tasks.length){ box.innerHTML='<p class="jm-hint">אין משימות. הוסף למטה.</p>'; }
-  else {
-    box.innerHTML=obj.tasks.map(t=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06)"><span>${t.text}</span><button class="delete-btn remove-task-btn" data-id="${t.id}" data-lt="${ltName}" style="font-size:11px;padding:3px 8px">הסר</button></div>`).join('');
-    box.querySelectorAll('.remove-task-btn').forEach(btn=>btn.onclick=()=>{
-      showCustomAlert(`להסיר משימה "${definedLogTypes.find(l=>l.name===btn.dataset.lt)?.tasks.find(t=>t.id===btn.dataset.id)?.text}"?`);
-      safe('customAlert').dataset.confirmAction='removeTask';
-      safe('customAlert').dataset.taskIdToRemove=btn.dataset.id;
-      safe('customAlert').dataset.logTypeToRemove=btn.dataset.lt;
+
+function renderLogtypesList() {
+  const box = safe('logtypesListBox'); if (!box) return;
+  if (!definedLogTypes.length) {
+    box.innerHTML = '<p class="jm-hint" style="padding:10px;text-align:center">אין שיוכים. הוסף למעלה.</p>';
+    return;
+  }
+  box.innerHTML = '';
+  const sorted = [...definedLogTypes].sort((a,b) => a.name.localeCompare(b.name,'he'));
+  sorted.forEach(lt => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:8px';
+
+    // main row
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 12px;background:#15304f;border:1px solid rgba(255,255,255,.08);border-radius:12px';
+    row.innerHTML = `
+      <span style="flex:1;font-weight:700;color:#fff;font-size:15px">${lt.name}</span>
+      <span style="font-size:12px;color:#8da8c5;white-space:nowrap">${(lt.tasks||[]).length} משימות</span>
+      <button data-action="toggle-tasks" style="font-size:12px;padding:5px 12px;background:#1a3d63;border:1px solid rgba(255,255,255,.15);color:#cde;border-radius:8px;cursor:pointer">✏️ משימות</button>
+      <button data-action="edit-name"    style="font-size:12px;padding:5px 12px;background:#1e4d8c;border:1px solid rgba(40,147,255,.4);color:#7ec8ff;border-radius:8px;cursor:pointer">עריכה</button>
+      <button data-action="delete"       style="font-size:12px;padding:5px 12px;background:#5c1c2a;border:1px solid rgba(220,80,80,.3);color:#ff9aaa;border-radius:8px;cursor:pointer">מחק</button>
+    `;
+
+    // edit row (hidden)
+    const editRow = document.createElement('div');
+    editRow.style.cssText = 'display:none;align-items:center;gap:8px;padding:8px 12px;background:#15304f;border:1px solid rgba(40,147,255,.4);border-radius:12px';
+    editRow.innerHTML = `
+      <input value="${lt.name}" style="flex:1;background:#0d2440;border:1px solid rgba(40,147,255,.5);border-radius:8px;color:#fff;padding:5px 10px;font-size:14px;font-family:inherit" />
+      <button data-action="save-name"   style="font-size:12px;padding:5px 12px;background:#1a6b3a;border:1px solid rgba(69,191,100,.4);color:#6fbf7a;border-radius:8px;cursor:pointer">שמור</button>
+      <button data-action="cancel-edit" style="font-size:12px;padding:5px 12px;background:#2a3d55;border:1px solid rgba(255,255,255,.1);color:#aaa;border-radius:8px;cursor:pointer">ביטול</button>
+    `;
+
+    // tasks panel (hidden)
+    const tasksBox = document.createElement('div');
+    tasksBox.style.cssText = 'display:none;background:#0d2440;border:1px solid rgba(40,147,255,.2);border-radius:10px;margin-top:4px;overflow:hidden';
+
+    wrap.appendChild(row);
+    wrap.appendChild(editRow);
+    wrap.appendChild(tasksBox);
+    box.appendChild(wrap);
+
+    function refreshTasksBox() {
+      const cur = definedLogTypes.find(l => l.id === lt.id) || lt;
+      const tasks = cur.tasks || [];
+      tasksBox.innerHTML = '';
+      if (!tasks.length) {
+        tasksBox.innerHTML = '<div style="padding:10px 14px;color:#8da8c5;font-size:14px">אין משימות עדיין</div>';
+      } else {
+        tasks.forEach(t => {
+          const tr = document.createElement('div');
+          tr.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.05);color:#cde;font-size:14px';
+          tr.innerHTML = `<span style="flex:1">${t.text}</span><button style="font-size:11px;padding:3px 8px;background:#5c1c2a;border:1px solid rgba(220,80,80,.3);color:#ff9aaa;border-radius:6px;cursor:pointer">הסר</button>`;
+          tr.querySelector('button').addEventListener('click', () => {
+            showCustomAlert(`להסיר משימה "${t.text}"?`);
+            safe('customAlert').dataset.confirmAction = 'removeTask';
+            safe('customAlert').dataset.taskIdToRemove = t.id;
+            safe('customAlert').dataset.logTypeToRemove = cur.name;
+          });
+          tasksBox.appendChild(tr);
+        });
+      }
+      const addRow = document.createElement('div');
+      addRow.style.cssText = 'display:flex;gap:8px;padding:8px 10px;border-top:1px solid rgba(255,255,255,.08);background:#0a1e35';
+      addRow.innerHTML = `<input placeholder="משימה חדשה..." style="flex:1;background:#15304f;border:1px solid rgba(40,147,255,.3);border-radius:8px;color:#fff;padding:5px 10px;font-size:13px;font-family:inherit" /><button style="font-size:12px;padding:5px 12px;background:#1a6b3a;border:1px solid rgba(69,191,100,.4);color:#6fbf7a;border-radius:8px;cursor:pointer;white-space:nowrap">+ הוסף</button>`;
+      addRow.querySelector('button').addEventListener('click', async () => {
+        const txt = addRow.querySelector('input').value.trim();
+        if (!txt) return;
+        await addTaskToLogType(cur.name, txt);
+        addRow.querySelector('input').value = '';
+        setTimeout(refreshTasksBox, 400);
+      });
+      tasksBox.appendChild(addRow);
+    }
+
+    row.querySelector('[data-action="toggle-tasks"]').addEventListener('click', () => {
+      const isHidden = tasksBox.style.display === 'none';
+      tasksBox.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) refreshTasksBox();
     });
+
+    row.querySelector('[data-action="edit-name"]').addEventListener('click', () => {
+      row.style.display = 'none';
+      editRow.style.display = 'flex';
+      editRow.querySelector('input').focus();
+    });
+
+    editRow.querySelector('[data-action="cancel-edit"]').addEventListener('click', () => {
+      editRow.style.display = 'none';
+      row.style.display = 'flex';
+    });
+
+    editRow.querySelector('[data-action="save-name"]').addEventListener('click', async () => {
+      const newName = editRow.querySelector('input').value.trim();
+      if (!newName) return;
+      if (!logTypesColRef || !auth.currentUser) { showCustomAlert('נדרשת התחברות'); return; }
+      try {
+        await updateDoc(doc(db, `artifacts/${appId}/public/data/log_types`, lt.id), { name: newName });
+        editRow.style.display = 'none';
+        row.style.display = 'flex';
+        showCustomAlert(`השם עודכן ל-"${newName}"`);
+      } catch(e) { showCustomAlert('שגיאה: ' + e.message); }
+    });
+
+    row.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      showCustomAlert(`למחוק שיוך "${lt.name}"?`);
+      safe('customAlert').dataset.confirmAction = 'deleteLogType';
+      safe('customAlert').dataset.logTypeToRemove = lt.id;
+      safe('customAlert').dataset.logTypeNameToRemove = lt.name;
+    });
+  });
+}
+async function deleteLogType(id, name) {
+  if(!logTypesColRef||!auth.currentUser){ showCustomAlert('נדרשת התחברות'); return; }
+  try { await deleteDoc(doc(db,`artifacts/${appId}/public/data/log_types`,id)); showCustomAlert(`"${name}" נמחק`); } catch(e){ showCustomAlert('שגיאה: '+e.message); }
+}
+
+async function editTaskInLogType(ltName, taskId, newText) {
+  const obj = definedLogTypes.find(l => l.name === ltName);
+  if (!obj) return;
+  if (!newText.trim()) {
+    showCustomAlert('טקסט המשימה לא יכול להיות ריק');
+    return;
+  }
+  const updatedTasks = obj.tasks.map(t =>
+    t.id === taskId ? { ...t, text: newText.trim() } : t
+  );
+  try {
+    await updateDoc(doc(db, `artifacts/${appId}/public/data/log_types`, obj.id), { tasks: updatedTasks });
+    showCustomAlert('המשימה עודכנה בהצלחה');
+  } catch(e) {
+    showCustomAlert('שגיאה בעדכון: ' + e.message);
+  }
+}
+
+function renderCurrentTasksForSettings(ltName) {
+  const box = safe('currentTasksForSettings');
+  const addRow = safe('jm-add-task-row');
+  if(!box) return;
+
+  if(!ltName){
+    box.innerHTML='<p class="jm-hint">בחר שיוך כדי לראות משימות.</p>';
+    if(addRow) addRow.classList.add('hidden');
+    return;
+  }
+
+  const obj = definedLogTypes.find(l => l.name === ltName);
+  if(!obj){
+    box.innerHTML='<p class="jm-hint">שיוך לא נמצא.</p>';
+    if(addRow) addRow.classList.add('hidden');
+    return;
+  }
+
+  if(!obj.tasks || !obj.tasks.length){
+    box.innerHTML='<p class="jm-hint">אין משימות. הוסף למטה.</p>';
+  } else {
+    box.innerHTML = ''; // מחיקת התוכן הקודם
+    const ul = document.createElement('ul');
+    ul.className = 'jm-list';
+    ul.style.maxHeight = 'none'; // נותן לקופסה העוטפת לגלול
+    ul.style.border = 'none';
+    ul.style.background = 'transparent';
+
+    obj.tasks.forEach(t => {
+      const li = document.createElement('li');
+      li.style.padding = '8px 4px';
+      li.style.borderBottom = '1px solid rgba(255,255,255,.06)';
+
+      // --- מצב צפייה ---
+      const viewDiv = document.createElement('div');
+      viewDiv.style.cssText = 'display:flex; justify-content:space-between; align-items:center; width:100%; gap:10px;';
+      viewDiv.innerHTML = `
+        <span style="flex:1; font-size:14px; color:#eef5ff;">${t.text}</span>
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          <button class="icon-btn edit-task-btn" style="font-size:12px; padding:4px 10px;" type="button">ערוך</button>
+          <button class="delete-btn remove-task-btn" style="font-size:12px; padding:4px 10px;" type="button">הסר</button>
+        </div>
+      `;
+
+      // --- מצב עריכה ---
+      const editDiv = document.createElement('div');
+      editDiv.style.cssText = 'display:none; justify-content:space-between; align-items:center; width:100%; gap:8px;';
+      editDiv.innerHTML = `
+        <input type="text" value="${t.text.replace(/"/g, '&quot;')}" style="flex:1; background:#0d2440; border:1px solid rgba(40,147,255,.5); border-radius:8px; color:#fff; padding:6px 10px; font-size:13px; font-family:inherit;" />
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          <button class="save-task-btn" style="font-size:12px; padding:6px 12px; background:#1a6b3a; border:1px solid rgba(69,191,100,.4); color:#6fbf7a; border-radius:8px; cursor:pointer;" type="button">שמור</button>
+          <button class="cancel-task-btn" style="font-size:12px; padding:6px 12px; background:#2a3d55; border:1px solid rgba(255,255,255,.1); color:#aaa; border-radius:8px; cursor:pointer;" type="button">ביטול</button>
+        </div>
+      `;
+
+      li.appendChild(viewDiv);
+      li.appendChild(editDiv);
+      ul.appendChild(li);
+
+      // --- אירועים לכפתורים ---
+      
+      // כניסה למצב עריכה
+      viewDiv.querySelector('.edit-task-btn').onclick = () => {
+        viewDiv.style.display = 'none';
+        editDiv.style.display = 'flex';
+        editDiv.querySelector('input').focus();
+      };
+      
+      // ביטול עריכה
+      editDiv.querySelector('.cancel-task-btn').onclick = () => {
+        editDiv.style.display = 'none';
+        viewDiv.style.display = 'flex';
+        editDiv.querySelector('input').value = t.text; // איפוס הטקסט חזרה למקור
+      };
+      
+      // שמירת עריכה
+      editDiv.querySelector('.save-task-btn').onclick = () => {
+        const newText = editDiv.querySelector('input').value;
+        editTaskInLogType(ltName, t.id, newText);
+      };
+      
+      // הסרת משימה
+      viewDiv.querySelector('.remove-task-btn').onclick = () => {
+        showCustomAlert(`להסיר את המשימה "${t.text}"?`);
+        safe('customAlert').dataset.confirmAction = 'removeTask';
+        safe('customAlert').dataset.taskIdToRemove = t.id;
+        safe('customAlert').dataset.logTypeToRemove = ltName;
+      };
+    });
+    box.appendChild(ul);
   }
   if(addRow) addRow.classList.remove('hidden');
 }
@@ -1424,6 +1727,8 @@ const handleAuthState = async (user) => {
         definedLogTypes=snap.docs.map(d=>({id:d.id,...d.data()}));
         populateLogTypesDropdowns(definedLogTypes);
         updateTasksButtonStates();
+        renderLogtypesList();
+        renderCurrentTasksForSettings(safe('selectTaskTypeForSettings')?.value || '');
         if(snap.size===0&&!localStorage.getItem('defaultLogTypesAddedOnce')) await addDefaultLogTypesIfEmpty();
         if(safe('tasksPanel')?.classList.contains('is-open')) renderTasksPanel(safe('tasksLogTypeDisplay')?.textContent||'');
       });
@@ -1495,11 +1800,24 @@ function setupReportForm() {
 // ════════════════════════════════════════════════════════
 function setupJournalManagerTabs() {
   $$('.jm-tab').forEach(tab=>tab.addEventListener('click',()=>{
+    // מסירים את הסימון מכל הלשוניות ושמים על הנוכחית
     $$('.jm-tab').forEach(t=>t.classList.remove('active'));
     tab.classList.add('active');
+    
+    // מעדכנים את התוכן של הלשוניות: גם hidden וגם active (לפי ה-CSS שלך)
     const name=tab.dataset.tab;
-    $$('.jm-tab-content').forEach(c=>c.classList.add('hidden'));
-    safe(`jm-tab-${name}`)?.classList.remove('hidden');
+    $$('.jm-tab-content').forEach(c=>{
+      c.classList.remove('active');
+      c.classList.add('hidden');
+    });
+    const target = safe(`jm-tab-${name}`);
+    if(target) {
+      target.classList.remove('hidden');
+      target.classList.add('active');
+    }
+
+    if(name==='logtypes') renderLogtypesList();
+    if(name==='tasks') { populateLogTypesDropdowns(definedLogTypes); renderCurrentTasksForSettings(safe('selectTaskTypeForSettings')?.value||''); }
   }));
 }
 function setupJournalManagerListeners() {
@@ -1558,6 +1876,10 @@ function setupJournalInlineListeners() {
   safe('assessmentTimePlusBtn')?.addEventListener('click',()=>{ if(!assessmentTimeIsManual){assessmentTime=new Date();assessmentTimeIsManual=true;} assessmentTime.setMinutes(assessmentTime.getMinutes()+5); assessmentTime.setSeconds(0); updateAssessmentDisplay(); });
   safe('assessmentTimeMinusBtn')?.addEventListener('click',()=>{ if(!assessmentTimeIsManual){assessmentTime=new Date();assessmentTimeIsManual=true;} assessmentTime.setMinutes(assessmentTime.getMinutes()-5); assessmentTime.setSeconds(0); updateAssessmentDisplay(); });
   safe('closeTasksPanelBtn')?.addEventListener('click',()=>toggleTasksPanel(false));
+  // click outside tasks panel inner closes it
+  safe('tasksPanel')?.addEventListener('click',e=>{
+    if(e.target===safe('tasksPanel')) toggleTasksPanel(false);
+  });
   
   // logout
   safe('logoutBtn')?.addEventListener('click',async()=>{ try{ await signOut(auth); }catch(e){} });
@@ -1579,7 +1901,8 @@ function setupJournalInlineListeners() {
     if(action==='deleteReport'){ const rId=ca.dataset.reportIdToDelete; if(rId) deleteJournalReport(rId); }
     if(action==='deleteReporter'){ const id=ca.dataset.reporterIdToDelete; if(id) deleteReporterFromFirestore(id); }
     if(action==='removeTask'){ const tid=ca.dataset.taskIdToRemove; const lt=ca.dataset.logTypeToRemove; if(tid&&lt) removeTaskFromLogType(lt,tid); }
-    delete ca.dataset.confirmAction; delete ca.dataset.dateToDelete; delete ca.dataset.reporterIdToDelete; delete ca.dataset.taskIdToRemove; delete ca.dataset.logTypeToRemove; delete ca.dataset.reportIdToDelete;
+    if(action==='deleteLogType'){ const ltId=ca.dataset.logTypeToRemove; const ltName=ca.dataset.logTypeNameToRemove; if(ltId&&ltName) deleteLogType(ltId,ltName); }
+    delete ca.dataset.confirmAction; delete ca.dataset.dateToDelete; delete ca.dataset.reporterIdToDelete; delete ca.dataset.taskIdToRemove; delete ca.dataset.logTypeToRemove; delete ca.dataset.reportIdToDelete; delete ca.dataset.logTypeNameToRemove;
   });
 }
 
@@ -1636,19 +1959,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupReportForm();
   syncStreetOptions();
 
-  if(!auth||!db){ const em=safe('loginErrorMessage'); if(em) em.textContent='שגיאה: Firebase לא אותחל'; return; }
+  // Hide splash after max 6 seconds no matter what
+  const splash = document.getElementById('loading-splash');
+  const hideSplash = () => { if (splash) splash.style.display = 'none'; };
+  const splashTimeout = setTimeout(hideSplash, 6000);
 
-  onAuthStateChanged(auth, handleAuthState);
-  await firebaseAuthReady;
-
-  if(!auth.currentUser) {
-    try {
-      if(initialAuthToken) await signInWithCustomToken(auth, initialAuthToken);
-      else { /* wait for user to login manually */ }
-    } catch(e) { console.error('Auto sign-in error:', e); }
+  if(!auth||!db){
+    hideSplash();
+    clearTimeout(splashTimeout);
+    const em=safe('loginErrorMessage'); if(em) em.textContent='שגיאה: Firebase לא אותחל';
+    // Still show admin screen so user sees something
+    await bootAdmin(false);
+    return;
   }
 
-  // Login form
+  // Register auth state listener
+  onAuthStateChanged(auth, handleAuthState);
+
+  // Try auto sign-in with custom token if available
+  if(!auth.currentUser && initialAuthToken) {
+    try { await signInWithCustomToken(auth, initialAuthToken); } catch(e) { console.error('Auto sign-in error:', e); }
+  }
+
+  // Login form listener
   safe('loginBtn')?.addEventListener('click', async () => {
     const email=safe('loginEmail')?.value; const pass=safe('loginPassword')?.value;
     const errEl=safe('loginErrorMessage'); if(errEl) errEl.textContent='';
@@ -1659,6 +1992,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if(errEl) errEl.textContent='שגיאה: '+msg;
     }
   });
+
+  // Wait for first auth state with a 5 second timeout
+  await Promise.race([
+    firebaseAuthReady,
+    new Promise(r => setTimeout(r, 5000))
+  ]);
+
+  hideSplash();
+  clearTimeout(splashTimeout);
 
   // URL-mode routing
   if (SHARE_TOKEN) {
@@ -1686,3 +2028,94 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Default: admin boot (login will show if not authenticated)
   await bootAdmin(false);
 });
+// ════════════════════════════════════════════════════════
+//  RESIDENT REPORTS MANAGER HELPERS
+// ════════════════════════════════════════════════════════
+function updateMapStatusBar() {
+  const total    = reportCache.length;
+  const ok       = reportCache.filter(r=>(r.statuses||[]).includes('ok')).length;
+  const injury   = reportCache.filter(r=>(r.statuses||[]).includes('injury')).length;
+  const property = reportCache.filter(r=>(r.statuses||[]).includes('property')).length;
+  const noReply  = Math.max(0, managedHouses.length - total);
+  const replied  = Math.max(0, total - ok - injury - property);
+  const set = (id,v) => { const el=safe(id); if(el) el.textContent=v; };
+  set('sbNoReply',  noReply);
+  set('sbReplied',  replied);
+  set('sbOk',       ok);
+  set('sbProperty', property);
+  set('sbInjury',   injury);
+  const bar = safe('statusBarWrap');
+  if (bar) bar.classList.remove('hidden');
+}
+
+function updateRrmStats() {
+  const total = reportCache.length;
+  const ok = reportCache.filter(r=>(r.statuses||[]).includes('ok')).length;
+  const injury = reportCache.filter(r=>(r.statuses||[]).includes('injury')).length;
+  const property = reportCache.filter(r=>(r.statuses||[]).includes('property')).length;
+  const setEl = (id,v) => { const el=safe(id); if(el) el.textContent=v; };
+  setEl('rrmStatTotal', total);
+  setEl('rrmStatOk', ok);
+  setEl('rrmStatInjury', injury);
+  setEl('rrmStatProperty', property);
+  updateMapStatusBar();
+}
+
+function renderRrmSnapshots() {
+  const wrap = safe('rrmSnapshotsList'); if(!wrap) return;
+  let snapshots = [];
+  try { snapshots = JSON.parse(localStorage.getItem('rrmSnapshots')||'[]'); } catch(e){}
+  if(!snapshots.length){ wrap.innerHTML='<p class="rrm-hint">לא נשמרו דיווחים עדיין.</p>'; return; }
+  wrap.innerHTML = snapshots.map((s,idx)=>`
+    <div class="rrm-snapshot-item">
+      <div>
+        <div class="rrm-snapshot-date">${s.dateLabel}</div>
+        <div class="rrm-snapshot-meta">
+          <span>${s.total} משיבים</span>
+          <span class="ok-pill">${s.ok} תקין</span>
+          <span class="inj-pill">${s.injury} פגיעה בנפש</span>
+          <span class="prop-pill">${s.property} נזק לרכוש</span>
+        </div>
+      </div>
+      <button class="rrm-snapshot-show-btn" data-idx="${idx}" type="button">הצג על המפה</button>
+    </div>
+  `).join('');
+
+  wrap.querySelectorAll('.rrm-snapshot-show-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=+btn.dataset.idx;
+      let snapshots2=[];
+      try { snapshots2=JSON.parse(localStorage.getItem('rrmSnapshots')||'[]'); } catch(e){}
+      const snapshot=snapshots2[idx]; if(!snapshot||!snapshot.reports) return;
+      // Switch to reports view
+      closeModal('#residentReportsManagerPanel');
+      $$('.rail-btn').forEach(b=>b.classList.remove('active'));
+      $$('.view').forEach(v=>v.classList.remove('active'));
+      const railBtn=document.querySelector('.rail-btn[data-view="reports"]');
+      if(railBtn) railBtn.classList.add('active');
+      const viewEl=safe('view-reports'); if(viewEl) viewEl.classList.add('active');
+      // Show snapshot button active
+      const showBtn=safe('showSnapshotOnMapBtn');
+      if(showBtn){
+        showBtn.classList.remove('hidden');
+        showBtn.classList.add('active-snapshot');
+        showBtn.dataset.snapshotActive='1';
+        showBtn.textContent=`📍 מוצג: ${snapshot.dateLabel}`;
+      }
+      // Temporarily override reportCache rendering
+      if(!map) return;
+      Object.values(residentMarkers).forEach(m=>map.removeLayer(m));
+      residentMarkers={};
+      snapshot.reports.forEach(r=>{
+        let lat=r.lat, lng=r.lng;
+        if(r.street||r.house){ const local=lookupHouseCoords(r.street||'',r.house||''); if(local){lat=local.lat;lng=local.lng;} }
+        if(!lat||!lng) return;
+        const color=iconColor(dotClass(r.statuses||[]));
+        const markerId='snap_'+r.id;
+        residentMarkers[markerId]=L.marker([lat,lng],{icon:makeMarkerIcon(color)}).addTo(map);
+        residentMarkers[markerId].bindPopup(popupHtml(`${r.city||''}, ${r.street||''} ${r.house||''}`,`${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,r.note||''));
+      });
+      setTimeout(()=>map?.invalidateSize(),80);
+    });
+  });
+}
