@@ -2026,6 +2026,8 @@ async function bootAdmin(sharedOnly=false) {
   setInterval(updateAssessmentDisplay, 1000);
   await getOrCreateActiveEvent();
   await subscribeVillageReports();
+  // Sync houses to Firestore now that auth is confirmed
+  if (!sharedOnly && managedHouses.length > 0) syncHousesToFirestore();
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
@@ -2115,25 +2117,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     safe('screen-report')?.classList.add('active');
     safe('screen-admin')?.classList.remove('active');
     // Load houses from Firestore so street/house dropdowns work via shared link
+    // Auth is already ready at this point (we waited for firebaseAuthReady above)
+    const streetSel = safe('street');
+    if (streetSel) {
+      streetSel.innerHTML = '<option value="">טוען רחובות...</option>';
+      streetSel.disabled = true;
+    }
     try {
       const housesSnap = await getDoc(getHousesDoc());
       if (housesSnap.exists()) {
         const data = housesSnap.data();
         if (Array.isArray(data.houses) && data.houses.length) {
           managedHouses = data.houses;
-          syncStreetOptions();
         }
       }
     } catch(e) { console.warn('Could not load houses from Firestore:', e); }
+    if (streetSel) streetSel.disabled = false;
+    syncStreetOptions();
     if (existingReportId) {
       const snap=await getDoc(getReportDoc(existingReportId));
       if(snap.exists()) {
         const d=snap.data();
         safe('city').value=d.city||'לפיד';
-        // Restore street + house selections after dropdown is populated
         if (d.street) {
-          const streetSel = safe('street');
-          if(streetSel) { streetSel.value=d.street; window.updateHouseOptions(); }
+          const sel = safe('street');
+          if(sel) { sel.value=d.street; window.updateHouseOptions(); }
         }
         if (d.house) { const houseSel=safe('house'); if(houseSel) houseSel.value=d.house; }
         safe('soulsCount').value=d.souls||0; safe('freeText').value=d.note||'';
