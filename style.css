@@ -603,7 +603,6 @@ textarea { min-height: 100px; resize: vertical; }
    REDESIGN: COMPACT SHARE MODAL (NO SCROLL)
 ════════════════════════════════════════════ */
 /* ── Share Panel ── */
-/* === Share Panel === */
 .share-modal-box { width: min(460px, 92vw); padding: 20px 18px 18px; max-height: min(88vh, 640px); overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; }
 .share-modal-title { font-size: 22px; margin: 0 0 14px; color: #fff; font-weight: 900; }
 .share-card { background: linear-gradient(135deg, #15304f, #1a3d63); border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
@@ -612,10 +611,10 @@ textarea { min-height: 100px; resize: vertical; }
 .share-card-icon { font-size: 20px; line-height: 1; margin-top: 2px; flex-shrink: 0; }
 .share-card-title { font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 2px; }
 .share-card-sub { font-size: 11px; color: var(--muted); line-height: 1.3; }
-.share-checkboxes { display: flex; gap: 8px; margin-bottom: 12px; }
-.share-checkbox-item { display: flex; align-items: center; gap: 7px; background: rgba(4,25,45,.6); border: 1.5px solid rgba(255,255,255,.1); border-radius: 10px; padding: 9px 14px; cursor: pointer; font-size: 13px; color: #d0e8ff; font-weight: 600; flex: 1; justify-content: center; user-select: none; transition: border-color .15s, background .15s; }
-.share-checkbox-item:has(input:checked) { border-color: var(--blue); background: rgba(40,147,255,.13); color: #fff; }
-.share-checkbox-item input[type="checkbox"] { accent-color: var(--blue); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+.share-checkboxes { display: flex; gap: 10px; margin-bottom: 12px; }
+.share-checkbox-item { display: flex; align-items: center; gap: 7px; background: rgba(4,25,45,.6); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px 14px; cursor: pointer; transition: border-color .15s, background .15s; font-size: 14px; color: #d0e8ff; font-weight: 600; flex: 1; justify-content: center; }
+.share-checkbox-item:has(input:checked) { border-color: var(--blue); background: rgba(40,147,255,.12); }
+.share-checkbox-item input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
 .share-checkbox-icon { font-size: 16px; }
 .share-datetime-row { display: flex; gap: 8px; margin-bottom: 10px; }
 .share-dt-field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -623,25 +622,19 @@ textarea { min-height: 100px; resize: vertical; }
 .share-input { background: rgba(4,25,45,.7); border: 1px solid rgba(255,255,255,.15); border-radius: 8px; color: #fff; padding: 7px 10px; font: inherit; font-size: 13px; width: 100%; box-sizing: border-box; }
 .share-input:focus { outline: none; border-color: var(--blue); }
 .share-btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
-.share-primary-btn { flex: 1; background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; }
+.share-primary-btn { flex: 1; background: var(--blue); color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s; }
 .share-primary-btn:hover { background: #1a7ae8; }
-.share-primary-btn:disabled { opacity: .6; cursor: default; }
-.share-copy-btn-btn { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
+.share-copy-btn-btn { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
 .share-copy-btn-btn:hover { background: rgba(255,255,255,.15); }
 .share-url-display-wrap { background: rgba(4,25,45,.8); border: 1px solid rgba(40,147,255,.2); border-radius: 8px; padding: 8px 10px; }
 .share-url-truncated { font-size: 11px; color: #7ec9ff; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .share-url-box { background: rgba(4,25,45,.8); border: 1px solid rgba(40,147,255,.25); padding: 10px 12px; font-size: 12px; margin-top: 6px; border-radius: 10px; word-break: break-all; color: #7ec9ff; font-family: monospace; line-height: 1.5; }
-
-/* === Journal Read-Only Screen === */
+/* ── Journal Read-Only Screen ── */
 .jro-screen { position: fixed; inset: 0; background: #04192d; display: none; flex-direction: column; z-index: 10; overflow: hidden; }
 .jro-screen.active { display: flex; }
-.jro-header { background: linear-gradient(135deg, #0a2540, #102b49); border-bottom: 1px solid rgba(40,147,255,.2); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 16px; }
-.jro-header-top { display: flex; flex-direction: column; gap: 3px; }
-.jro-brand { font-size: 20px; font-weight: 900; color: #fff; }
-.jro-subtitle { font-size: 12px; color: #8aabcc; }
-.jro-assess-chip { background: rgba(40,147,255,.12); border: 1px solid rgba(40,147,255,.3); border-radius: 12px; padding: 8px 16px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 100px; }
-.jro-assess-label { font-size: 10px; color: #8aabcc; font-weight: 700; letter-spacing: .06em; }
-.jro-assess-val { font-size: 20px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+.jro-header { background: linear-gradient(135deg, #0a2540, #102b49); border-bottom: 1px solid rgba(40,147,255,.2); padding: 16px 24px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.jro-brand { font-size: 22px; font-weight: 900; color: #fff; }
+.jro-subtitle { font-size: 13px; color: #8aabcc; }
 .jro-main { flex: 1; overflow-y: auto; padding: 16px; }
 .jro-table-wrap { background: #0d2540; border: 1px solid rgba(40,147,255,.15); border-radius: 16px; overflow: hidden; }
 .jro-table { width: 100%; border-collapse: collapse; direction: rtl; }
@@ -797,159 +790,4 @@ textarea { min-height: 100px; resize: vertical; }
   html, body { height: auto; overflow-x: hidden; width: 100vw; position: relative; }
   * { max-width: 100%; }
   .screen { height: auto; }
-  .screen.active { height: auto; min-height: 100vh; overflow-x: hidden; width: 100vw; }
-  .overlay, .modal-box, .side-rail, .journal-col, .map-journal-split { overflow-x: hidden; }
-
-  .admin-shell { grid-template-columns: 1fr; height: auto; overflow: visible; }
-  
-  /* הסתרת כפתורים במסך ניהול למעט מידע וקישורים */
-  #openUploadsManagerBtn,
-  #openHousesManagerBtn,
-  #openLayersManagerBtn,
-  #openEventTypesManagerBtn,
-  #openJournalManagerBtn,
-  #openResidentReportsManagerBtn { display: none !important; }
-
-  /* סידור מחדש של הסרגל העליון שיתמוך בהמבורגר */
-  .admin-header { flex-wrap: wrap; padding: 10px 14px; align-items: flex-start; }
-  .hamburger-btn { display: block; order: -1; margin-left: 10px; }
-  .header-chip-wrap { flex: 1; }
-  .header-center { width: 100%; order: 3; margin-top: 12px; }
-  .header-user-area { display: none; }
-
-  /* הפיכת תפריט הניווט למגירת צד נשלפת */
-  .side-rail {
-    position: fixed; top: 0; right: -280px; width: 260px; height: 100vh; background: #0a233d;
-    z-index: 1000; flex-direction: column; justify-content: flex-start; padding: 60px 20px 20px;
-    border-radius: 0; border: none; border-left: 1px solid var(--line);
-    box-shadow: -4px 0 24px rgba(0,0,0,0.6); transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow-y: auto; overflow-x: hidden;
-  }
-  .side-rail.is-open { right: 0; }
-  .rail-btn { width: 100%; text-align: right; padding: 16px 20px; font-size: 18px; border-radius: 12px; margin-bottom: 10px; background: transparent; min-width: unset; white-space: nowrap;}
-  .rail-btn.active { background: #163d66; }
-  .side-rail-actions { display: block; margin-top: auto; padding-top: 12px; }
-
-  .map-journal-split { grid-template-columns: 1fr; grid-template-rows: 300px 1fr; overflow: visible; }
-  .journal-col { min-height: 400px; overflow: visible; }
-  .journal-table-wrap { overflow-y: visible; overflow-x: hidden; }
-  .jt-hide-sm { display: none; }
-  .grid-4, .grid-3, .grid-2, .split-panels { flex-direction: column; }
-  .manage-grid { grid-template-columns: 1fr; }
-  .main-stage { overflow: visible; }
-  .modal-box { width: min(92vw, 840px); padding: 14px; }
-  /* ── Mobile header redesign ── */
-  .admin-header {
-    padding: 0;
-    border-bottom: none;
-    background: none;
-    display: block;
-  }
-
-  .mobile-header-top {
-    display: flex;
-    align-items: center;
-    padding: 10px 14px 8px;
-    background: linear-gradient(135deg, #062040 0%, #0a2d50 50%, #062040 100%);
-    border-bottom: 2px solid var(--blue);
-    gap: 10px;
-  }
-
-  .mobile-header-brand {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .mobile-brand-title {
-    font-size: 22px;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: 0.03em;
-    line-height: 1.1;
-    text-shadow: 0 0 18px rgba(40,147,255,0.5);
-  }
-
-  .mobile-brand-subtitle {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .mobile-header-clocks {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-
-  .mobile-clock-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(40, 147, 255, 0.08);
-    border: 1px solid rgba(40, 147, 255, 0.22);
-    border-radius: 10px;
-    padding: 4px 10px;
-    min-width: 88px;
-    justify-content: flex-end;
-  }
-
-  .mobile-clock-icon {
-    font-size: 11px;
-    color: var(--blue2);
-    opacity: 0.8;
-  }
-
-  .mobile-clock-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-  }
-
-  .mobile-clock-val {
-    font-size: 17px;
-    font-weight: 900;
-    color: #fff;
-    font-family: monospace;
-    letter-spacing: 0.04em;
-    line-height: 1;
-  }
-
-  .mobile-assessment-row {
-    background: rgba(244, 194, 70, 0.07);
-    border-color: rgba(244, 194, 70, 0.25);
-  }
-
-  .mobile-assessment-row .mobile-clock-val {
-    color: var(--warn);
-  }
-
-  .mobile-assessment-row .mobile-clock-label {
-    color: rgba(244, 194, 70, 0.7);
-  }
-
-  /* Override default header layout for mobile — hide desktop elements */
-  .header-chip-wrap { display: none !important; }
-  .header-center { display: none !important; }
-  .header-user-area { display: none !important; }
-  .desktop-ham { display: none !important; }
-  .mobile-header-top { display: flex; }
-
-  /* Assessment time buttons hidden on mobile (read-only) */
-  .hclock-btn { display: none; }
-
-  /* Legacy chip sizing (fallback) */
-  .header-chip { font-size: 14px; padding: 4px 12px; min-height: 58px; }
-  .header-clock-chip { padding: 4px 10px; min-height: 58px; }
-  .header-clock-chip .hclock-val { font-size: 16px; }
-  .header-clock-time .hclock-val { font-size: 16px; }
-  .rrm-stats-row { gap: 5px; }
-  .rrm-stat-chip { font-size: 12px; padding: 4px 10px; }
-  .houses-panel-grid { grid-template-columns: 1fr !important; }
-}
+  .screen.active { height: auto; min-height:

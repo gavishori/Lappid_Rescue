@@ -272,12 +272,11 @@ async function verifyShareToken(token) {
   if (!snap.exists()) return null;
   const d = snap.data();
   if (d.expiresAt?.toDate && d.expiresAt.toDate()<new Date()) return null;
-  return { eventId: d.eventId||null, type: d.type||'map', assessmentTime: d.assessmentTime||null };
+  return { eventId: d.eventId||null, type: d.type||'map' };
 }
 async function createTimedShare(untilDate) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
-  const assessStr = assessmentTimeIsManual ? `${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}` : null;
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
@@ -285,12 +284,9 @@ async function createUnifiedShare(untilDate, includeMap, includeJournal) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
   const type = (includeMap && includeJournal) ? 'both' : includeJournal ? 'journal' : 'map';
-  const assessStr = assessmentTimeIsManual
-    ? `${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}`
-    : null;
   await setDoc(getShareDoc(token), {
-    eventId: activeEventId, type,
-    assessmentTime: assessStr,
+    eventId: activeEventId,
+    type,
     expiresAt: Timestamp.fromDate(untilDate),
     createdAt: serverTimestamp()
   });
@@ -2042,20 +2038,15 @@ function setupJournalInlineListeners() {
 // ════════════════════════════════════════════════════════
 //  BOOT ADMIN
 // ════════════════════════════════════════════════════════
-async function bootJournalReadOnly(eventId, shareInfo) {
+async function bootJournalReadOnly(eventId) {
   safe('screen-report')?.classList.remove('active');
   safe('screen-admin')?.classList.remove('active');
   const jscreen = safe('screen-journal-readonly');
   if (jscreen) jscreen.classList.add('active');
-  // Show snapshotted assessment time from admin
-  if (shareInfo?.assessmentTime) { const el=safe('jroAssessmentTime'); if(el) el.textContent=shareInfo.assessmentTime; }
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-  // Journal entries have no eventId - listen to all, filter out resident reports
-  onSnapshot(reportsColRef, snap => {
-    const entries = sortChronologically(snap.docs
-      .map(d => ({id: d.id, ...d.data()}))
-      .filter(r => !r.street && !r.house)
-    );
+  const q = query(getReportsCol(), where('eventId', '==', eventId));
+  onSnapshot(q, snap => {
+    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
     renderJournalReadOnly(entries);
   });
 }
@@ -2076,21 +2067,16 @@ function renderJournalReadOnly(entries) {
     </tr>`).join('');
 }
 
-function bootJournalDrawer(eventId, shareInfo) {
+function showJournalSidePanel() {
+  // When type=both: show journal as a side drawer over the map
   const jscreen = safe('screen-journal-readonly');
   if (!jscreen) return;
-  jscreen.style.cssText = 'position:fixed;inset:0 0 0 auto;width:min(440px,100vw);z-index:200;display:flex;flex-direction:column;background:#04192d;border-right:2px solid rgba(40,147,255,.25);box-shadow:-8px 0 40px rgba(0,0,0,.6)';
+  jscreen.style.cssText = 'position:fixed;inset:0 0 0 auto;width:min(480px,100vw);z-index:200;display:flex;flex-direction:column;background:#04192d;border-right:1px solid rgba(40,147,255,.2);box-shadow:-8px 0 32px rgba(0,0,0,.5)';
   jscreen.classList.add('active');
-  // Hide the built-in journal column - we show our own drawer instead
-  const jcol = document.querySelector('.journal-col'); if (jcol) jcol.style.display = 'none';
-  if (shareInfo?.assessmentTime) { const el=safe('jroAssessmentTime'); if(el) el.textContent=shareInfo.assessmentTime; }
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-  // Journal entries have no eventId - filter out resident reports by absence of street/house
-  onSnapshot(reportsColRef, snap => {
-    const entries = sortChronologically(snap.docs
-      .map(d => ({id: d.id, ...d.data()}))
-      .filter(r => !r.street && !r.house)
-    );
+  const q = query(getReportsCol(), where('eventId', '==', activeEventId));
+  onSnapshot(q, snap => {
+    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
     renderJournalReadOnly(entries);
   });
 }
@@ -2119,21 +2105,10 @@ async function bootAdmin(sharedOnly=false) {
   // Sync houses to Firestore now that auth is confirmed
   if (!sharedOnly && managedHouses.length > 0) syncHousesToFirestore();
   if(sharedOnly) {
-    // Hide nav rail and lock button
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
-    // Hide user email and logout
-    document.querySelector('.header-user-area') && (document.querySelector('.header-user-area').style.display='none');
-    safe('headerUserEmail') && (safe('headerUserEmail').style.display='none');
-    safe('logoutBtn') && (safe('logoutBtn').style.display='none');
-    safe('mobileLogoutBtn') && (safe('mobileLogoutBtn').style.display='none');
-    // Disable assessment +/- buttons (read-only)
-    ['assessmentTimePlusBtn','assessmentTimeMinusBtn'].forEach(id=>{ const b=safe(id); if(b){b.disabled=true;b.style.opacity='0.35';b.style.cursor='default';} });
-    // Hide journal input and task buttons bar
-    const jib=document.querySelector('.journal-input-box'); if(jib) jib.style.display='none';
-    const dtl=document.querySelector('#dateTimeToggleLabel'); if(dtl) dtl.style.display='none';
-    const tbc=safe('taskButtonsContainer'); if(tbc) tbc.style.display='none';
-    const jtb=document.querySelector('.journal-top-bar'); if(jtb) jtb.style.display='none';
+    // הסתרת שורת המשימות בתצוגת שיתוף
+    const topBar = document.querySelector('.journal-top-bar'); if(topBar) topBar.style.display='none';
   }
   setTimeout(()=>map.invalidateSize(),150);
 }
@@ -2227,10 +2202,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeEventId = shareInfo.eventId;
     if (shareInfo.type === 'journal') {
       if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-      await bootJournalReadOnly(activeEventId, shareInfo);
+      await bootJournalReadOnly(activeEventId);
     } else if (shareInfo.type === 'both') {
       await bootAdmin(true);
-      setTimeout(() => bootJournalDrawer(activeEventId, shareInfo), 900);
+      // הוסר: showJournalSidePanel()
     } else {
       await bootAdmin(true);
     }

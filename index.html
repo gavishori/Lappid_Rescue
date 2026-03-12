@@ -101,7 +101,6 @@
 
 <div id="screen-admin" class="screen">
     <header class="app-header admin-header">
-        <!-- Desktop layout -->
         <button id="hamburgerMenuBtn" class="hamburger-btn desktop-ham" type="button"><i class="fas fa-bars"></i></button>
         <div class="header-chip-wrap">
             <div class="header-chip">חפ"ק לפיד</div>
@@ -123,7 +122,6 @@
             <span id="headerUserEmail" class="header-user-email"></span>
             <button id="logoutBtn" class="header-logout-btn" type="button">התנתק</button>
         </div>
-        <!-- Mobile layout -->
         <div class="mobile-header-top">
             <button id="hamburgerMenuBtnMobile" class="hamburger-btn mobile-ham" type="button"><i class="fas fa-bars"></i></button>
             <div class="mobile-header-brand">
@@ -174,7 +172,6 @@
                                         <span id="sbSummaryText" class="msb-summary">סטטוס דיווחים</span>
                                     </button>
                                 </div>
-                                <!-- Status popup modal -->
                                 <div id="statusPopup" class="status-popup hidden">
                                     <div class="status-popup-header">
                                         <span class="status-popup-title">סטטוס דיווחים</span>
@@ -316,13 +313,12 @@
         <button class="modal-close" data-close="#sharePanel" type="button">×</button>
         <h2 class="share-modal-title">🔗 קישורים</h2>
 
-        <!-- Resident report - permanent link -->
         <div class="share-card">
             <div class="share-card-header">
                 <span class="share-card-icon">📱</span>
                 <div>
                     <div class="share-card-title">דיווח תושבים</div>
-                    <div class="share-card-sub">קישור קבוע לטופס הדיווח של התושב</div>
+                    <div class="share-card-sub">קישור ישיר לטופס הדיווח של התושב</div>
                 </div>
             </div>
             <div class="share-url-display-wrap">
@@ -334,13 +330,12 @@
             </div>
         </div>
 
-        <!-- Unified timed share -->
         <div class="share-card">
             <div class="share-card-header">
                 <span class="share-card-icon">🔗</span>
                 <div>
                     <div class="share-card-title">שיתוף זמני</div>
-                    <div class="share-card-sub">בחר מה לכלול וקבע תפוגה — קריאה בלבד</div>
+                    <div class="share-card-sub">בחר מה לכלול בקישור ולמה תוקפו יפוג</div>
                 </div>
             </div>
             <div class="share-checkboxes">
@@ -606,36 +601,6 @@
     <header class="jro-header">
         <div class="jro-brand">יומן חפ"ק לפיד</div>
         <div class="jro-subtitle">צפייה בלבד — עדכון אוטומטי בזמן אמת</div>
-    </header>
-    <main class="jro-main">
-        <div class="jro-table-wrap">
-            <table class="jro-table">
-                <thead>
-                    <tr>
-                        <th class="jro-th">דיווח</th>
-                        <th class="jro-th">תאריך / שעה</th>
-                        <th class="jro-th">מדווח</th>
-                        <th class="jro-th">שיוך</th>
-                    </tr>
-                </thead>
-                <tbody id="journalReadOnlyBody">
-                    <tr><td colspan="4" style="text-align:center;padding:40px;color:#8aabcc">טוען יומן...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </main>
-</div>
-
-<div id="screen-journal-readonly" class="screen jro-screen">
-    <header class="jro-header">
-        <div class="jro-header-top">
-            <div class="jro-brand">יומן חפ"ק לפיד</div>
-            <div class="jro-subtitle">צפייה בלבד — עדכון אוטומטי בזמן אמת</div>
-        </div>
-        <div class="jro-assess-chip" id="jroAssessmentChip">
-            <span class="jro-assess-label">הערכת מצב</span>
-            <span id="jroAssessmentTime" class="jro-assess-val">טרם נקבע</span>
-        </div>
     </header>
     <main class="jro-main">
         <div class="jro-table-wrap">
