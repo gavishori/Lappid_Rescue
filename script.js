@@ -2081,6 +2081,8 @@ function bootJournalDrawer(eventId, shareInfo) {
   if (!jscreen) return;
   jscreen.style.cssText = 'position:fixed;inset:0 0 0 auto;width:min(440px,100vw);z-index:200;display:flex;flex-direction:column;background:#04192d;border-right:2px solid rgba(40,147,255,.25);box-shadow:-8px 0 40px rgba(0,0,0,.6)';
   jscreen.classList.add('active');
+  // Hide the built-in journal column - we show our own drawer instead
+  const jcol = document.querySelector('.journal-col'); if (jcol) jcol.style.display = 'none';
   if (shareInfo?.assessmentTime) { const el=safe('jroAssessmentTime'); if(el) el.textContent=shareInfo.assessmentTime; }
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
   // Journal entries have no eventId - filter out resident reports by absence of street/house
