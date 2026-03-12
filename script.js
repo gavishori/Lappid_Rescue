@@ -40,6 +40,7 @@ let residentMarkers = {};
 let layerMarkers    = {};
 let reportCache     = [];   // village reports (Firestore events/reports)
 let unsubReports    = null;
+let unsubEvent      = null; // להאזנה לנתוני האירוע (כמו שעת הערכת מצב)
 
 let eventTypes    = storage.get('hamal_event_types', ['ביטחוני','שריפה','נעדר','נפילת טיל']);
 let managedLayers = storage.get('hamal_layers', ['דיווחי תושבים','נקודות דיווח','מצלמות','הידרנטים','מספרי בתים']);
@@ -74,6 +75,7 @@ function syncHousesToFirestore() {
 //  ② JOURNAL STATE
 // ════════════════════════════════════════════════════════
 let journalReports          = [];
+let isSharedLinkView        = false; // הגדרה המזהה תצוגה דרך קישור משותף
 let editingReportId         = null;
 let lastAddedReportId       = null;
 let collapsedGroups         = new Set();
@@ -1089,6 +1091,22 @@ async function subscribeVillageReports() {
   },()=>{ reportCache=[]; renderResidentMarkers(); });
 }
 
+// ── האזנה לאירוע הפעיל (לסנכרון שעת הערכת מצב במסך קריאה) ──
+async function subscribeActiveEvent() {
+  if (unsubEvent) unsubEvent();
+  if (!activeEventId) return;
+  unsubEvent = onSnapshot(getEventDoc(activeEventId), snap => {
+    if (snap.exists()) {
+      const d = snap.data();
+      if (d.assessmentTimeIsManual && d.assessmentTime) {
+        assessmentTime = new Date(d.assessmentTime);
+        assessmentTimeIsManual = true;
+      }
+      updateAssessmentDisplay();
+    }
+  });
+}
+
 // ════════════════════════════════════════════════════════
 //  JOURNAL HELPERS
 // ════════════════════════════════════════════════════════
@@ -1121,6 +1139,18 @@ const setDefaultDateTime = () => {
   if(safe('newDate')) safe('newDate').value=`${y}-${m}-${d}`;
   if(safe('newTime')) safe('newTime').value=`${h}:${mi}`;
 };
+
+// פונקציית סינון - מציגה דיווחים מהיום ואתמול בלבד
+function filterToLastTwoDays(reports) {
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  const formatD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const validDates = new Set([formatD(today), formatD(yesterday)]);
+  
+  return reports.filter(r => validDates.has(r.date));
+}
 
 // last used reporter/logType — persist across submissions
 let lastReporter = '';
@@ -1160,6 +1190,12 @@ function renderTable(searchTerm='') {
   if(loadRow) loadRow.classList.add('hidden');
 
   let data=[...journalReports];
+
+  // סינון ליומיים האחרונים בלבד עבור צופים דרך קישור משותף
+  if (isSharedLinkView) {
+    data = filterToLastTwoDays(data);
+  }
+
   if(searchTerm) {
     const lc=searchTerm.toLowerCase();
     data=data.filter(r=>
@@ -2000,8 +2036,25 @@ function setupJournalInlineListeners() {
   
   safe('searchInput')?.addEventListener('input',()=>renderTable(safe('searchInput').value.trim()));
   safe('showDateTimeToggle')?.addEventListener('change',e=>{ const wrap=safe('dateTimeInputsWrapper'); if(wrap) wrap.classList.toggle('hidden',!e.target.checked); });
-  safe('assessmentTimePlusBtn')?.addEventListener('click',()=>{ if(!assessmentTimeIsManual){assessmentTime=new Date();assessmentTimeIsManual=true;} assessmentTime.setMinutes(assessmentTime.getMinutes()+5); assessmentTime.setSeconds(0); updateAssessmentDisplay(); });
-  safe('assessmentTimeMinusBtn')?.addEventListener('click',()=>{ if(!assessmentTimeIsManual){assessmentTime=new Date();assessmentTimeIsManual=true;} assessmentTime.setMinutes(assessmentTime.getMinutes()-5); assessmentTime.setSeconds(0); updateAssessmentDisplay(); });
+  
+  safe('assessmentTimePlusBtn')?.addEventListener('click', async ()=>{ 
+      if(!assessmentTimeIsManual){assessmentTime=new Date();} 
+      assessmentTime.setMinutes(assessmentTime.getMinutes()+5); 
+      assessmentTime.setSeconds(0); 
+      assessmentTimeIsManual=true;
+      updateAssessmentDisplay(); 
+      if (activeEventId) await updateDoc(getEventDoc(activeEventId), { assessmentTime: assessmentTime.getTime(), assessmentTimeIsManual: true });
+  });
+
+  safe('assessmentTimeMinusBtn')?.addEventListener('click', async ()=>{ 
+      if(!assessmentTimeIsManual){assessmentTime=new Date();} 
+      assessmentTime.setMinutes(assessmentTime.getMinutes()-5); 
+      assessmentTime.setSeconds(0); 
+      assessmentTimeIsManual=true;
+      updateAssessmentDisplay(); 
+      if (activeEventId) await updateDoc(getEventDoc(activeEventId), { assessmentTime: assessmentTime.getTime(), assessmentTimeIsManual: true });
+  });
+
   safe('closeTasksPanelBtn')?.addEventListener('click',()=>toggleTasksPanel(false));
   // click outside tasks panel inner closes it
   safe('tasksPanel')?.addEventListener('click',e=>{
@@ -2046,7 +2099,9 @@ async function bootJournalReadOnly(eventId) {
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
   const q = query(getReportsCol(), where('eventId', '==', eventId));
   onSnapshot(q, snap => {
-    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    let entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    // סינון ליומיים האחרונים בתצוגת קריאה בלבד נפרדת
+    entries = filterToLastTwoDays(entries);
     renderJournalReadOnly(entries);
   });
 }
@@ -2055,7 +2110,7 @@ function renderJournalReadOnly(entries) {
   const tbody = safe('journalReadOnlyBody');
   if (!tbody) return;
   if (!entries.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#8aabcc">אין רשומות ביומן</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#8aabcc">אין רשומות ביומן ליומיים האחרונים</td></tr>';
     return;
   }
   tbody.innerHTML = entries.map(e => `
@@ -2067,24 +2122,16 @@ function renderJournalReadOnly(entries) {
     </tr>`).join('');
 }
 
-function showJournalSidePanel() {
-  // When type=both: show journal as a side drawer over the map
-  const jscreen = safe('screen-journal-readonly');
-  if (!jscreen) return;
-  jscreen.style.cssText = 'position:fixed;inset:0 0 0 auto;width:min(480px,100vw);z-index:200;display:flex;flex-direction:column;background:#04192d;border-right:1px solid rgba(40,147,255,.2);box-shadow:-8px 0 32px rgba(0,0,0,.5)';
-  jscreen.classList.add('active');
-  if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-  const q = query(getReportsCol(), where('eventId', '==', activeEventId));
-  onSnapshot(q, snap => {
-    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
-    renderJournalReadOnly(entries);
-  });
-}
-
 async function bootAdmin(sharedOnly=false) {
   safe('screen-report')?.classList.remove('active');
   safe('screen-admin')?.classList.add('active');
-  if (!sharedOnly) setJournalLockedState(!hasJournalAccess(auth?.currentUser));
+
+  if (sharedOnly) {
+    isSharedLinkView = true;
+  } else {
+    setJournalLockedState(!hasJournalAccess(auth?.currentUser));
+  }
+
   initMap();
   setupNavigation();
   setupModals();
@@ -2102,14 +2149,36 @@ async function bootAdmin(sharedOnly=false) {
   setInterval(updateAssessmentDisplay, 1000);
   await getOrCreateActiveEvent();
   await subscribeVillageReports();
+  await subscribeActiveEvent(); // מתחיל להאזין לעדכוני שעת הערכת המצב מ-Firestore
+  
   // Sync houses to Firestore now that auth is confirmed
   if (!sharedOnly && managedHouses.length > 0) syncHousesToFirestore();
+
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
-    // הסתרת שורת המשימות בתצוגת שיתוף
     const topBar = document.querySelector('.journal-top-bar'); if(topBar) topBar.style.display='none';
+    const logoutDesktop = safe('logoutBtn'); if(logoutDesktop) logoutDesktop.style.display='none';
+    const logoutMobile = safe('mobileLogoutBtn'); if(logoutMobile) logoutMobile.style.display='none';
+    const plusBtn = safe('assessmentTimePlusBtn'); if(plusBtn) plusBtn.style.display='none';
+    const minusBtn = safe('assessmentTimeMinusBtn'); if(minusBtn) minusBtn.style.display='none';
+    
+    // הסתרת האימייל של המשתמש
+    const emailEl = safe('headerUserEmail'); if (emailEl) emailEl.style.display='none';
+    
+    // הסתרת אזור הזנת הנתונים כולו
+    const inputBox = document.querySelector('.journal-input-box'); if (inputBox) inputBox.style.display='none';
+
+    // הבטחת טעינת הנתונים למשתמשים לא מחוברים בקישור שיתוף ציבורי
+    if (!unsubJournalReports) {
+      if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+      unsubJournalReports = onSnapshot(reportsColRef, snap => {
+        journalReports = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
+        renderTable();
+      });
+    }
   }
+  
   setTimeout(()=>map.invalidateSize(),150);
 }
 
@@ -2205,7 +2274,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       await bootJournalReadOnly(activeEventId);
     } else if (shareInfo.type === 'both') {
       await bootAdmin(true);
-      // הוסר: showJournalSidePanel()
     } else {
       await bootAdmin(true);
     }
