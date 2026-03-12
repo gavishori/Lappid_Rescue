@@ -2050,9 +2050,12 @@ async function bootJournalReadOnly(eventId, shareInfo) {
   // Show snapshotted assessment time from admin
   if (shareInfo?.assessmentTime) { const el=safe('jroAssessmentTime'); if(el) el.textContent=shareInfo.assessmentTime; }
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-  const q = query(getReportsCol(), where('eventId', '==', eventId));
-  onSnapshot(q, snap => {
-    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
+  // Journal entries have no eventId - listen to all, filter out resident reports
+  onSnapshot(reportsColRef, snap => {
+    const entries = sortChronologically(snap.docs
+      .map(d => ({id: d.id, ...d.data()}))
+      .filter(r => !r.street && !r.house)
+    );
     renderJournalReadOnly(entries);
   });
 }
@@ -2080,9 +2083,12 @@ function bootJournalDrawer(eventId, shareInfo) {
   jscreen.classList.add('active');
   if (shareInfo?.assessmentTime) { const el=safe('jroAssessmentTime'); if(el) el.textContent=shareInfo.assessmentTime; }
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-  const q = query(getReportsCol(), where('eventId', '==', eventId));
-  onSnapshot(q, snap => {
-    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
+  // Journal entries have no eventId - filter out resident reports by absence of street/house
+  onSnapshot(reportsColRef, snap => {
+    const entries = sortChronologically(snap.docs
+      .map(d => ({id: d.id, ...d.data()}))
+      .filter(r => !r.street && !r.house)
+    );
     renderJournalReadOnly(entries);
   });
 }
@@ -2121,9 +2127,11 @@ async function bootAdmin(sharedOnly=false) {
     safe('mobileLogoutBtn') && (safe('mobileLogoutBtn').style.display='none');
     // Disable assessment +/- buttons (read-only)
     ['assessmentTimePlusBtn','assessmentTimeMinusBtn'].forEach(id=>{ const b=safe(id); if(b){b.disabled=true;b.style.opacity='0.35';b.style.cursor='default';} });
-    // Hide journal input area
+    // Hide journal input and task buttons bar
     const jib=document.querySelector('.journal-input-box'); if(jib) jib.style.display='none';
     const dtl=document.querySelector('#dateTimeToggleLabel'); if(dtl) dtl.style.display='none';
+    const tbc=safe('taskButtonsContainer'); if(tbc) tbc.style.display='none';
+    const jtb=document.querySelector('.journal-top-bar'); if(jtb) jtb.style.display='none';
   }
   setTimeout(()=>map.invalidateSize(),150);
 }
