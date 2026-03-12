@@ -277,7 +277,17 @@ async function createTimedShare(untilDate) {
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
-function getResidentReportUrl() { return `${location.origin}${location.pathname}?mode=report`; }
+function getResidentReportUrl() {
+  const base = `${location.origin}${location.pathname}?mode=report`;
+  if (!managedHouses.length) return base;
+  try {
+    // Pack only street+house pairs (no coords needed for dropdowns) to keep URL short
+    const packed = managedHouses.map(h => ({ s: (h.street||'').trim(), n: String(h.house||'').trim() }))
+      .filter(h => h.s && h.n);
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(packed))));
+    return `${base}&houses=${encoded}`;
+  } catch(e) { return base; }
+}
 
 async function submitVillageReport(data) {
   if (!activeEventId) await getOrCreateActiveEvent();
@@ -1025,7 +1035,13 @@ function updateFilterBtnLabel() {
   btn.textContent = allOn ? 'סינון ▾' : (active.length ? active.join(', ') + ' ▾' : 'ללא ▾');
 }
 function setupShareUi() {
-  const box=safe('residentReportUrl'); if(box) box.textContent=getResidentReportUrl();
+  // Refresh URL display (houses may be loaded after initial render)
+  const refreshReportUrl = () => {
+    const box=safe('residentReportUrl');
+    if(box) box.textContent=getResidentReportUrl();
+  };
+  refreshReportUrl();
+  safe('openLinksManagerBtn')?.addEventListener('click', refreshReportUrl);
   safe('copyResidentLinkBtn')?.addEventListener('click',async()=>{
     await navigator.clipboard.writeText(getResidentReportUrl());
     const btn=safe('copyResidentLinkBtn'); const t=btn.textContent; btn.textContent='הועתק'; setTimeout(()=>btn.textContent=t,1200);
@@ -2122,23 +2138,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (MODE==='report'||REPORT_KEY) {
     safe('screen-report')?.classList.add('active');
     safe('screen-admin')?.classList.remove('active');
-    // Load houses from Firestore so street/house dropdowns work via shared link
-    // Auth is already ready at this point (we waited for firebaseAuthReady above)
-    const streetSel = safe('street');
-    if (streetSel) {
-      streetSel.innerHTML = '<option value="">טוען רחובות...</option>';
-      streetSel.disabled = true;
-    }
-    try {
-      const housesSnap = await getDoc(getHousesDoc());
-      if (housesSnap.exists()) {
-        const data = housesSnap.data();
-        if (Array.isArray(data.houses) && data.houses.length) {
-          managedHouses = data.houses;
+
+    // Load houses from URL parameter (embedded by admin when generating the link)
+    const housesParam = params.get('houses');
+    if (housesParam) {
+      try {
+        const packed = JSON.parse(decodeURIComponent(escape(atob(housesParam))));
+        if (Array.isArray(packed) && packed.length) {
+          managedHouses = packed.map(h => ({ street: h.s || '', house: h.n || '' }));
         }
-      }
-    } catch(e) { console.warn('Could not load houses from Firestore:', e); }
-    if (streetSel) streetSel.disabled = false;
+      } catch(e) { console.warn('Could not decode houses from URL:', e); }
+    }
     syncStreetOptions();
     if (existingReportId) {
       const snap=await getDoc(getReportDoc(existingReportId));
