@@ -15,7 +15,6 @@ const params      = new URLSearchParams(location.search);
 const MODE        = params.get('mode');
 const SHARE_TOKEN = params.get('token');
 const REPORT_KEY  = params.get('rkey');
-const JOURNAL_TOKEN = params.get('jtoken');
 
 // ── helpers ─────────────────────────────────────────────
 const $   = (s)  => document.querySelector(s);
@@ -273,29 +272,32 @@ async function verifyShareToken(token) {
   if (!snap.exists()) return null;
   const d = snap.data();
   if (d.expiresAt?.toDate && d.expiresAt.toDate()<new Date()) return null;
-  return d.eventId||null;
+  return { eventId: d.eventId||null, type: d.type||'map', assessmentTime: d.assessmentTime||null };
 }
 async function createTimedShare(untilDate) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
+  const assessStr = assessmentTimeIsManual ? `${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}` : null;
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
-function getResidentReportUrl() {
-  // Short URL — houses load from Firestore automatically
-  return `${location.origin}${location.pathname}?mode=report`;
-}
-
-async function createJournalShare(untilDate) {
+async function createUnifiedShare(untilDate, includeMap, includeJournal) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
+  const type = (includeMap && includeJournal) ? 'both' : includeJournal ? 'journal' : 'map';
+  const assessStr = assessmentTimeIsManual
+    ? `${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}`
+    : null;
   await setDoc(getShareDoc(token), {
-    eventId: activeEventId,
-    type: 'journal',
+    eventId: activeEventId, type,
+    assessmentTime: assessStr,
     expiresAt: Timestamp.fromDate(untilDate),
     createdAt: serverTimestamp()
   });
-  return `${location.origin}${location.pathname}?jtoken=${token}`;
+  return `${location.origin}${location.pathname}?token=${token}`;
+}
+function getResidentReportUrl() {
+  return `${location.origin}${location.pathname}?mode=report`;
 }
 
 async function submitVillageReport(data) {
@@ -1056,32 +1058,30 @@ function setupShareUi() {
     const btn = safe(btnId); const t = btn.textContent;
     btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
   };
-  // Resident report URL (short)
+
+  // Resident report URL
   const refreshReportUrl = () => setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
   refreshReportUrl();
   safe('openLinksManagerBtn')?.addEventListener('click', refreshReportUrl);
   safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
-  // Map share
+
+  // Unified share (map + journal checkboxes)
   const now = new Date(); now.setHours(now.getHours() + 3);
   if (safe('shareDateInput')) safe('shareDateInput').value = now.toISOString().slice(0,10);
   if (safe('shareTimeInput')) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
   safe('createShareBtn')?.addEventListener('click', async () => {
     const date = safe('shareDateInput').value; const time = safe('shareTimeInput').value || '23:59';
     if (!date) return;
-    const url = await createTimedShare(new Date(`${date}T${time}:00`));
+    const includeMap     = safe('shareIncludeMap')?.checked !== false;
+    const includeJournal = safe('shareIncludeJournal')?.checked === true;
+    if (!includeMap && !includeJournal) {
+      safe('createShareBtn').textContent = 'בחר לפחות אחד'; setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1500); return;
+    }
+    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal);
     setUrlDisplay('generatedShareUrlDisplay', 'generatedShareUrl', url);
   });
   safe('copyShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedShareUrl', 'copyShareBtn'));
-  // Journal share
-  if (safe('journalDateInput')) safe('journalDateInput').value = now.toISOString().slice(0,10);
-  if (safe('journalTimeInput')) safe('journalTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  safe('createJournalShareBtn')?.addEventListener('click', async () => {
-    const date = safe('journalDateInput').value; const time = safe('journalTimeInput').value || '23:59';
-    if (!date) return;
-    const url = await createJournalShare(new Date(`${date}T${time}:00`));
-    setUrlDisplay('generatedJournalUrlDisplay', 'generatedJournalUrl', url);
-  });
-  safe('copyJournalShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedJournalUrl', 'copyJournalShareBtn'));
 }
 async function subscribeVillageReports() {
   if (unsubReports) unsubReports();
@@ -2042,11 +2042,13 @@ function setupJournalInlineListeners() {
 // ════════════════════════════════════════════════════════
 //  BOOT ADMIN
 // ════════════════════════════════════════════════════════
-async function bootJournalReadOnly(eventId) {
+async function bootJournalReadOnly(eventId, shareInfo) {
   safe('screen-report')?.classList.remove('active');
   safe('screen-admin')?.classList.remove('active');
   const jscreen = safe('screen-journal-readonly');
   if (jscreen) jscreen.classList.add('active');
+  // Show snapshotted assessment time from admin
+  if (shareInfo?.assessmentTime) { const el=safe('jroAssessmentTime'); if(el) el.textContent=shareInfo.assessmentTime; }
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
   const q = query(getReportsCol(), where('eventId', '==', eventId));
   onSnapshot(q, snap => {
@@ -2069,6 +2071,20 @@ function renderJournalReadOnly(entries) {
       <td class="jro-td jro-reporter">${e.reporter || ''}</td>
       <td class="jro-td jro-type">${e.logType || ''}</td>
     </tr>`).join('');
+}
+
+function bootJournalDrawer(eventId, shareInfo) {
+  const jscreen = safe('screen-journal-readonly');
+  if (!jscreen) return;
+  jscreen.style.cssText = 'position:fixed;inset:0 0 0 auto;width:min(440px,100vw);z-index:200;display:flex;flex-direction:column;background:#04192d;border-right:2px solid rgba(40,147,255,.25);box-shadow:-8px 0 40px rgba(0,0,0,.6)';
+  jscreen.classList.add('active');
+  if (shareInfo?.assessmentTime) { const el=safe('jroAssessmentTime'); if(el) el.textContent=shareInfo.assessmentTime; }
+  if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+  const q = query(getReportsCol(), where('eventId', '==', eventId));
+  onSnapshot(q, snap => {
+    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    renderJournalReadOnly(entries);
+  });
 }
 
 async function bootAdmin(sharedOnly=false) {
@@ -2097,6 +2113,26 @@ async function bootAdmin(sharedOnly=false) {
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
+    // Hide user info and logout
+    document.querySelector('.header-user-area') && (document.querySelector('.header-user-area').style.display='none');
+    safe('headerUserEmail') && (safe('headerUserEmail').style.display='none');
+    safe('logoutBtn') && (safe('logoutBtn').style.display='none');
+    safe('mobileLogoutBtn') && (safe('mobileLogoutBtn').style.display='none');
+    // Disable assessment +/- buttons (read-only)
+    ['assessmentTimePlusBtn','assessmentTimeMinusBtn'].forEach(id=>{ const b=safe(id); if(b){b.disabled=true;b.style.opacity='0.35';b.style.cursor='default';} });
+    // Hide journal input (no editing)
+    const jib=document.querySelector('.journal-input-box'); if(jib) jib.style.display='none';
+    const dtl=document.querySelector('#dateTimeToggleLabel'); if(dtl) dtl.style.display='none';
+    // Hide user email and logout button
+    const ua=safe('header-user-area')||document.querySelector('.header-user-area'); if(ua) ua.style.display='none';
+    safe('headerUserEmail') && (safe('headerUserEmail').style.display='none');
+    safe('logoutBtn') && (safe('logoutBtn').style.display='none');
+    safe('mobileLogoutBtn') && (safe('mobileLogoutBtn').style.display='none');
+    // Disable assessment time +/- buttons
+    safe('assessmentTimePlusBtn') && (safe('assessmentTimePlusBtn').disabled=true, safe('assessmentTimePlusBtn').style.opacity='0.3', safe('assessmentTimePlusBtn').style.cursor='default');
+    safe('assessmentTimeMinusBtn') && (safe('assessmentTimeMinusBtn').disabled=true, safe('assessmentTimeMinusBtn').style.opacity='0.3', safe('assessmentTimeMinusBtn').style.cursor='default');
+    // Disable journal input area
+    const jib=document.querySelector('.journal-input-box'); if(jib) jib.style.display='none';
   }
   setTimeout(()=>map.invalidateSize(),150);
 }
@@ -2154,7 +2190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // For public modes (report form / shared map), skip auth entirely —
   // anonymous sign-in is disabled; Firestore public paths are accessible without auth.
-  const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY || JOURNAL_TOKEN);
+  const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY);
   if (needsPublicSession && !auth.currentUser) {
     // Initialize Firestore collection refs so public reads/writes work without auth
     if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
@@ -2185,10 +2221,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // URL-mode routing
   if (SHARE_TOKEN) {
-    const eventId = await verifyShareToken(SHARE_TOKEN);
-    if (!eventId) { document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl">הקישור לא תקף או פג תוקפו.</div>'; return; }
-    activeEventId=eventId;
-    await bootAdmin(true);
+    const shareInfo = await verifyShareToken(SHARE_TOKEN);
+    if (!shareInfo?.eventId) { document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>'; return; }
+    activeEventId = shareInfo.eventId;
+    if (shareInfo.type === 'journal') {
+      if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+      await bootJournalReadOnly(activeEventId, shareInfo);
+    } else if (shareInfo.type === 'both') {
+      await bootAdmin(true);
+      setTimeout(() => bootJournalDrawer(activeEventId, shareInfo), 900);
+    } else {
+      await bootAdmin(true);
+    }
     return;
   }
   if (MODE==='report'||REPORT_KEY) {
@@ -2237,23 +2281,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         $$('.status-btn').forEach(b=>b.classList.toggle('active',currentStatus.includes(b.dataset.status)));
       }
     }
-    return;
-  }
-  // Journal read-only mode
-  if (JOURNAL_TOKEN) {
-    const snap = await getDoc(getShareDoc(JOURNAL_TOKEN));
-    if (!snap.exists()) {
-      document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>';
-      return;
-    }
-    const d = snap.data();
-    if (d.expiresAt?.toDate && d.expiresAt.toDate() < new Date()) {
-      document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">פג תוקף הקישור.</div>';
-      return;
-    }
-    activeEventId = d.eventId;
-    if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-    await bootJournalReadOnly(activeEventId);
     return;
   }
   // Default: admin boot (login will show if not authenticated)

@@ -316,12 +316,13 @@
         <button class="modal-close" data-close="#sharePanel" type="button">×</button>
         <h2 class="share-modal-title">🔗 קישורים</h2>
 
+        <!-- Resident report - permanent link -->
         <div class="share-card">
             <div class="share-card-header">
                 <span class="share-card-icon">📱</span>
                 <div>
                     <div class="share-card-title">דיווח תושבים</div>
-                    <div class="share-card-sub">קישור ישיר לטופס הדיווח של התושב</div>
+                    <div class="share-card-sub">קישור קבוע לטופס הדיווח של התושב</div>
                 </div>
             </div>
             <div class="share-url-display-wrap">
@@ -333,13 +334,26 @@
             </div>
         </div>
 
+        <!-- Unified timed share -->
         <div class="share-card">
             <div class="share-card-header">
-                <span class="share-card-icon">🗺️</span>
+                <span class="share-card-icon">🔗</span>
                 <div>
-                    <div class="share-card-title">שיתוף המפה</div>
-                    <div class="share-card-sub">קישור זמני לצפייה במפה בלבד</div>
+                    <div class="share-card-title">שיתוף זמני</div>
+                    <div class="share-card-sub">בחר מה לכלול וקבע תפוגה — קריאה בלבד</div>
                 </div>
+            </div>
+            <div class="share-checkboxes">
+                <label class="share-checkbox-item">
+                    <input type="checkbox" id="shareIncludeMap" checked />
+                    <span class="share-checkbox-icon">🗺️</span>
+                    <span>מפה</span>
+                </label>
+                <label class="share-checkbox-item">
+                    <input type="checkbox" id="shareIncludeJournal" />
+                    <span class="share-checkbox-icon">📋</span>
+                    <span>יומן חפ"ק</span>
+                </label>
             </div>
             <div class="share-datetime-row">
                 <div class="share-dt-field">
@@ -359,34 +373,6 @@
                 <div id="generatedShareUrlDisplay" class="share-url-truncated">עדיין לא נוצר קישור</div>
             </div>
             <span id="generatedShareUrl" style="display:none">עדיין לא נוצר קישור</span>
-        </div>
-
-        <div class="share-card">
-            <div class="share-card-header">
-                <span class="share-card-icon">📋</span>
-                <div>
-                    <div class="share-card-title">קריאת יומן חפ"ק</div>
-                    <div class="share-card-sub">קישור זמני לצפייה ביומן בלבד (ללא עריכה)</div>
-                </div>
-            </div>
-            <div class="share-datetime-row">
-                <div class="share-dt-field">
-                    <label class="share-dt-label">תאריך תפוגה</label>
-                    <input id="journalDateInput" type="date" class="share-input" />
-                </div>
-                <div class="share-dt-field">
-                    <label class="share-dt-label">שעת תפוגה</label>
-                    <input id="journalTimeInput" type="time" class="share-input" />
-                </div>
-            </div>
-            <div class="share-btn-row">
-                <button id="createJournalShareBtn" class="share-primary-btn" type="button">✨ צור קישור</button>
-                <button id="copyJournalShareBtn" class="share-copy-btn-btn" type="button">📋 העתק</button>
-            </div>
-            <div class="share-url-display-wrap">
-                <div id="generatedJournalUrlDisplay" class="share-url-truncated">עדיין לא נוצר קישור</div>
-            </div>
-            <span id="generatedJournalUrl" style="display:none">עדיין לא נוצר קישור</span>
         </div>
     </div>
 </div>
@@ -620,6 +606,36 @@
     <header class="jro-header">
         <div class="jro-brand">יומן חפ"ק לפיד</div>
         <div class="jro-subtitle">צפייה בלבד — עדכון אוטומטי בזמן אמת</div>
+    </header>
+    <main class="jro-main">
+        <div class="jro-table-wrap">
+            <table class="jro-table">
+                <thead>
+                    <tr>
+                        <th class="jro-th">דיווח</th>
+                        <th class="jro-th">תאריך / שעה</th>
+                        <th class="jro-th">מדווח</th>
+                        <th class="jro-th">שיוך</th>
+                    </tr>
+                </thead>
+                <tbody id="journalReadOnlyBody">
+                    <tr><td colspan="4" style="text-align:center;padding:40px;color:#8aabcc">טוען יומן...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<div id="screen-journal-readonly" class="screen jro-screen">
+    <header class="jro-header">
+        <div class="jro-header-top">
+            <div class="jro-brand">יומן חפ"ק לפיד</div>
+            <div class="jro-subtitle">צפייה בלבד — עדכון אוטומטי בזמן אמת</div>
+        </div>
+        <div class="jro-assess-chip" id="jroAssessmentChip">
+            <span class="jro-assess-label">הערכת מצב</span>
+            <span id="jroAssessmentTime" class="jro-assess-val">טרם נקבע</span>
+        </div>
     </header>
     <main class="jro-main">
         <div class="jro-table-wrap">
