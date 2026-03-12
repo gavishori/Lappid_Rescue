@@ -149,7 +149,6 @@ const getSharesCol = () => collection(db, `${publicDataRoot}/shares`);
 const getReportDoc = (reportId) => doc(getReportsCol(), reportId);
 const getEventDoc = (eventId) => doc(getEventsCol(), eventId);
 const getShareDoc = (shareId) => doc(getSharesCol(), shareId);
-// Houses stored inside the existing public/data document (same path already used by the app)
 const getConfigDoc = () => doc(db, 'artifacts', appId, 'public', 'data');
 const hasJournalAccess = (user) => Boolean(user?.email && !user?.isAnonymous);
 
@@ -224,7 +223,6 @@ function fitMapToLayerBounds(layerName) {
       .map(r => [Number(r.lat), Number(r.lng)])
       .filter(([lat,lng]) => Number.isFinite(lat) && Number.isFinite(lng));
   } else {
-    // GPX layer
     const item = gpxItems.find(x => x.type === layerName);
     if (item) pts = (item.points||[]).map(p => [p.lat, p.lng]).filter(([lat,lng]) => Number.isFinite(lat) && Number.isFinite(lng));
   }
@@ -345,22 +343,23 @@ function makeHouseNumberIcon(label) {
     iconAnchor:[14,10]
   });
 }
-let editingLayerPoint = null; // {itemId, ptIndex, marker}
+let editingLayerPoint = null;
 
 function makeLayerPointPopupHtml(pt, itemType, itemId, ptIndex) {
   return `<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px">
     <strong>${pt.name||itemType}</strong>
     <div style="color:#666;font-size:12px;margin:4px 0">${itemType}</div>
     <div style="color:#8da8c5;font-size:11px;margin-bottom:8px">${Number(pt.lat).toFixed(6)}, ${Number(pt.lng).toFixed(6)}</div>
+    ${!isSharedLinkView ? `
     <div style="display:flex;gap:6px">
       <button onclick="startEditLayerPoint('${itemId}',${ptIndex})" style="background:#2893ff;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">עריכה</button>
       <button onclick="deleteLayerPoint('${itemId}',${ptIndex})" style="background:#d45b6e;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">מחיקה</button>
-    </div>
+    </div>` : ''}
   </div>`;
 }
 
 window.startEditLayerPoint = function(itemId, ptIndex) {
-  // Close any previous edit
+  if (isSharedLinkView) return;
   if (editingLayerPoint) cancelEditLayerPoint();
   const item = gpxItems.find(x => x.id === itemId);
   if (!item || !item.points[ptIndex]) return;
@@ -369,7 +368,6 @@ window.startEditLayerPoint = function(itemId, ptIndex) {
   if (!markerArr || !markerArr[ptIndex]) return;
   const marker = markerArr[ptIndex];
   marker.closePopup();
-  // Set edit icon (orange/yellow)
   marker.setIcon(L.divIcon({
     className:'',
     html:`<div style="width:18px;height:18px;border-radius:50%;background:#f4c246;border:3px solid #fff;box-shadow:0 0 12px #f4c24699;cursor:grab"></div>`,
@@ -378,7 +376,6 @@ window.startEditLayerPoint = function(itemId, ptIndex) {
   marker.dragging.enable();
   editingLayerPoint = {itemId, ptIndex, marker, item};
 
-  // Show save button in popup
   marker.bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif">
     <strong>מצב עריכה</strong>
     <div style="color:#666;font-size:12px;margin:4px 0">גרור את הנקודה למיקום חדש</div>
@@ -407,6 +404,7 @@ window.cancelEditLayerPoint = function() {
 };
 
 window.deleteLayerPoint = function(itemId, ptIndex) {
+  if (isSharedLinkView) return;
   const item = gpxItems.find(x => x.id === itemId);
   if (!item) return;
   item.points.splice(ptIndex, 1);
@@ -419,23 +417,28 @@ function renderGpxMarkers() {
   clearLayerMarkers();
 
   if (activeLayers.has('מספרי בתים')) {
-    layerMarkers.houses = managedHouses
-      .filter(h => Number.isFinite(Number(h.lat)) && Number.isFinite(Number(h.lng)))
-      .map((h, idx) => {
-        const m = L.marker([Number(h.lat), Number(h.lng)], {icon: makeHouseNumberIcon(h.house || '')})
-          .addTo(map);
-        const popupContent = `<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px">
-          <strong>${(h.street||'')+' '+(h.house||'')}</strong>
-          <div style="color:#666;font-size:12px;margin:4px 0">מספר בית</div>
-          <div style="color:#8da8c5;font-size:11px;margin-bottom:8px">${Number(h.lat).toFixed(6)}, ${Number(h.lng).toFixed(6)}</div>
-          <div style="display:flex;gap:6px">
-            <button onclick="editHouseFromMap(${idx})" style="background:#2893ff;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">עריכה</button>
-            <button onclick="deleteHouseFromMap(${idx})" style="background:#d45b6e;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">מחיקה</button>
-          </div>
-        </div>`;
-        m.bindPopup(popupContent);
-        return m;
-      });
+    layerMarkers.houses = [];
+    // השינוי הקריטי - כאן מעבירים את originalIdx ולא את האינדקס לאחר הסינון!
+    managedHouses.forEach((h, originalIdx) => {
+      if (!Number.isFinite(Number(h.lat)) || !Number.isFinite(Number(h.lng))) return;
+
+      const m = L.marker([Number(h.lat), Number(h.lng)], {icon: makeHouseNumberIcon(h.house || '')})
+        .addTo(map);
+
+      const popupContent = `<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px">
+        <strong>${(h.street||'')+' '+(h.house||'')}</strong>
+        <div style="color:#666;font-size:12px;margin:4px 0">מספר בית</div>
+        <div style="color:#8da8c5;font-size:11px;margin-bottom:8px">${Number(h.lat).toFixed(6)}, ${Number(h.lng).toFixed(6)}</div>
+        ${!isSharedLinkView ? `
+        <div style="display:flex;gap:6px">
+          <button onclick="editHouseFromMap(${originalIdx})" style="background:#2893ff;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">עריכה</button>
+          <button onclick="deleteHouseFromMap(${originalIdx})" style="background:#d45b6e;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">מחיקה</button>
+        </div>` : ''}
+      </div>`;
+      
+      m.bindPopup(popupContent);
+      layerMarkers.houses.push(m);
+    });
   }
 
   for (const item of gpxItems) {
@@ -449,7 +452,7 @@ function renderGpxMarkers() {
   }
 }
 
-let editingHouseMarker = null; // {idx, marker, originalLatLng}
+let editingHouseMarker = null;
 
 function makeHouseEditPopupHtml(idx) {
   return `<div style="direction:rtl;font-family:Heebo,sans-serif">
@@ -463,21 +466,22 @@ function makeHouseEditPopupHtml(idx) {
 }
 
 window.editHouseFromMap = function(idx) {
+  if (isSharedLinkView) return;
   if (editingHouseMarker) cancelHouseMarkerEdit();
   const h = managedHouses[idx];
   if (!h) return;
   const markerArr = layerMarkers.houses;
   if (!markerArr) return;
-  // Find the marker that matches this house index in the filtered list
+  
   const validHouses = managedHouses
     .map((house, i) => ({house, i}))
     .filter(({house}) => Number.isFinite(Number(house.lat)) && Number.isFinite(Number(house.lng)));
   const posInFiltered = validHouses.findIndex(({i}) => i === idx);
   if (posInFiltered === -1 || !markerArr[posInFiltered]) return;
+  
   const marker = markerArr[posInFiltered];
   marker.closePopup();
   const originalLatLng = marker.getLatLng();
-  // Set edit icon (yellow)
   marker.setIcon(L.divIcon({
     className:'',
     html:`<div style="width:22px;height:22px;border-radius:50%;background:#f4c246;border:3px solid #fff;box-shadow:0 0 14px #f4c24699;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#333">${h.house||''}</div>`,
@@ -506,11 +510,13 @@ window.cancelHouseMarkerEdit = function() {
 };
 
 window.deleteHouseFromMap = function(idx) {
+  if (isSharedLinkView) return;
   managedHouses = managedHouses.filter((_,i) => i !== idx);
   if (editingHouseIndex === idx) resetHouseForm();
   else if (editingHouseIndex !== null && idx < editingHouseIndex) editingHouseIndex -= 1;
   persistAll(); renderHouses(); syncStreetOptions(); updateHouseStats(); renderGpxMarkers();
 };
+
 function lookupHouseCoords(street, house) {
   if (!street || !house) return null;
   const s = String(street).trim().toLowerCase();
@@ -541,7 +547,7 @@ async function renderResidentMarkers() {
         if (local) {
           lat=local.lat; lng=local.lng;
           if (local.lat !== r.lat || local.lng !== r.lng) {
-            updateDoc(getReportDoc(r.id), {lat,lng}).catch(()=>{});
+            if(!isSharedLinkView) updateDoc(getReportDoc(r.id), {lat,lng}).catch(()=>{});
           }
         } else if (r.locationType === 'gps' && lat && lng) {
           // GPS — use as-is
@@ -563,7 +569,6 @@ async function renderResidentMarkers() {
     Object.keys(residentMarkers).forEach(id=>{ if(!ids.has(id)&&!id.startsWith('noreport_')){map.removeLayer(residentMarkers[id]);delete residentMarkers[id];} });
 
     // ── no-report houses ──
-    // Remove old no-report markers first
     Object.keys(residentMarkers).filter(id=>id.startsWith('noreport_')).forEach(id=>{
       map.removeLayer(residentMarkers[id]); delete residentMarkers[id];
     });
@@ -728,6 +733,7 @@ function setupNavigation() {
   // ניהול ניווט הטאבים הקיים
   $$('.rail-btn').forEach(btn=>btn.addEventListener('click',()=>{
     const view=btn.dataset.view;
+    if(!view) return;
     if (view==='layers') { openLayersModal(); return; }
     $$('.rail-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
@@ -764,6 +770,15 @@ function setupNavigation() {
           toggleMenu();
         }
       });
+    });
+
+    // חיבור כפתור הסטטוס מתוך התפריט
+    safe('menuStatusBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const statusPopup = safe('statusPopup');
+      if (statusPopup) {
+        statusPopup.classList.toggle('hidden');
+      }
     });
   }
 }
@@ -802,7 +817,7 @@ function setupModals() {
     });
     if(statusPopupClose) statusPopupClose.addEventListener('click', () => statusPopup.classList.add('hidden'));
     document.addEventListener('click', (e) => {
-      if(!statusPopup.classList.contains('hidden') && !statusPopup.contains(e.target) && e.target !== statusToggleBtn) {
+      if(!statusPopup.classList.contains('hidden') && !statusPopup.contains(e.target) && e.target !== statusToggleBtn && e.target !== safe('menuStatusBtn')) {
         statusPopup.classList.add('hidden');
       }
     });
@@ -1233,7 +1248,7 @@ function renderTable(searchTerm='') {
       <span class="toggle-day-icon">${isCollapsed?'◀':'▼'}</span>
       ${formatAsDDMMYYYY(dateKey)}
       <span class="daily-summary ${isCollapsed?'':'hidden'}">${summary}</span>
-      ${auth.currentUser?.email==='gavishori@gmail.com'?`<button class="delete-btn delete-day-btn" data-date="${dateKey}" style="margin-right:10px;font-size:12px;padding:3px 8px">מחק יום</button>`:''}
+      ${!isSharedLinkView && auth.currentUser?.email==='gavishori@gmail.com'?`<button class="delete-btn delete-day-btn" data-date="${dateKey}" style="margin-right:10px;font-size:12px;padding:3px 8px">מחק יום</button>`:''}
     </td>`;
     tableBody.appendChild(hRow);
 
@@ -1247,7 +1262,7 @@ function renderTable(searchTerm='') {
     const sorted=[...reps].sort((a,b)=>a.time>b.time?-1:a.time<b.time?1:0);
     sorted.forEach(report=>{
       const diff=(new Date()-new Date(report.timestamp))/(1000*60*60);
-      const canEdit=diff<48;
+      const canEdit= !isSharedLinkView && diff<48;
       const hl=(text,term)=>{ if(!term) return text; return text.replace(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),'<span class="highlight">$&</span>'); };
       const tr=document.createElement('tr');
       tr.innerHTML=`
@@ -2155,7 +2170,8 @@ async function bootAdmin(sharedOnly=false) {
   if (!sharedOnly && managedHouses.length > 0) syncHousesToFirestore();
 
   if(sharedOnly) {
-    const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
+    // השארת תפריט הצד (שכבות ומידע) פתוח אך הסתרת כפתור הניהול
+    const navMgmt = safe('navManagementBtn'); if (navMgmt) navMgmt.style.display = 'none';
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
     const topBar = document.querySelector('.journal-top-bar'); if(topBar) topBar.style.display='none';
     const logoutDesktop = safe('logoutBtn'); if(logoutDesktop) logoutDesktop.style.display='none';
@@ -2168,6 +2184,9 @@ async function bootAdmin(sharedOnly=false) {
     
     // הסתרת אזור הזנת הנתונים כולו
     const inputBox = document.querySelector('.journal-input-box'); if (inputBox) inputBox.style.display='none';
+    
+    // הסתרת עמודת הפעולות (עריכה / מחיקה) מהטבלה
+    const actionsTh = safe('journalActionsTh'); if (actionsTh) actionsTh.style.display='none';
 
     // הבטחת טעינת הנתונים למשתמשים לא מחוברים בקישור שיתוף ציבורי
     if (!unsubJournalReports) {
