@@ -2111,28 +2111,19 @@ async function bootAdmin(sharedOnly=false) {
   // Sync houses to Firestore now that auth is confirmed
   if (!sharedOnly && managedHouses.length > 0) syncHousesToFirestore();
   if(sharedOnly) {
+    // Hide nav rail and lock button
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
-    // Hide user info and logout
+    // Hide user email and logout
     document.querySelector('.header-user-area') && (document.querySelector('.header-user-area').style.display='none');
     safe('headerUserEmail') && (safe('headerUserEmail').style.display='none');
     safe('logoutBtn') && (safe('logoutBtn').style.display='none');
     safe('mobileLogoutBtn') && (safe('mobileLogoutBtn').style.display='none');
     // Disable assessment +/- buttons (read-only)
     ['assessmentTimePlusBtn','assessmentTimeMinusBtn'].forEach(id=>{ const b=safe(id); if(b){b.disabled=true;b.style.opacity='0.35';b.style.cursor='default';} });
-    // Hide journal input (no editing)
+    // Hide journal input area
     const jib=document.querySelector('.journal-input-box'); if(jib) jib.style.display='none';
     const dtl=document.querySelector('#dateTimeToggleLabel'); if(dtl) dtl.style.display='none';
-    // Hide user email and logout button
-    const ua=safe('header-user-area')||document.querySelector('.header-user-area'); if(ua) ua.style.display='none';
-    safe('headerUserEmail') && (safe('headerUserEmail').style.display='none');
-    safe('logoutBtn') && (safe('logoutBtn').style.display='none');
-    safe('mobileLogoutBtn') && (safe('mobileLogoutBtn').style.display='none');
-    // Disable assessment time +/- buttons
-    safe('assessmentTimePlusBtn') && (safe('assessmentTimePlusBtn').disabled=true, safe('assessmentTimePlusBtn').style.opacity='0.3', safe('assessmentTimePlusBtn').style.cursor='default');
-    safe('assessmentTimeMinusBtn') && (safe('assessmentTimeMinusBtn').disabled=true, safe('assessmentTimeMinusBtn').style.opacity='0.3', safe('assessmentTimeMinusBtn').style.cursor='default');
-    // Disable journal input area
-    const jib=document.querySelector('.journal-input-box'); if(jib) jib.style.display='none';
   }
   setTimeout(()=>map.invalidateSize(),150);
 }
