@@ -315,9 +315,32 @@
     <div class="modal-box share-modal-box">
         <button class="modal-close" data-close="#sharePanel" type="button">×</button>
         <h2 class="share-modal-title">🔗 קישורים</h2>
-        <div class="modal-section share-section">
-            <h3>🗺️ שיתוף המפה בלבד</h3>
-            <p>הגדר תאריך ושעת תפוגה לקישור</p>
+
+        <div class="share-card">
+            <div class="share-card-header">
+                <span class="share-card-icon">📱</span>
+                <div>
+                    <div class="share-card-title">דיווח תושבים</div>
+                    <div class="share-card-sub">קישור ישיר לטופס הדיווח של התושב</div>
+                </div>
+            </div>
+            <div class="share-url-display-wrap">
+                <div id="residentReportUrlDisplay" class="share-url-truncated"></div>
+            </div>
+            <span id="residentReportUrl" style="display:none"></span>
+            <div class="share-btn-row" style="margin-top:10px">
+                <button id="copyResidentLinkBtn" class="share-primary-btn" type="button">📋 העתק קישור</button>
+            </div>
+        </div>
+
+        <div class="share-card">
+            <div class="share-card-header">
+                <span class="share-card-icon">🗺️</span>
+                <div>
+                    <div class="share-card-title">שיתוף המפה</div>
+                    <div class="share-card-sub">קישור זמני לצפייה במפה בלבד</div>
+                </div>
+            </div>
             <div class="share-datetime-row">
                 <div class="share-dt-field">
                     <label class="share-dt-label">תאריך תפוגה</label>
@@ -328,19 +351,42 @@
                     <input id="shareTimeInput" type="time" class="share-input" />
                 </div>
             </div>
-            <div class="share-actions">
-                <button id="createShareBtn" class="primary-btn share-create-btn" type="button">✨ צור קישור</button>
-                <button id="copyShareBtn" class="ghost-btn share-copy-btn" type="button">📋 העתק</button>
+            <div class="share-btn-row">
+                <button id="createShareBtn" class="share-primary-btn" type="button">✨ צור קישור</button>
+                <button id="copyShareBtn" class="share-copy-btn-btn" type="button">📋 העתק</button>
             </div>
-            <div id="generatedShareUrl" class="value-box share-url-box">עדיין לא נוצר קישור</div>
+            <div class="share-url-display-wrap">
+                <div id="generatedShareUrlDisplay" class="share-url-truncated">עדיין לא נוצר קישור</div>
+            </div>
+            <span id="generatedShareUrl" style="display:none">עדיין לא נוצר קישור</span>
         </div>
-        <div class="modal-section share-section">
-            <h3>📱 דיווח תושבים</h3>
-            <p>קישור ישיר לטופס הדיווח של התושב</p>
-            <div id="residentReportUrl" class="value-box share-url-box"></div>
-            <div class="share-actions" style="margin-top:10px">
-                <button id="copyResidentLinkBtn" class="primary-btn share-copy-btn" type="button">📋 העתק קישור</button>
+
+        <div class="share-card">
+            <div class="share-card-header">
+                <span class="share-card-icon">📋</span>
+                <div>
+                    <div class="share-card-title">קריאת יומן חפ"ק</div>
+                    <div class="share-card-sub">קישור זמני לצפייה ביומן בלבד (ללא עריכה)</div>
+                </div>
             </div>
+            <div class="share-datetime-row">
+                <div class="share-dt-field">
+                    <label class="share-dt-label">תאריך תפוגה</label>
+                    <input id="journalDateInput" type="date" class="share-input" />
+                </div>
+                <div class="share-dt-field">
+                    <label class="share-dt-label">שעת תפוגה</label>
+                    <input id="journalTimeInput" type="time" class="share-input" />
+                </div>
+            </div>
+            <div class="share-btn-row">
+                <button id="createJournalShareBtn" class="share-primary-btn" type="button">✨ צור קישור</button>
+                <button id="copyJournalShareBtn" class="share-copy-btn-btn" type="button">📋 העתק</button>
+            </div>
+            <div class="share-url-display-wrap">
+                <div id="generatedJournalUrlDisplay" class="share-url-truncated">עדיין לא נוצר קישור</div>
+            </div>
+            <span id="generatedJournalUrl" style="display:none">עדיין לא נוצר קישור</span>
         </div>
     </div>
 </div>
@@ -568,6 +614,30 @@
         <button id="customAlertCloseBtn" class="primary-btn" type="button">אישור</button>
         <button id="customAlertCancelBtn" class="ghost-btn" style="margin-right:10px" type="button">ביטול</button>
     </div>
+</div>
+
+<div id="screen-journal-readonly" class="screen jro-screen">
+    <header class="jro-header">
+        <div class="jro-brand">יומן חפ"ק לפיד</div>
+        <div class="jro-subtitle">צפייה בלבד — עדכון אוטומטי בזמן אמת</div>
+    </header>
+    <main class="jro-main">
+        <div class="jro-table-wrap">
+            <table class="jro-table">
+                <thead>
+                    <tr>
+                        <th class="jro-th">דיווח</th>
+                        <th class="jro-th">תאריך / שעה</th>
+                        <th class="jro-th">מדווח</th>
+                        <th class="jro-th">שיוך</th>
+                    </tr>
+                </thead>
+                <tbody id="journalReadOnlyBody">
+                    <tr><td colspan="4" style="text-align:center;padding:40px;color:#8aabcc">טוען יומן...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
 </div>
 
 <script type="module" src="firebase.js"></script>

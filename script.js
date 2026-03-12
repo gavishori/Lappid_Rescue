@@ -15,6 +15,7 @@ const params      = new URLSearchParams(location.search);
 const MODE        = params.get('mode');
 const SHARE_TOKEN = params.get('token');
 const REPORT_KEY  = params.get('rkey');
+const JOURNAL_TOKEN = params.get('jtoken');
 
 // ── helpers ─────────────────────────────────────────────
 const $   = (s)  => document.querySelector(s);
@@ -281,15 +282,20 @@ async function createTimedShare(untilDate) {
   return `${location.origin}${location.pathname}?token=${token}`;
 }
 function getResidentReportUrl() {
-  const base = `${location.origin}${location.pathname}?mode=report`;
-  if (!managedHouses.length) return base;
-  try {
-    // Pack only street+house pairs (no coords needed for dropdowns) to keep URL short
-    const packed = managedHouses.map(h => ({ s: (h.street||'').trim(), n: String(h.house||'').trim() }))
-      .filter(h => h.s && h.n);
-    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(packed))));
-    return `${base}&houses=${encoded}`;
-  } catch(e) { return base; }
+  // Short URL — houses load from Firestore automatically
+  return `${location.origin}${location.pathname}?mode=report`;
+}
+
+async function createJournalShare(untilDate) {
+  if (!activeEventId) await getOrCreateActiveEvent();
+  const token = crypto.randomUUID();
+  await setDoc(getShareDoc(token), {
+    eventId: activeEventId,
+    type: 'journal',
+    expiresAt: Timestamp.fromDate(untilDate),
+    createdAt: serverTimestamp()
+  });
+  return `${location.origin}${location.pathname}?jtoken=${token}`;
 }
 
 async function submitVillageReport(data) {
@@ -1038,32 +1044,44 @@ function updateFilterBtnLabel() {
   btn.textContent = allOn ? 'סינון ▾' : (active.length ? active.join(', ') + ' ▾' : 'ללא ▾');
 }
 function setupShareUi() {
-  // Refresh URL display (houses may be loaded after initial render)
-  const refreshReportUrl = () => {
-    const box=safe('residentReportUrl');
-    if(box) box.textContent=getResidentReportUrl();
+  const setUrlDisplay = (displayId, hiddenId, url) => {
+    const d = safe(displayId); const h = safe(hiddenId);
+    if (d) d.textContent = url || '';
+    if (h) h.textContent = url || '';
   };
+  const copyWithFeedback = async (hiddenId, btnId) => {
+    const url = safe(hiddenId)?.textContent?.trim();
+    if (!url || url === 'עדיין לא נוצר קישור') return;
+    await navigator.clipboard.writeText(url);
+    const btn = safe(btnId); const t = btn.textContent;
+    btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
+  };
+  // Resident report URL (short)
+  const refreshReportUrl = () => setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
   refreshReportUrl();
   safe('openLinksManagerBtn')?.addEventListener('click', refreshReportUrl);
-  safe('copyResidentLinkBtn')?.addEventListener('click',async()=>{
-    await navigator.clipboard.writeText(getResidentReportUrl());
-    const btn=safe('copyResidentLinkBtn'); const t=btn.textContent; btn.textContent='הועתק'; setTimeout(()=>btn.textContent=t,1200);
+  safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
+  // Map share
+  const now = new Date(); now.setHours(now.getHours() + 3);
+  if (safe('shareDateInput')) safe('shareDateInput').value = now.toISOString().slice(0,10);
+  if (safe('shareTimeInput')) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  safe('createShareBtn')?.addEventListener('click', async () => {
+    const date = safe('shareDateInput').value; const time = safe('shareTimeInput').value || '23:59';
+    if (!date) return;
+    const url = await createTimedShare(new Date(`${date}T${time}:00`));
+    setUrlDisplay('generatedShareUrlDisplay', 'generatedShareUrl', url);
   });
-  const now=new Date(); now.setHours(now.getHours()+3);
-  if(safe('shareDateInput')) safe('shareDateInput').value=now.toISOString().slice(0,10);
-  if(safe('shareTimeInput')) safe('shareTimeInput').value=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  safe('createShareBtn')?.addEventListener('click',async()=>{
-    const date=safe('shareDateInput').value; const time=safe('shareTimeInput').value||'23:59';
-    if(!date) return;
-    const url=await createTimedShare(new Date(`${date}T${time}:00`));
-    safe('generatedShareUrl').textContent=url;
+  safe('copyShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedShareUrl', 'copyShareBtn'));
+  // Journal share
+  if (safe('journalDateInput')) safe('journalDateInput').value = now.toISOString().slice(0,10);
+  if (safe('journalTimeInput')) safe('journalTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  safe('createJournalShareBtn')?.addEventListener('click', async () => {
+    const date = safe('journalDateInput').value; const time = safe('journalTimeInput').value || '23:59';
+    if (!date) return;
+    const url = await createJournalShare(new Date(`${date}T${time}:00`));
+    setUrlDisplay('generatedJournalUrlDisplay', 'generatedJournalUrl', url);
   });
-  safe('copyShareBtn')?.addEventListener('click',async()=>{
-    const url=safe('generatedShareUrl').textContent.trim();
-    if(!url||url==='עדיין לא נוצר קישור') return;
-    await navigator.clipboard.writeText(url);
-    const btn=safe('copyShareBtn'); const t=btn.textContent; btn.textContent='הועתק'; setTimeout(()=>btn.textContent=t,1200);
-  });
+  safe('copyJournalShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedJournalUrl', 'copyJournalShareBtn'));
 }
 async function subscribeVillageReports() {
   if (unsubReports) unsubReports();
@@ -2024,6 +2042,35 @@ function setupJournalInlineListeners() {
 // ════════════════════════════════════════════════════════
 //  BOOT ADMIN
 // ════════════════════════════════════════════════════════
+async function bootJournalReadOnly(eventId) {
+  safe('screen-report')?.classList.remove('active');
+  safe('screen-admin')?.classList.remove('active');
+  const jscreen = safe('screen-journal-readonly');
+  if (jscreen) jscreen.classList.add('active');
+  if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+  const q = query(getReportsCol(), where('eventId', '==', eventId));
+  onSnapshot(q, snap => {
+    const entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    renderJournalReadOnly(entries);
+  });
+}
+
+function renderJournalReadOnly(entries) {
+  const tbody = safe('journalReadOnlyBody');
+  if (!tbody) return;
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#8aabcc">אין רשומות ביומן</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => `
+    <tr class="jro-row">
+      <td class="jro-td jro-desc">${e.description || ''}</td>
+      <td class="jro-td jro-time">${e.date || ''} ${e.time || ''}</td>
+      <td class="jro-td jro-reporter">${e.reporter || ''}</td>
+      <td class="jro-td jro-type">${e.logType || ''}</td>
+    </tr>`).join('');
+}
+
 async function bootAdmin(sharedOnly=false) {
   safe('screen-report')?.classList.remove('active');
   safe('screen-admin')?.classList.add('active');
@@ -2107,7 +2154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // For public modes (report form / shared map), skip auth entirely —
   // anonymous sign-in is disabled; Firestore public paths are accessible without auth.
-  const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY);
+  const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY || JOURNAL_TOKEN);
   if (needsPublicSession && !auth.currentUser) {
     // Initialize Firestore collection refs so public reads/writes work without auth
     if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
@@ -2190,6 +2237,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         $$('.status-btn').forEach(b=>b.classList.toggle('active',currentStatus.includes(b.dataset.status)));
       }
     }
+    return;
+  }
+  // Journal read-only mode
+  if (JOURNAL_TOKEN) {
+    const snap = await getDoc(getShareDoc(JOURNAL_TOKEN));
+    if (!snap.exists()) {
+      document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>';
+      return;
+    }
+    const d = snap.data();
+    if (d.expiresAt?.toDate && d.expiresAt.toDate() < new Date()) {
+      document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">פג תוקף הקישור.</div>';
+      return;
+    }
+    activeEventId = d.eventId;
+    if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+    await bootJournalReadOnly(activeEventId);
     return;
   }
   // Default: admin boot (login will show if not authenticated)
