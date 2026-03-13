@@ -117,7 +117,6 @@
                     <button id="assessmentTimePlusBtn" class="hclock-btn">+</button>
                 </div>
             </div>
-            <button id="mobileHeaderMenuBtn" class="mobile-header-menu-btn" type="button" aria-label="תפריט"><i class="fas fa-bars"></i></button>
         </div>
         <div class="header-user-area">
             <span id="headerUserEmail" class="header-user-email"></span>
@@ -144,27 +143,6 @@
     </header>
 
     <div id="mobileMenuOverlay" class="mobile-menu-overlay"></div>
-    <div id="mobileDrawer" class="mobile-drawer" aria-hidden="true">
-        <div class="mobile-drawer-header">
-            <div class="mobile-drawer-title">תפריט</div>
-            <button id="mobileDrawerCloseBtn" class="mobile-drawer-close" type="button" aria-label="סגור">×</button>
-        </div>
-        <div class="mobile-drawer-actions">
-            <button id="mobileMenuReportsBtn" class="mobile-drawer-btn" type="button">דיווח</button>
-            <button id="mobileMenuLayersBtn" class="mobile-drawer-btn" type="button">שכבות</button>
-            <button id="mobileMenuInfoBtn" class="mobile-drawer-btn" type="button">מידע</button>
-            <button id="mobileMenuManagementBtn" class="mobile-drawer-btn" type="button">ניהול</button>
-        </div>
-    </div>
-    <div id="mobileInfoPanel" class="mobile-info-panel hidden">
-        <div class="mobile-info-panel-inner">
-            <div class="mobile-info-panel-header">
-                <h2>מידע</h2>
-                <button id="mobileInfoCloseBtn" class="mobile-drawer-close" type="button" aria-label="סגור">×</button>
-            </div>
-            <div id="mobileInfoButtonsView" class="cards-grid info-grid mobile-info-buttons"></div>
-        </div>
-    </div>
 
     <main class="admin-shell">
         <section class="main-stage">
@@ -174,7 +152,7 @@
 
                     <div class="map-col">
                         <div class="map-wrap">
-                            <button id="expandMapBtn" class="pane-expand-btn map-expand-btn" type="button" aria-label="הגדל מפה"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
+                            <button id="toggleMapPaneBtn" class="pane-toggle-btn" type="button" aria-label="הגדל או הקטן מפה">⤢</button>
                             <div id="map"></div>
                             <div class="map-overlay-controls">
                                 <div class="map-filter-wrap" id="mapFilterWrap">
@@ -217,8 +195,8 @@
                     </div>
 
                     <div class="journal-col">
-                        <button id="expandJournalBtn" class="pane-expand-btn journal-expand-btn" type="button" aria-label="הגדל יומן"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
                         <div class="journal-top-bar">
+                            <button id="toggleJournalPaneBtn" class="pane-toggle-btn pane-toggle-btn-journal" type="button" aria-label="הגדל או הקטן יומן">⤢</button>
                             <div id="taskButtonsContainer" class="task-btns-row"></div>
                         </div>
 

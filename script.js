@@ -60,15 +60,35 @@ function persistAll() {
   storage.set('hamal_info_buttons',   managedInfoButtons);
   storage.set('hamal_houses',         managedHouses);
   storage.set('hamal_gpx_items',      gpxItems);
-  // Sync houses to Firestore so the resident report form can load them via shared link
-  syncHousesToFirestore();
+  syncConfigToFirestore();
 }
 
-function syncHousesToFirestore() {
-  if (!db || !managedHouses.length) return;
-  setDoc(getConfigDoc(), { houses: managedHouses }, { merge: true })
-    .then(() => console.log('Houses synced to Firestore:', managedHouses.length))
-    .catch(e => console.error('Failed to sync houses to Firestore:', e));
+function syncConfigToFirestore() {
+  if (!db) return;
+  const payload = {
+    houses: managedHouses,
+    infoButtons: managedInfoButtons,
+    updatedAt: serverTimestamp()
+  };
+  setDoc(getConfigDoc(), payload, { merge: true })
+    .then(() => console.log('Config synced to Firestore'))
+    .catch(e => console.error('Failed to sync config to Firestore:', e));
+}
+
+async function loadConfigFromFirestore() {
+  if (!db) return;
+  try {
+    const snap = await getDoc(getConfigDoc());
+    if (!snap.exists()) return;
+    const d = snap.data() || {};
+    if (Array.isArray(d.houses) && d.houses.length && !managedHouses.length) managedHouses = d.houses;
+    if (Array.isArray(d.infoButtons) && d.infoButtons.length) {
+      managedInfoButtons = d.infoButtons;
+      storage.set('hamal_info_buttons', managedInfoButtons);
+    }
+  } catch (e) {
+    console.warn('Failed to load config from Firestore:', e);
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -84,6 +104,7 @@ let currentUserId           = null;
 let definedLogTypes         = [];
 let completedTasks          = {};
 let currentReporters        = [];
+let mobilePaneMode          = null;
 
 let reportsColRef           = null;
 let reportersColRef         = null;
@@ -141,7 +162,6 @@ const firebaseAuthReady = new Promise(r => { firebaseAuthReadyResolve = r; });
 let assessmentTime          = new Date();
 let assessmentTimeIsManual  = false;
 let isSearchInputVisible    = false;
-let mobilePaneMode          = 'split';
 
 const publicDataRoot = `artifacts/${appId}/public/data`;
 const getEventsCol = () => collection(db, `${publicDataRoot}/events`);
@@ -725,40 +745,8 @@ function renderEventTypes() {
   $$('#eventTypesList .remove-type').forEach(b=>b.onclick=()=>{ eventTypes=eventTypes.filter((_,i)=>i!==+b.dataset.idx); if(!eventTypes.length) eventTypes=['נפילת טיל']; persistAll(); renderEventTypes(); });
 }
 
-function isMobileViewport() {
-  return window.innerWidth <= 800;
-}
-
-function setMobilePaneMode(mode = 'split') {
-  mobilePaneMode = mode;
-  document.body.classList.remove('mobile-pane-split', 'mobile-pane-map', 'mobile-pane-journal');
-  document.body.classList.add(`mobile-pane-${mode}`);
-  const mapBtn = safe('expandMapBtn');
-  const journalBtn = safe('expandJournalBtn');
-  const fullMap = mode === 'map';
-  const fullJournal = mode === 'journal';
-  if (mapBtn) mapBtn.innerHTML = `<i class="fas ${fullMap ? 'fa-down-left-and-up-right-to-center' : 'fa-up-right-and-down-left-from-center'}"></i>`;
-  if (journalBtn) journalBtn.innerHTML = `<i class="fas ${fullJournal ? 'fa-down-left-and-up-right-to-center' : 'fa-up-right-and-down-left-from-center'}"></i>`;
-  setTimeout(() => map?.invalidateSize(), 160);
-}
-
-function renderMobileInfoPanel() {
-  const wrap = safe('mobileInfoButtonsView');
-  if (!wrap) return;
-  wrap.innerHTML = managedInfoButtons.map(item => `
-    <button class="manage-card info-link-btn" data-url="${item.url}">
-      <strong>${item.title}</strong>
-      <span>${item.url}</span>
-    </button>
-  `).join('');
-  $$('#mobileInfoButtonsView .info-link-btn').forEach(btn => btn.addEventListener('click', () => {
-    const u = btn.dataset.url;
-    if (!u || u === '#') return;
-    window.open(u, '_blank', 'noopener');
-  }));
-}
-
 function setupNavigation() {
+  // ניהול ניווט הטאבים הקיים
   $$('.rail-btn').forEach(btn=>btn.addEventListener('click',()=>{
     const view=btn.dataset.view;
     if (view==='layers') { openLayersModal(); return; }
@@ -769,70 +757,36 @@ function setupNavigation() {
     if (view==='reports') setTimeout(()=>map?.invalidateSize(),80);
   }));
 
-  const desktopHamBtn = safe('hamburgerMenuBtn');
-  const mobileMenuBtn = safe('mobileHeaderMenuBtn');
-  const mobileDrawer = safe('mobileDrawer');
+  // לוגיקת תפריט המבורגר (מובייל)
+  const hamBtn = safe('hamburgerMenuBtn');
+  const hamBtnMobile = safe('hamburgerMenuBtnMobile');
+  const sideRail = document.querySelector('.side-rail');
   const overlay = safe('mobileMenuOverlay');
-  const closeDrawerBtn = safe('mobileDrawerCloseBtn');
-  const mobileInfoPanel = safe('mobileInfoPanel');
 
-  const openMobileDrawer = () => {
-    if (!isMobileViewport() || !mobileDrawer || !overlay) return;
-    mobileDrawer.classList.add('is-open');
-    overlay.classList.add('is-open');
-    mobileDrawer.setAttribute('aria-hidden', 'false');
-  };
-  const closeMobileDrawer = () => {
-    if (!mobileDrawer || !overlay) return;
-    mobileDrawer.classList.remove('is-open');
-    overlay.classList.remove('is-open');
-    mobileDrawer.setAttribute('aria-hidden', 'true');
-  };
-  const openMobileInfo = () => {
-    renderMobileInfoPanel();
-    mobileInfoPanel?.classList.remove('hidden');
-    closeMobileDrawer();
-  };
-  const closeMobileInfo = () => mobileInfoPanel?.classList.add('hidden');
+  if(sideRail && overlay) {
+    const toggleMenu = () => {
+      sideRail.classList.toggle('is-open');
+      overlay.classList.toggle('is-open');
+      const isOpen = sideRail.classList.contains('is-open');
+      // שינוי אייקון מ-X לתפריט ולהפך
+      const icon = isOpen ? '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+      if(hamBtn) hamBtn.innerHTML = icon;
+      if(hamBtnMobile) hamBtnMobile.innerHTML = icon;
+    };
 
-  if (desktopHamBtn) desktopHamBtn.addEventListener('click', () => {
-    const sideRail = document.querySelector('.side-rail');
-    if (!sideRail || isMobileViewport()) return;
-    sideRail.classList.toggle('is-open');
-  });
+    if(hamBtn) hamBtn.addEventListener('click', toggleMenu);
+    if(hamBtnMobile) hamBtnMobile.addEventListener('click', toggleMenu);
+    overlay.addEventListener('click', toggleMenu);
 
-  mobileMenuBtn?.addEventListener('click', openMobileDrawer);
-  closeDrawerBtn?.addEventListener('click', closeMobileDrawer);
-  overlay?.addEventListener('click', closeMobileDrawer);
-  safe('mobileInfoCloseBtn')?.addEventListener('click', closeMobileInfo);
-
-  safe('mobileMenuReportsBtn')?.addEventListener('click', () => {
-    closeMobileInfo();
-    setMobilePaneMode('split');
-    closeMobileDrawer();
-  });
-  safe('mobileMenuLayersBtn')?.addEventListener('click', () => {
-    closeMobileDrawer();
-    openLayersModal();
-  });
-  safe('mobileMenuInfoBtn')?.addEventListener('click', openMobileInfo);
-  safe('mobileMenuManagementBtn')?.addEventListener('click', () => {
-    closeMobileDrawer();
-    openModal('#sharePanel');
-  });
-
-  safe('expandMapBtn')?.addEventListener('click', () => setMobilePaneMode(mobilePaneMode === 'map' ? 'split' : 'map'));
-  safe('expandJournalBtn')?.addEventListener('click', () => setMobilePaneMode(mobilePaneMode === 'journal' ? 'split' : 'journal'));
-
-  window.addEventListener('resize', () => {
-    if (!isMobileViewport()) {
-      closeMobileDrawer();
-      closeMobileInfo();
-      document.body.classList.remove('mobile-pane-split', 'mobile-pane-map', 'mobile-pane-journal');
-    } else {
-      setMobilePaneMode(mobilePaneMode || 'split');
-    }
-  });
+    // סגירת התפריט בלחיצה על אחד מכפתורי הניווט (רק במובייל)
+    $$('.rail-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(window.innerWidth <= 800 && sideRail.classList.contains('is-open')) {
+          toggleMenu();
+        }
+      });
+    });
+  }
 }
 
 const openModal  = sel => $(sel)?.classList.remove('hidden');
@@ -880,6 +834,14 @@ function setupModals() {
     const btn = safe('mobileRefreshBtn');
     if(btn) { btn.classList.add('spinning'); setTimeout(()=>btn.classList.remove('spinning'), 700); }
     location.reload();
+  });
+
+  safe('toggleMapPaneBtn')?.addEventListener('click', () => togglePaneMode('map'));
+  safe('toggleJournalPaneBtn')?.addEventListener('click', () => togglePaneMode('journal'));
+  window.addEventListener('resize', () => {
+    applyMobileReadOnlyMode();
+    renderTable(safe('searchInput')?.value || '');
+    setTimeout(() => map?.invalidateSize(), 120);
   });
 
   // ── Resident Reports Manager ──
@@ -1248,6 +1210,40 @@ function fullResetForm() {
   const lt=safe('filterLogType');   if(lt)  lt.value='';
 }
 
+function isMobileViewport() {
+  return window.innerWidth <= 800;
+}
+
+function filterToTodayAndYesterday(data) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  const allowed = new Set([
+    today.toISOString().slice(0,10),
+    yesterday.toISOString().slice(0,10)
+  ]);
+  return data.filter(r => allowed.has(r.date));
+}
+
+function applyMobileReadOnlyMode() {
+  const admin = safe('screen-admin');
+  if (!admin) return;
+  admin.classList.toggle('mobile-readonly-mode', isMobileViewport());
+  if (!isMobileViewport()) mobilePaneMode = null;
+  if (!isMobileViewport()) admin.classList.remove('pane-map-full', 'pane-journal-full');
+}
+
+function togglePaneMode(which) {
+  if (!isMobileViewport()) return;
+  const admin = safe('screen-admin');
+  if (!admin) return;
+  mobilePaneMode = mobilePaneMode === which ? null : which;
+  admin.classList.toggle('pane-map-full', mobilePaneMode === 'map');
+  admin.classList.toggle('pane-journal-full', mobilePaneMode === 'journal');
+  setTimeout(() => map?.invalidateSize(), 120);
+}
+
 // ── render journal table ──────────────────────────────
 function renderTable(searchTerm='') {
   const tableBody=safe('reportTableBody'); if(!tableBody) return;
@@ -1258,9 +1254,9 @@ function renderTable(searchTerm='') {
 
   let data=[...journalReports];
 
-  // במובייל היומן הוא לצפייה בלבד ומציג רק היום ואתמול
+  // סינון ליומיים האחרונים בלבד עבור צופים דרך קישור משותף
   if (isSharedLinkView || isMobileViewport()) {
-    data = filterToLastTwoDays(data);
+    data = filterToTodayAndYesterday(data);
   }
 
   if(searchTerm) {
@@ -2206,6 +2202,7 @@ async function bootAdmin(sharedOnly=false) {
   setupShareUi();
   setupManagement();
   renderInfoView();
+  applyMobileReadOnlyMode();
   setupJournalManagerTabs();
   setupJournalManagerListeners();
   setupJournalInlineListeners();
@@ -2214,13 +2211,12 @@ async function bootAdmin(sharedOnly=false) {
   assessmentTime.setMinutes(assessmentTime.getMinutes()+30); assessmentTime.setSeconds(0);
   setInterval(updateCurrentTime, 1000);
   setInterval(updateAssessmentDisplay, 1000);
-  if (isMobileViewport()) setMobilePaneMode('split');
   await getOrCreateActiveEvent();
   await subscribeVillageReports();
   await subscribeActiveEvent(); // מתחיל להאזין לעדכוני שעת הערכת המצב מ-Firestore
   
   // Sync houses to Firestore now that auth is confirmed
-  if (!sharedOnly && managedHouses.length > 0) syncHousesToFirestore();
+  if (!sharedOnly && (managedHouses.length > 0 || managedInfoButtons.length > 0)) syncConfigToFirestore();
 
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
@@ -2275,8 +2271,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Eagerly sync houses to Firestore if we have them locally (admin device)
   // This ensures the Firestore fallback works for other devices/browsers
-  if (managedHouses.length && !MODE && !SHARE_TOKEN && !REPORT_KEY) {
-    syncHousesToFirestore();
+  if (!MODE && !SHARE_TOKEN && !REPORT_KEY) {
+    await loadConfigFromFirestore();
+    if (managedHouses.length || managedInfoButtons.length) syncConfigToFirestore();
   }
 
   // Hide splash after max 6 seconds no matter what
