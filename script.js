@@ -22,9 +22,18 @@ const $$  = (s)  => Array.from(document.querySelectorAll(s));
 const safe = (id) => document.getElementById(id);
 
 const storage = {
-  get (k, fb) { try { return JSON.parse(localStorage.getItem(k)) ?? fb; } catch { return fb; } },
-  set (k, v)  { localStorage.setItem(k, JSON.stringify(v)); }
+  _mem: new Map(),
+  get (k, fb) { return this._mem.has(k) ? this._mem.get(k) : fb; },
+  set (k, v)  { this._mem.set(k, v); }
 };
+
+const DEFAULT_EVENT_TYPES = ['ביטחוני','שריפה','נעדר','נפילת טיל'];
+const DEFAULT_MANAGED_LAYERS = ['דיווחי תושבים','נקודות דיווח','מצלמות','הידרנטים','מספרי בתים'];
+const DEFAULT_ACTIVE_LAYERS = ['דיווחי תושבים'];
+const DEFAULT_INFO_BUTTONS = [
+  { title: 'פיקוד העורף', url: 'https://www.oref.org.il/' },
+  { title: 'מפת יישוב', url: '#' }
+];
 
 // ════════════════════════════════════════════════════════
 //  ① VILLAGE APP STATE
@@ -42,53 +51,89 @@ let reportCache     = [];   // village reports (Firestore events/reports)
 let unsubReports    = null;
 let unsubEvent      = null; // להאזנה לנתוני האירוע (כמו שעת הערכת מצב)
 
-let eventTypes    = storage.get('hamal_event_types', ['ביטחוני','שריפה','נעדר','נפילת טיל']);
-let managedLayers = storage.get('hamal_layers', ['דיווחי תושבים','נקודות דיווח','מצלמות','הידרנטים','מספרי בתים']);
-let activeLayers  = new Set(storage.get('hamal_active_layers', ['דיווחי תושבים']));
-let managedInfoButtons = storage.get('hamal_info_buttons', [
-  { title: 'פיקוד העורף', url: 'https://www.oref.org.il/' },
-  { title: 'מפת יישוב', url: '#' }
-]);
-let managedHouses = storage.get('hamal_houses', []);
-let gpxItems      = storage.get('hamal_gpx_items', []);
+let eventTypes    = [...DEFAULT_EVENT_TYPES];
+let managedLayers = [...DEFAULT_MANAGED_LAYERS];
+let activeLayers  = new Set(DEFAULT_ACTIVE_LAYERS);
+let managedInfoButtons = [...DEFAULT_INFO_BUTTONS];
+let managedHouses = [];
+let gpxItems      = [];
+let rrmSnapshotsCache = [];
 let editingHouseIndex = null;
 
+function buildConfigPayload() {
+  return {
+    eventTypes,
+    managedLayers: Array.from(new Set([...managedLayers, 'מספרי בתים'])),
+    activeLayers: Array.from(activeLayers),
+    infoButtons: managedInfoButtons,
+    houses: managedHouses,
+    gpxItems,
+    updatedAt: serverTimestamp()
+  };
+}
+
 function persistAll() {
-  storage.set('hamal_event_types',    eventTypes);
-  storage.set('hamal_layers',         managedLayers);
-  storage.set('hamal_active_layers',  Array.from(activeLayers));
-  storage.set('hamal_info_buttons',   managedInfoButtons);
-  storage.set('hamal_houses',         managedHouses);
-  storage.set('hamal_gpx_items',      gpxItems);
+  managedLayers = Array.from(new Set([...managedLayers, 'מספרי בתים']));
+  activeLayers = new Set(Array.from(activeLayers).filter(Boolean));
   syncConfigToFirestore();
 }
 
 function syncConfigToFirestore() {
-  if (!db) return;
-  const payload = {
-    houses: managedHouses,
-    infoButtons: managedInfoButtons,
-    updatedAt: serverTimestamp()
-  };
-  setDoc(getConfigDoc(), payload, { merge: true })
+  if (!db) return Promise.resolve();
+  return setDoc(getConfigDoc(), buildConfigPayload(), { merge: true })
     .then(() => console.log('Config synced to Firestore'))
     .catch(e => console.error('Failed to sync config to Firestore:', e));
+}
+
+function applyConfigData(d = {}) {
+  if (Array.isArray(d.eventTypes) && d.eventTypes.length) eventTypes = d.eventTypes;
+  else eventTypes = [...DEFAULT_EVENT_TYPES];
+
+  if (Array.isArray(d.managedLayers) && d.managedLayers.length) managedLayers = d.managedLayers;
+  else managedLayers = [...DEFAULT_MANAGED_LAYERS];
+  managedLayers = Array.from(new Set([...managedLayers, 'מספרי בתים']));
+
+  if (Array.isArray(d.activeLayers) && d.activeLayers.length) activeLayers = new Set(d.activeLayers);
+  else activeLayers = new Set(DEFAULT_ACTIVE_LAYERS);
+
+  if (Array.isArray(d.infoButtons)) managedInfoButtons = d.infoButtons;
+  else managedInfoButtons = [...DEFAULT_INFO_BUTTONS];
+
+  if (Array.isArray(d.houses)) managedHouses = d.houses;
+  else managedHouses = [];
+
+  if (Array.isArray(d.gpxItems)) gpxItems = d.gpxItems;
+  else gpxItems = [];
 }
 
 async function loadConfigFromFirestore() {
   if (!db) return;
   try {
     const snap = await getDoc(getConfigDoc());
-    if (!snap.exists()) return;
-    const d = snap.data() || {};
-    if (Array.isArray(d.houses) && d.houses.length && !managedHouses.length) managedHouses = d.houses;
-    if (Array.isArray(d.infoButtons) && d.infoButtons.length) {
-      managedInfoButtons = d.infoButtons;
-      storage.set('hamal_info_buttons', managedInfoButtons);
+    if (!snap.exists()) {
+      applyConfigData({});
+      return;
     }
+    applyConfigData(snap.data() || {});
   } catch (e) {
     console.warn('Failed to load config from Firestore:', e);
+    applyConfigData({});
   }
+}
+
+const getRrmSnapshotsCol = () => collection(db, `${publicDataRoot}/resident_report_snapshots`);
+async function loadRrmSnapshotsFromFirestore() {
+  if (!db) return [];
+  try {
+    const snap = await getDocs(getRrmSnapshotsCol());
+    rrmSnapshotsCache = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  } catch (e) {
+    console.warn('Failed to load resident report snapshots:', e);
+    rrmSnapshotsCache = [];
+  }
+  return rrmSnapshotsCache;
 }
 
 // ════════════════════════════════════════════════════════
@@ -809,7 +854,7 @@ function setupModals() {
   safe('openInfoManagerBtn')?.addEventListener('click',()=>openModal('#infoManagerPanel'));
   safe('openEventTypesManagerBtn')?.addEventListener('click',()=>openModal('#eventTypesPanel'));
   safe('openJournalManagerBtn')?.addEventListener('click',()=>openModal('#journalManagerPanel'));
-  safe('openResidentReportsManagerBtn')?.addEventListener('click',()=>{ openModal('#residentReportsManagerPanel'); updateRrmStats(); renderRrmSnapshots(); });
+  safe('openResidentReportsManagerBtn')?.addEventListener('click', async ()=>{ openModal('#residentReportsManagerPanel'); updateRrmStats(); await loadRrmSnapshotsFromFirestore(); renderRrmSnapshots(); });
   safe('lockEventBtn')?.addEventListener('click',()=>openModal('#lockPanel'));
 
   // ── Status popup toggle ──
@@ -864,11 +909,14 @@ function setupModals() {
     const injury=reportCache.filter(r=>(r.statuses||[]).includes('injury')).length;
     const property=reportCache.filter(r=>(r.statuses||[]).includes('property')).length;
     const snapshot={ dateLabel, total:reportCache.length, ok, injury, property, ts:now.getTime(), reports: reportCache.map(r=>({...r})) };
-    const existing=JSON.parse(localStorage.getItem('rrmSnapshots')||'[]');
-    existing.unshift(snapshot);
-    localStorage.setItem('rrmSnapshots', JSON.stringify(existing.slice(0,20)));
-    renderRrmSnapshots();
-    showCustomAlert('הדיווחים נשמרו בהצלחה ✓');
+    try {
+      await addDoc(getRrmSnapshotsCol(), snapshot);
+      await loadRrmSnapshotsFromFirestore();
+      renderRrmSnapshots();
+      showCustomAlert('הדיווחים נשמרו בהצלחה ✓');
+    } catch (e) {
+      showCustomAlert('שגיאה בשמירת הדיווחים: ' + e.message);
+    }
   });
 
   safe('rrmResetBtn')?.addEventListener('click',()=>{
@@ -1261,7 +1309,7 @@ function renderTable(searchTerm='') {
   let data=[...journalReports];
 
   // סינון ליומיים האחרונים בלבד עבור צופים דרך קישור משותף
-  if (isSharedLinkView || isMobileViewport()) {
+  if (isSharedLinkView) {
     data = filterToTodayAndYesterday(data);
   }
 
@@ -1511,7 +1559,7 @@ async function deleteReporterFromFirestore(id) {
 async function addDefaultReportersIfEmpty() {
   try {
     const snap=await getDocs(reportersColRef);
-    if(snap.empty){ const batch=writeBatch(db); ["אורי","שונית","חיליק"].forEach(n=>{ const r=doc(reportersColRef); batch.set(r,{name:n}); }); await batch.commit(); localStorage.setItem('defaultReportersAddedOnce','true'); }
+    if(snap.empty){ const batch=writeBatch(db); ["אורי","שונית","חיליק"].forEach(n=>{ const r=doc(reportersColRef); batch.set(r,{name:n}); }); await batch.commit(); }
   } catch(e){ console.error(e); }
 }
 async function addDefaultLogTypesIfEmpty() {
@@ -1526,7 +1574,7 @@ async function addDefaultLogTypesIfEmpty() {
       ];
       const batch=writeBatch(db);
       defaults.forEach(lt=>{ const r=doc(logTypesColRef); batch.set(r,lt); });
-      await batch.commit(); localStorage.setItem('defaultLogTypesAddedOnce','true');
+      await batch.commit();
     }
   } catch(e){ console.error(e); }
 }
@@ -1955,7 +2003,7 @@ const handleAuthState = async (user) => {
         currentReporters=snap.docs.map(d=>({id:d.id,...d.data()}));
         populateReportersDropdown(currentReporters.map(r=>r.name));
         renderReportersInModal(currentReporters);
-        if(snap.size===0&&!localStorage.getItem('defaultReportersAddedOnce')) await addDefaultReportersIfEmpty();
+        if(snap.size===0) await addDefaultReportersIfEmpty();
       });
     }
     if(!unsubTasksCompletion) {
@@ -1971,7 +2019,7 @@ const handleAuthState = async (user) => {
         updateTasksButtonStates();
         renderLogtypesList();
         renderCurrentTasksForSettings(safe('selectTaskTypeForSettings')?.value || '');
-        if(snap.size===0&&!localStorage.getItem('defaultLogTypesAddedOnce')) await addDefaultLogTypesIfEmpty();
+        if(snap.size===0) await addDefaultLogTypesIfEmpty();
         if(safe('tasksPanel')?.classList.contains('is-open')) renderTasksPanel(safe('tasksLogTypeDisplay')?.textContent||'');
       });
     }
@@ -2227,8 +2275,6 @@ async function bootAdmin(sharedOnly=false) {
   await subscribeVillageReports();
   await subscribeActiveEvent(); // מתחיל להאזין לעדכוני שעת הערכת המצב מ-Firestore
   
-  // Sync houses to Firestore now that auth is confirmed
-  if (!sharedOnly && (managedHouses.length > 0 || managedInfoButtons.length > 0)) syncConfigToFirestore();
 
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
@@ -2279,14 +2325,8 @@ window.updateHouseOptions = function() {
 document.addEventListener('DOMContentLoaded', async () => {
 
   setupReportForm();
+  await loadConfigFromFirestore();
   syncStreetOptions();
-
-  // Eagerly sync houses to Firestore if we have them locally (admin device)
-  // This ensures the Firestore fallback works for other devices/browsers
-  if (!MODE && !SHARE_TOKEN && !REPORT_KEY) {
-    await loadConfigFromFirestore();
-    if (managedHouses.length || managedInfoButtons.length) syncConfigToFirestore();
-  }
 
   // Hide splash after max 6 seconds no matter what
   const splash = document.getElementById('loading-splash');
@@ -2360,8 +2400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     safe('screen-report')?.classList.add('active');
     safe('screen-admin')?.classList.remove('active');
 
-    // Load houses — try all sources in order of reliability:
-    // 1. URL parameter (new links generated by admin)
+    // Load houses from Firestore config, with optional URL override for lightweight resident links.
     const housesParam = params.get('houses');
     if (housesParam) {
       try {
@@ -2370,21 +2409,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           managedHouses = packed.map(h => ({ street: h.s || '', house: h.n || '' }));
         }
       } catch(e) { console.warn('Could not decode houses from URL:', e); }
-    }
-    // 2. localStorage (same device/browser as admin)
-    if (!managedHouses.length) {
-      const local = storage.get('hamal_houses', []);
-      if (local.length) managedHouses = local;
-    }
-    // 3. Firestore fallback (after admin opened app with new code at least once)
-    if (!managedHouses.length) {
-      try {
-        const snap = await getDoc(getConfigDoc());
-        if (snap.exists()) {
-          const d = snap.data();
-          if (Array.isArray(d.houses) && d.houses.length) managedHouses = d.houses;
-        }
-      } catch(e) { console.warn('Firestore houses fallback failed:', e); }
     }
     syncStreetOptions();
     if (existingReportId) {
@@ -2454,8 +2478,7 @@ function updateRrmStats() {
 
 function renderRrmSnapshots() {
   const wrap = safe('rrmSnapshotsList'); if(!wrap) return;
-  let snapshots = [];
-  try { snapshots = JSON.parse(localStorage.getItem('rrmSnapshots')||'[]'); } catch(e){}
+  const snapshots = Array.isArray(rrmSnapshotsCache) ? rrmSnapshotsCache : [];
   if(!snapshots.length){ wrap.innerHTML='<p class="rrm-hint">לא נשמרו דיווחים עדיין.</p>'; return; }
   wrap.innerHTML = snapshots.map((s,idx)=>`
     <div class="rrm-snapshot-item">
@@ -2475,9 +2498,7 @@ function renderRrmSnapshots() {
   wrap.querySelectorAll('.rrm-snapshot-show-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const idx=+btn.dataset.idx;
-      let snapshots2=[];
-      try { snapshots2=JSON.parse(localStorage.getItem('rrmSnapshots')||'[]'); } catch(e){}
-      const snapshot=snapshots2[idx]; if(!snapshot||!snapshot.reports) return;
+      const snapshot=snapshots[idx]; if(!snapshot||!snapshot.reports) return;
       // Switch to reports view
       closeModal('#residentReportsManagerPanel');
       $$('.rail-btn').forEach(b=>b.classList.remove('active'));
