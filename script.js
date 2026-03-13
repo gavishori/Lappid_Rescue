@@ -836,6 +836,13 @@ function setupModals() {
     location.reload();
   });
 
+  // ── Top mobile refresh button (above hamburger) ──
+  safe('mobileTopRefreshBtn')?.addEventListener('click', () => {
+    const btn = safe('mobileTopRefreshBtn');
+    if(btn) { btn.classList.add('spinning'); setTimeout(()=>btn.classList.remove('spinning'), 700); }
+    location.reload();
+  });
+
   safe('toggleMapPaneBtn')?.addEventListener('click', () => togglePaneMode('map'));
   safe('toggleJournalPaneBtn')?.addEventListener('click', () => togglePaneMode('journal'));
   window.addEventListener('resize', () => {
@@ -1324,7 +1331,7 @@ function renderTable(searchTerm='') {
         <td class="journal-table-td" style="text-align:center">${report.time || ''}</td>
         <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.reporter,searchTerm)}</td>
         <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.logType,searchTerm)}</td>
-        <td class="journal-table-td" style="text-align:center">
+        <td class="journal-table-td jt-hide-mobile-journal" style="text-align:center">
           ${canEdit?`<button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button>`:`<span style="color:#aaa;font-size:11px">—</span>`}
         </td>`;
       innerB.appendChild(tr);
@@ -2422,6 +2429,15 @@ function updateMapStatusBar() {
   if(summaryEl) summaryEl.textContent = `${total} השיבו · ${noReply} לא השיבו`;
   const bar = safe('statusBarWrap');
   if (bar) bar.classList.remove('hidden');
+
+  // Update journal top-bar resident status
+  set('rsbTotal',    total);
+  set('rsbOk',       ok);
+  set('rsbInjury',   injury);
+  set('rsbProperty', property);
+  set('rsbNoReply',  noReply);
+  const rsb = safe('residentStatusBar');
+  if (rsb) rsb.classList.remove('hidden');
 }
 
 function updateRrmStats() {

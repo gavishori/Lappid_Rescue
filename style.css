@@ -629,7 +629,30 @@ textarea { min-height: 100px; resize: vertical; }
 .share-url-display-wrap { background: rgba(4,25,45,.8); border: 1px solid rgba(40,147,255,.2); border-radius: 8px; padding: 8px 10px; }
 .share-url-truncated { font-size: 11px; color: #7ec9ff; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .share-url-box { background: rgba(4,25,45,.8); border: 1px solid rgba(40,147,255,.25); padding: 10px 12px; font-size: 12px; margin-top: 6px; border-radius: 10px; word-break: break-all; color: #7ec9ff; font-family: monospace; line-height: 1.5; }
-/* ── Journal Read-Only Screen ── */
+/* ── Resident Status Bar (in journal top-bar) ── */
+.resident-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--jmuted);
+  direction: rtl;
+}
+.rsb-item { white-space: nowrap; }
+.rsb-sep  { color: #ccc; }
+.rsb-ok       { color: #2a9d5c; }
+.rsb-injury   { color: #c0392b; }
+.rsb-property { color: #b8860b; }
+.rsb-noreply  { color: #888; }
+.rsb-total    { color: #5b7a99; font-weight: 800; }
+
+/* הסתרת עמודת פעולות ביומן במובייל */
+@media (max-width: 800px) {
+  .jt-hide-mobile-journal { display: none !important; }
+}
 .jro-screen { position: fixed; inset: 0; background: #04192d; display: none; flex-direction: column; z-index: 10; overflow: hidden; }
 .jro-screen.active { display: flex; }
 .jro-header { background: linear-gradient(135deg, #0a2540, #102b49); border-bottom: 1px solid rgba(40,147,255,.2); padding: 16px 24px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
@@ -795,7 +818,7 @@ textarea { min-height: 100px; resize: vertical; }
 .pane-toggle-btn {
   position: absolute;
   top: 10px;
-  left: 10px;
+  right: 10px;
   z-index: 650;
   width: 38px;
   height: 38px;
@@ -854,20 +877,63 @@ textarea { min-height: 100px; resize: vertical; }
     align-items: stretch;
   }
 
+  .mobile-ham-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-top-refresh-btn {
+    background: #12355c;
+    border: 2px solid var(--blue);
+    border-radius: 10px;
+    color: var(--blue2);
+    font-size: 14px;
+    cursor: pointer;
+    width: 46px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity .2s, transform .3s;
+  }
+  .mobile-top-refresh-btn.spinning i { animation: spin .6s linear infinite; }
+
   .mobile-ham {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 46px;
-    height: 46px;
+    height: 36px;
     border-radius: 12px;
     border: 2px solid var(--blue);
     background: #12355c;
     color: #fff;
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .mobile-header-brand { display: none; }
+
+  .mobile-brand-clock {
+    background: #12355c !important;
+    border-color: var(--blue) !important;
+    justify-content: center;
+    gap: 0 !important;
+  }
+  .mobile-brand-line1 {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--blue2);
+    line-height: 1.2;
+  }
+  .mobile-brand-line2 {
+    font-size: 16px;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1.2;
+  }
 
   .mobile-header-clocks {
     display: grid;
@@ -883,12 +949,12 @@ textarea { min-height: 100px; resize: vertical; }
     border: 3px solid var(--blue);
     background: #12355c;
     color: #fff;
-    padding: 8px 10px;
+    padding: 6px 8px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
     text-align: center;
   }
 
@@ -898,7 +964,7 @@ textarea { min-height: 100px; resize: vertical; }
   .mobile-clock-val {
     display: block;
     font-family: monospace;
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 900;
     max-width: 100%;
     overflow: hidden;
