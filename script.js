@@ -1318,7 +1318,11 @@ function renderTable(searchTerm='') {
     sorted.forEach(report=>{
       const diff=(new Date()-new Date(report.timestamp))/(1000*60*60);
       const canEdit=diff<48;
-      const hl=(text,term)=>{ if(!term) return text; return text.replace(new RegExp(`(${term.replace(/[.*+?^${}()|[\]\]/g,'\$&')})`, 'gi'),'<span class="highlight">$&</span>'); };
+      const hl=(text,term)=>{
+        if(!term) return text;
+        const escapedTerm=term.replace(/[.*+?^${}()|[\]\]/g,'\$&');
+        return text.replace(new RegExp(`(${escapedTerm})`,'gi'),'<span class="highlight">$&</span>');
+      };
       const tr=document.createElement('tr');
       if (isMobile) {
         tr.innerHTML=`
