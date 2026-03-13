@@ -1311,7 +1311,7 @@ function renderTable(searchTerm='') {
     const hl=(value,term)=>{
       const safeValue = value == null ? '' : String(value);
       if(!term) return safeValue;
-      const escapedTerm = String(term).replace(/[.*+?^${}()|[\]\]/g, '\\$&');
+      const escapedTerm = String(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp('(' + escapedTerm + ')', 'gi');
       return safeValue.replace(regex,'<span class="highlight">$&</span>');
     };
