@@ -1250,12 +1250,12 @@ function renderTable(searchTerm='') {
   tableBody.innerHTML='';
   const emptyRow=safe('empty-state');
   const loadRow =safe('loading-state');
-  const isMobile = isMobileViewport();
   if(loadRow) loadRow.classList.add('hidden');
 
   let data=[...journalReports];
 
-  if (isSharedLinkView || isMobile) {
+  // סינון ליומיים האחרונים בלבד עבור צופים דרך קישור משותף
+  if (isSharedLinkView || isMobileViewport()) {
     data = filterToTodayAndYesterday(data);
   }
 
@@ -1273,12 +1273,7 @@ function renderTable(searchTerm='') {
     lastAddedReportId=null;
   }
   if(data.length===0) {
-    if(emptyRow){
-      emptyRow.querySelector('td').colSpan = isMobile ? 2 : 5;
-      emptyRow.classList.remove('hidden');
-      tableBody.appendChild(emptyRow);
-    }
-    return;
+    if(emptyRow){ emptyRow.classList.remove('hidden'); tableBody.appendChild(emptyRow); } return;
   }
   if(emptyRow) emptyRow.classList.add('hidden');
 
@@ -1287,62 +1282,56 @@ function renderTable(searchTerm='') {
   const sortedDates=[...grouped.keys()].sort((a,b)=>new Date(b)-new Date(a));
   const today=new Date();
   const todayKey=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  const colCount = isMobile ? 2 : 5;
 
   sortedDates.forEach(dateKey=>{
     const reps=grouped.get(dateKey);
     const isToday=dateKey===todayKey;
-    const isCollapsed= isMobile ? false : (searchTerm?false:collapsedGroups.has(dateKey));
+    const isCollapsed=searchTerm?false:collapsedGroups.has(dateKey);
     const summary=` (${reps.length} דיווחים)`;
-    const titleText = isMobile ? formatMobileGroupLabel(dateKey) : formatAsDDMMYYYY(dateKey);
 
     const hRow=document.createElement('tr');
     hRow.className='date-group-header';
     hRow.dataset.toggleDate = dateKey;
-    hRow.innerHTML=`<td colspan="${colCount}">
-      <span class="toggle-day-icon">${isMobile ? '•' : (isCollapsed?'◀':'▼')}</span>
-      ${titleText}
+    hRow.innerHTML=`<td colspan="5">
+      <span class="toggle-day-icon">${isCollapsed?'◀':'▼'}</span>
+      ${formatAsDDMMYYYY(dateKey)}
       <span class="daily-summary ${isCollapsed?'':'hidden'}">${summary}</span>
-      ${!isMobile && auth.currentUser?.email==='gavishori@gmail.com'?`<button class="delete-btn delete-day-btn" data-date="${dateKey}" style="margin-right:10px;font-size:12px;padding:3px 8px">מחק יום</button>`:''}
+      ${auth.currentUser?.email==='gavishori@gmail.com'?`<button class="delete-btn delete-day-btn" data-date="${dateKey}" style="margin-right:10px;font-size:12px;padding:3px 8px">מחק יום</button>`:''}
     </td>`;
     tableBody.appendChild(hRow);
 
     const cRow=document.createElement('tr');
     cRow.className=`date-group-content${isCollapsed?' hidden':''}`;
     cRow.dataset.contentDate=dateKey;
-    const cell=document.createElement('td'); cell.colSpan=colCount; cell.className='p-0';
+    const cell=document.createElement('td'); cell.colSpan=5; cell.className='p-0';
     const innerT=document.createElement('table'); innerT.className='w-full';
     const innerB=document.createElement('tbody');
 
     const sorted=[...reps].sort((a,b)=>a.time>b.time?-1:a.time<b.time?1:0);
+    const hl=(value,term)=>{
+      const safeValue = value == null ? '' : String(value);
+      if(!term) return safeValue;
+      const escapedTerm = String(term).replace(/[.*+?^${}()|[\]\]/g, '\\$&');
+      const regex = new RegExp('(' + escapedTerm + ')', 'gi');
+      return safeValue.replace(regex,'<span class="highlight">$&</span>');
+    };
     sorted.forEach(report=>{
       const diff=(new Date()-new Date(report.timestamp))/(1000*60*60);
       const canEdit=diff<48;
-      const hl=(text,term)=>{
-        if(!term) return text;
-        const escapedTerm=term.replace(/[.*+?^${}()|[\]\]/g,'\$&');
-        return text.replace(new RegExp(`(${escapedTerm})`,'gi'),'<span class="highlight">$&</span>');
-      };
       const tr=document.createElement('tr');
-      if (isMobile) {
-        tr.innerHTML=`
-          <td class="journal-table-td">${hl(report.description,searchTerm)}</td>
-          <td class="journal-table-td" style="text-align:center;white-space:nowrap">${report.time}</td>`;
-      } else {
-        tr.innerHTML=`
-          <td class="journal-table-td">${hl(report.description,searchTerm)}</td>
-          <td class="journal-table-td" style="text-align:center">${report.time}</td>
-          <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.reporter,searchTerm)}</td>
-          <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.logType,searchTerm)}</td>
-          <td class="journal-table-td" style="text-align:center">
-            ${canEdit?`<button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button>`:`<span style="color:#aaa;font-size:11px">—</span>`}
-          </td>`;
-      }
+      tr.innerHTML=`
+        <td class="journal-table-td">${hl(report.description,searchTerm)}</td>
+        <td class="journal-table-td" style="text-align:center">${report.time || ''}</td>
+        <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.reporter,searchTerm)}</td>
+        <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.logType,searchTerm)}</td>
+        <td class="journal-table-td" style="text-align:center">
+          ${canEdit?`<button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button>`:`<span style="color:#aaa;font-size:11px">—</span>`}
+        </td>`;
       innerB.appendChild(tr);
     });
     innerT.appendChild(innerB); cell.appendChild(innerT); cRow.appendChild(cell); tableBody.appendChild(cRow);
 
-    if(!isMobile && !isToday&&!collapsedGroups.has(dateKey)&&!searchTerm&&!forceAllOpen) {
+    if(!isToday&&!collapsedGroups.has(dateKey)&&!searchTerm&&!forceAllOpen) {
       collapsedGroups.add(dateKey);
       cRow.classList.add('hidden');
       hRow.querySelector('.toggle-day-icon').textContent='◀';
@@ -1350,44 +1339,43 @@ function renderTable(searchTerm='') {
     }
   });
 
-  if (!isMobile) {
-    tableBody.querySelectorAll('.date-group-header').forEach(row=>{
-      row.addEventListener('click',e=>{
-        if (e.target.closest('.delete-day-btn')) return;
-        const dt=row.dataset.toggleDate;
-        const cr=tableBody.querySelector(`tr[data-content-date="${dt}"]`);
-        const sp=row.querySelector('.daily-summary');
-        const icon=row.querySelector('.toggle-day-icon');
-        if(cr){
-            cr.classList.toggle('hidden');
-            const col=cr.classList.contains('hidden');
-            icon.textContent=col?'◀':'▼';
-            if(col){ forceAllOpen=false; collapsedGroups.add(dt); if(sp) sp.classList.remove('hidden'); }
-            else   { collapsedGroups.delete(dt); if(sp) sp.classList.add('hidden'); }
-        }
-      });
+  // toggle handlers - Click specific row
+  tableBody.querySelectorAll('.date-group-header').forEach(row=>{
+    row.addEventListener('click',e=>{
+      if (e.target.closest('.delete-day-btn')) return; // Ignore if clicking delete day button
+      const dt=row.dataset.toggleDate;
+      const cr=tableBody.querySelector(`tr[data-content-date="${dt}"]`);
+      const sp=row.querySelector('.daily-summary');
+      const icon=row.querySelector('.toggle-day-icon');
+      if(cr){ 
+          cr.classList.toggle('hidden'); 
+          const col=cr.classList.contains('hidden'); 
+          icon.textContent=col?'◀':'▼'; 
+          if(col){ forceAllOpen=false; collapsedGroups.add(dt); if(sp) sp.classList.remove('hidden'); }
+          else   { collapsedGroups.delete(dt); if(sp) sp.classList.add('hidden'); } 
+      }
     });
+  });
 
-    tableBody.querySelectorAll('.edit-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>startEditReport(btn.dataset.id));
-    });
+  tableBody.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>startEditReport(btn.dataset.id));
+  });
 
-    tableBody.querySelectorAll('.delete-btn-sm').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        showCustomAlert('האם למחוק דיווח זה?');
-        safe('customAlert').dataset.confirmAction='deleteReport';
-        safe('customAlert').dataset.reportIdToDelete=btn.dataset.id;
-      });
+  tableBody.querySelectorAll('.delete-btn-sm').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      showCustomAlert('האם למחוק דיווח זה?');
+      safe('customAlert').dataset.confirmAction='deleteReport';
+      safe('customAlert').dataset.reportIdToDelete=btn.dataset.id;
     });
+  });
 
-    tableBody.querySelectorAll('.delete-day-btn').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        showCustomAlert(`האם למחוק את כל הדיווחים מ-${formatAsDDMMYYYY(btn.dataset.date)}?`);
-        safe('customAlert').dataset.confirmAction='deleteDay';
-        safe('customAlert').dataset.dateToDelete=btn.dataset.date;
-      });
+  tableBody.querySelectorAll('.delete-day-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      showCustomAlert(`האם למחוק את כל הדיווחים מ-${formatAsDDMMYYYY(btn.dataset.date)}?`);
+      safe('customAlert').dataset.confirmAction='deleteDay';
+      safe('customAlert').dataset.dateToDelete=btn.dataset.date;
     });
-  }
+  });
 }
 
 // journal inline cell style
@@ -2416,33 +2404,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ════════════════════════════════════════════════════════
 //  RESIDENT REPORTS MANAGER HELPERS
 // ════════════════════════════════════════════════════════
-function updateSideRailStatus(stats) {
-  const set = (id,v) => { const el=safe(id); if(el) el.textContent=v; };
-  set('srNoReply',  stats.noReply);
-  set('srReplied',  stats.replied);
-  set('srOk',       stats.ok);
-  set('srProperty', stats.property);
-  set('srInjury',   stats.injury);
-}
-
 function updateMapStatusBar() {
   const total    = reportCache.length;
   const ok       = reportCache.filter(r=>(r.statuses||[]).includes('ok')).length;
   const injury   = reportCache.filter(r=>(r.statuses||[]).includes('injury')).length;
   const property = reportCache.filter(r=>(r.statuses||[]).includes('property')).length;
   const noReply  = Math.max(0, managedHouses.length - total);
-  const replied  = total;
+  const replied  = Math.max(0, total - ok - injury - property);
   const set = (id,v) => { const el=safe(id); if(el) el.textContent=v; };
   set('sbNoReply',  noReply);
   set('sbReplied',  replied);
   set('sbOk',       ok);
   set('sbProperty', property);
   set('sbInjury',   injury);
-  updateSideRailStatus({ noReply, replied, ok, property, injury });
+  // Update summary button text
   const summaryEl = safe('sbSummaryText');
-  if(summaryEl) summaryEl.textContent = `סטטוס דיווחים · ${replied}/${managedHouses.length || total}`;
+  if(summaryEl) summaryEl.textContent = `${total} השיבו · ${noReply} לא השיבו`;
   const bar = safe('statusBarWrap');
-  if (bar) bar.classList.toggle('hidden', managedHouses.length === 0 && total === 0);
+  if (bar) bar.classList.remove('hidden');
 }
 
 function updateRrmStats() {

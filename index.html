@@ -123,21 +123,20 @@
             <button id="logoutBtn" class="header-logout-btn" type="button">התנתק</button>
         </div>
         <div class="mobile-header-top">
-            <div class="mobile-header-main-grid">
-                <div class="mobile-clock-row mobile-brand-card">
-                    <span class="mobile-brand-title">חפ"ק<br>לפיד</span>
-                </div>
-                <div class="mobile-clock-row mobile-time-card">
-                    <span class="mobile-clock-label">שעה</span>
+            <button id="hamburgerMenuBtnMobile" class="hamburger-btn mobile-ham" type="button"><i class="fas fa-bars"></i></button>
+            <div class="mobile-header-brand">
+                <div class="mobile-brand-title">חפ"ק לפיד</div>
+                <div class="mobile-brand-subtitle">מרכז שליטה ישובי</div>
+            </div>
+            <div class="mobile-header-clocks">
+                <div class="mobile-clock-row">
+                    <span class="mobile-clock-icon"><i class="fas fa-clock"></i></span>
                     <span id="mobileTimeDisplay" class="mobile-clock-val">00:00:00</span>
+                    <button id="mobileRefreshBtn" class="mobile-refresh-btn" type="button" title="רענן"><i class="fas fa-sync-alt"></i></button>
                 </div>
                 <div class="mobile-clock-row mobile-assessment-row">
                     <span class="mobile-clock-label">הערכת מצב</span>
                     <span id="mobileAssessmentDisplay" class="mobile-clock-val">טרם נקבע</span>
-                </div>
-                <div class="mobile-header-actions">
-                    <button id="mobileRefreshBtn" class="mobile-header-action-btn mobile-refresh-btn" type="button" title="רענן"><i class="fas fa-sync-alt"></i></button>
-                    <button id="hamburgerMenuBtnMobile" class="hamburger-btn mobile-ham mobile-header-action-btn" type="button"><i class="fas fa-bars"></i></button>
                 </div>
             </div>
         </div>
@@ -198,7 +197,6 @@
                     <div class="journal-col">
                         <div class="journal-top-bar">
                             <button id="toggleJournalPaneBtn" class="pane-toggle-btn pane-toggle-btn-journal" type="button" aria-label="הגדל או הקטן יומן">⤢</button>
-                            <div class="journal-mobile-title">דיווחים</div>
                             <div id="taskButtonsContainer" class="task-btns-row"></div>
                         </div>
 
@@ -246,7 +244,7 @@
                                         <th>שעה</th>
                                         <th class="jt-hide-sm">מדווח</th>
                                         <th class="jt-hide-sm">שיוך</th>
-                                        <th class="jt-actions-col">פעולות</th>
+                                        <th>פעולות</th>
                                     </tr>
                                 </thead>
                                 <tbody id="reportTableBody">
@@ -285,16 +283,6 @@
             <button class="rail-btn" data-view="layers" type="button">שכבות</button>
             <button class="rail-btn" data-view="info" type="button">מידע</button>
             <button class="rail-btn" data-view="management" type="button">ניהול</button>
-            <div id="sideRailStatusCard" class="side-rail-status-card">
-                <div class="side-rail-status-title">סטטוס דיווחי תושבים</div>
-                <div class="side-rail-status-grid">
-                    <div class="sr-stat sr-gray"><span id="srNoReply">0</span><small>לא השיבו</small></div>
-                    <div class="sr-stat sr-blue"><span id="srReplied">0</span><small>השיבו</small></div>
-                    <div class="sr-stat sr-green"><span id="srOk">0</span><small>תקין</small></div>
-                    <div class="sr-stat sr-yellow"><span id="srProperty">0</span><small>רכוש</small></div>
-                    <div class="sr-stat sr-red"><span id="srInjury">0</span><small>פגיעה</small></div>
-                </div>
-            </div>
             <div class="side-rail-actions">
                 <button id="mobileLogoutBtn" class="mobile-logout-btn" type="button">התנתק</button>
             </div>
