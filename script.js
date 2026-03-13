@@ -1178,13 +1178,13 @@ const setDefaultDateTime = () => {
 
 // פונקציית סינון - מציגה דיווחים מהיום ואתמול בלבד
 function filterToLastTwoDays(reports) {
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  const formatD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const validDates = new Set([formatD(today), formatD(yesterday)]);
-  
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const todayStr = localDate(now);
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const yesterdayStr = localDate(yest);
+  const validDates = new Set([todayStr, yesterdayStr]);
   return reports.filter(r => validDates.has(r.date));
 }
 
@@ -1223,13 +1223,12 @@ function isMobileViewport() {
 
 function filterToTodayAndYesterday(data) {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  const allowed = new Set([
-    today.toISOString().slice(0,10),
-    yesterday.toISOString().slice(0,10)
-  ]);
+  const pad = n => String(n).padStart(2,'0');
+  const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const todayStr = localDate(now);
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const yesterdayStr = localDate(yest);
+  const allowed = new Set([todayStr, yesterdayStr]);
   return data.filter(r => allowed.has(r.date));
 }
 
