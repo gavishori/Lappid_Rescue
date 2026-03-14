@@ -1071,6 +1071,65 @@ function extractCell(row, aliases) {
   const key = Object.keys(row).find(k => aliases.includes(String(k).trim().toLowerCase()));
   return key ? row[key] : undefined;
 }
+
+// ── ITM (Israel Transverse Mercator / EPSG:2039) → WGS84 ──────────────────
+// X = Easting (~100,000–300,000), Y = Northing (~400,000–900,000)
+// Returns {lat, lng} in decimal degrees, or null if not ITM values
+function itmToWgs84(x, y) {
+  const xn = Number(x), yn = Number(y);
+  if (!Number.isFinite(xn) || !Number.isFinite(yn)) return null;
+  // ITM range check: X (easting) ~100k-350k, Y (northing) ~350k-900k
+  const isITM = xn > 50000 && xn < 1300000 && yn > 50000 && yn < 1300000
+             && !(xn >= -180 && xn <= 180 && yn >= -90 && yn <= 90);
+  if (!isITM) return { lat: yn, lng: xn }; // already WGS84
+  // Helmert / ITM→WGS84 (accurate to ~1m for Israel)
+  const a = 6378137.0, f = 1/298.257222101; // GRS80
+  const k0 = 1.0000067, E0 = 219529.584, N0 = 2885516.9488;
+  const lat0 = 31.7343936111111 * Math.PI / 180;
+  const lon0 = 35.2045169444444 * Math.PI / 180;
+  const b = a * (1 - f);
+  const e2 = 1 - (b*b)/(a*a);
+  const ep2 = e2 / (1 - e2);
+  const E = xn - E0, N = yn - N0;
+  const n = (a - b)/(a + b);
+  const n2 = n*n, n3 = n*n2, n4 = n*n3;
+  const A0 = 1 - n + (5/4)*n2 - (5/4)*n3 + (81/64)*n4;
+  const B0 = (3/2)*(n - n2 + (7/8)*n3 - (7/8)*n4);
+  const C0 = (15/16)*(n2 - n3 + (55/64)*n4);
+  const D0 = (35/48)*(n3 - n4);
+  const M0 = a/(1+n)*(A0*lat0 - B0*Math.sin(2*lat0) + C0*Math.sin(4*lat0) - D0*Math.sin(6*lat0));
+  const M = M0 + N/k0;
+  const mu = M / (a/(1+n)*A0);
+  const e1 = (1 - Math.sqrt(1-e2)) / (1 + Math.sqrt(1-e2));
+  const J1 = (3/2)*e1 - (27/32)*e1*e1*e1;
+  const J2 = (21/16)*e1*e1 - (55/32)*e1*e1*e1*e1;
+  const J3 = (151/96)*e1*e1*e1;
+  const J4 = (1097/512)*e1*e1*e1*e1;
+  const fp = mu + J1*Math.sin(2*mu) + J2*Math.sin(4*mu) + J3*Math.sin(6*mu) + J4*Math.sin(8*mu);
+  const ef2 = e2*Math.pow(Math.cos(fp),2)/(1-e2);
+  const C1 = ep2*Math.pow(Math.cos(fp),2);
+  const T1 = Math.pow(Math.tan(fp),2);
+  const R1 = a*(1-e2)/Math.pow(1-e2*Math.pow(Math.sin(fp),2),1.5);
+  const N1 = a/Math.sqrt(1-e2*Math.pow(Math.sin(fp),2));
+  const D1 = E/(N1*k0);
+  const lat = fp - (N1*Math.tan(fp)/R1)*(D1*D1/2 - (5+3*T1+10*C1-4*C1*C1-9*ep2)*D1*D1*D1*D1/24 + (61+90*T1+298*C1+45*T1*T1-252*ep2-3*C1*C1)*Math.pow(D1,6)/720);
+  const lon = lon0 + (D1 - (1+2*T1+C1)*D1*D1*D1/6 + (5-2*C1+(28*T1)-3*C1*C1+8*ep2+24*T1*T1)*Math.pow(D1,5)/120) / Math.cos(fp);
+  return { lat: lat * 180/Math.PI, lng: lon * 180/Math.PI };
+}
+
+// Extract street name — tries multiple common Hebrew column names
+function extractStreetHebrew(row) {
+  return extractCell(row, [
+    'שם רחוב בעברית','שם רחוב','רחוב','street','street name','street_name','st'
+  ]);
+}
+// Extract house number — tries multiple common column names
+function extractHouseNumber(row) {
+  return extractCell(row, [
+    'מספר בית','מספר','מס בית','house','house number','house_number','number'
+  ]);
+}
+
 async function importHousesFromExcel(file) {
   const status = safe('housesImportStatus');
   try {
@@ -1078,12 +1137,14 @@ async function importHousesFromExcel(file) {
     const wb = XLSX.read(data, {type:'array'});
     const sheet = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-    const parsed = rows.map(row => ({
-      street: extractCell(row, ['street','רחוב','street name','street_name','st']),
-      house: extractCell(row, ['house','house number','house_number','number','מספר','מס בית','מספר בית']),
-      lat: extractCell(row, ['lat','latitude','קו רוחב','רוחב','y']),
-      lng: extractCell(row, ['lng','lon','long','longitude','קו אורך','אורך','x'])
-    })).filter(item => String(item.street ?? '').trim() && String(item.house ?? '').trim());
+    const parsed = rows.map(row => {
+      const street = extractStreetHebrew(row);
+      const house  = extractHouseNumber(row);
+      const rawX   = extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך']);
+      const rawY   = extractCell(row, ['y','lat','latitude','קו רוחב','רוחב']);
+      const coords = itmToWgs84(rawX, rawY);
+      return { street, house, lat: coords?.lat ?? '', lng: coords?.lng ?? '' };
+    }).filter(item => String(item.street ?? '').trim() && String(item.house ?? '').trim());
 
     let changed = 0;
     parsed.forEach(item => { if (upsertHouse(item)) changed += 1; });
@@ -1132,12 +1193,14 @@ function setupManagement() {
         const wb = XLSX.read(data, {type:'array'});
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-        const streetData = rows.map(row => ({
-          street: extractCell(row, ['street','רחוב','street name','street_name','st']),
-          house:  extractCell(row, ['house','house number','house_number','number','מספר','מס בית','מספר בית']),
-          x:      extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך']),
-          y:      extractCell(row, ['y','lat','latitude','קו רוחב','רוחב']),
-        })).filter(r => String(r.street??'').trim());
+        const streetData = rows.map(row => {
+          const street = extractStreetHebrew(row);
+          const house  = extractHouseNumber(row);
+          const rawX   = extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך']);
+          const rawY   = extractCell(row, ['y','lat','latitude','קו רוחב','רוחב']);
+          const coords = itmToWgs84(rawX, rawY);
+          return { street, house, x: coords?.lng, y: coords?.lat };
+        }).filter(r => String(r.street??'').trim());
         // Merge into managedHouses for resident-report coordinate matching
         let changed = 0;
         streetData.forEach(r => {
