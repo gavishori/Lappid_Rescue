@@ -80,8 +80,9 @@ function persistAll() {
 
 function syncConfigToFirestore() {
   if (!db) return Promise.resolve();
+  _configLoaded = false;
   return setDoc(getConfigDoc(), buildConfigPayload(), { merge: true })
-    .then(() => console.log('Config synced to Firestore'))
+    .then(() => { _configLoaded = true; console.log('Config synced to Firestore'); })
     .catch(e => console.error('Failed to sync config to Firestore:', e));
 }
 
@@ -119,6 +120,13 @@ async function loadConfigFromFirestore() {
     console.warn('Failed to load config from Firestore:', e);
     applyConfigData({});
   }
+}
+
+let _configLoaded = false;
+async function ensureConfigLoaded() {
+  if (_configLoaded) return;
+  await loadConfigFromFirestore();
+  _configLoaded = true;
 }
 
 const getRrmSnapshotsCol = () => collection(db, `${publicDataRoot}/resident_report_snapshots`);
@@ -1120,13 +1128,15 @@ function itmToWgs84(x, y) {
 // Extract street name — tries multiple common Hebrew column names
 function extractStreetHebrew(row) {
   return extractCell(row, [
-    'שם רחוב בעברית','שם רחוב','רחוב','street','street name','street_name','st'
+    'שם רחוב בעברית','שם רחוב','רחוב','street','street name','street_name','st',
+    '__empty_1' // עמודה B בקובץ לפיד WGS84 (ללא כותרת)
   ]);
 }
 // Extract house number — tries multiple common column names
 function extractHouseNumber(row) {
   return extractCell(row, [
-    'מספר בית','מספר','מס בית','house','house number','house_number','number'
+    'מספר בית','מספר','מס בית','house','house number','house_number','number',
+    '__empty_2' // עמודה C בקובץ לפיד WGS84 (ללא כותרת)
   ]);
 }
 
@@ -1140,8 +1150,8 @@ async function importHousesFromExcel(file) {
     const parsed = rows.map(row => {
       const street = extractStreetHebrew(row);
       const house  = extractHouseNumber(row);
-      const rawX   = extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך']);
-      const rawY   = extractCell(row, ['y','lat','latitude','קו רוחב','רוחב']);
+      const rawX   = extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך','קו אורך (wgs84)']);
+      const rawY   = extractCell(row, ['y','lat','latitude','קו רוחב','רוחב','קו רוחב (wgs84)']);
       const coords = itmToWgs84(rawX, rawY);
       return { street, house, lat: coords?.lat ?? '', lng: coords?.lng ?? '' };
     }).filter(item => String(item.street ?? '').trim() && String(item.house ?? '').trim());
@@ -1196,11 +1206,16 @@ function setupManagement() {
         const streetData = rows.map(row => {
           const street = extractStreetHebrew(row);
           const house  = extractHouseNumber(row);
-          const rawX   = extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך']);
-          const rawY   = extractCell(row, ['y','lat','latitude','קו רוחב','רוחב']);
+          const rawX   = extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך','קו אורך (wgs84)']);
+          const rawY   = extractCell(row, ['y','lat','latitude','קו רוחב','רוחב','קו רוחב (wgs84)']);
           const coords = itmToWgs84(rawX, rawY);
           return { street, house, x: coords?.lng, y: coords?.lat };
-        }).filter(r => String(r.street??'').trim());
+        }).filter(r => r.street && String(r.street).trim() && r.house && String(r.house).trim() && r.x && r.y);
+        if (!streetData.length) {
+          const sampleKeys = rows.length ? Object.keys(rows[0]).join(', ') : 'אין שורות';
+          if(errBox){errBox.textContent=`לא נמצאו שורות תקינות. מפתחות בקובץ: ${sampleKeys}`; errBox.classList.remove('hidden');}
+          return;
+        }
         // Merge into managedHouses for resident-report coordinate matching
         let changed = 0;
         streetData.forEach(r => {
@@ -1215,8 +1230,8 @@ function setupManagement() {
         const disp=safe('uploadFileNameDisplay'); if(disp){disp.textContent='לא נבחר קובץ';disp.classList.remove('has-file');}
         if(errBox){errBox.textContent=`✓ יובאו ${streetData.length} שורות מרחובות (${changed} בתים עודכנו)`;errBox.style.cssText='background:rgba(0,200,100,.12);border-color:rgba(0,200,100,.3);color:#5ef5a0';errBox.classList.remove('hidden');setTimeout(()=>errBox.classList.add('hidden'),4000);}
       } catch(e){
-        console.error(e);
-        if(errBox){errBox.textContent='שגיאה בקריאת האקסל — ודא עמודות: רחוב, מספר, X, Y'; errBox.classList.remove('hidden');}
+        console.error('Excel import error:', e);
+        if(errBox){errBox.textContent=`שגיאה בקריאת האקסל: ${e?.message||e}`; errBox.classList.remove('hidden');}
       }
       return;
     }
@@ -2749,6 +2764,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     if (!SHARE_TOKEN && MODE !== 'report' && !REPORT_KEY) {
+      await ensureConfigLoaded();
       await bootAdmin(false);
       hideSplash();
     }
