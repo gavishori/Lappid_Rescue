@@ -695,10 +695,83 @@ function moveLayer(idx,delta) {
   [managedLayers[idx],managedLayers[nx]]=[managedLayers[nx],managedLayers[idx]];
   persistAll(); renderManagedLayers(); renderLayersModal();
 }
+function populateGpxLayerSelect() {
+  const sel = safe('gpxLayerType'); if (!sel) return;
+  // Built-in non-GPX layers we don't show as upload targets
+  const builtInNonGpx = new Set(['דיווחי תושבים', 'מספרי בתים']);
+  const options = managedLayers.filter(l => !builtInNonGpx.has(l));
+  const current = sel.value;
+  sel.innerHTML = '<option value="">בחר שכבה...</option>' + options.map(l => `<option value="${l}">${l}</option>`).join('');
+  if (options.includes(current)) sel.value = current;
+}
+
 function renderGpxList() {
   const wrap=safe('gpxList'); if(!wrap) return;
-  wrap.innerHTML=gpxItems.length?gpxItems.map(item=>`<div class="simple-item"><div class="item-main"><span>${item.type}</span><span class="item-sub">${item.name} · ${item.points.length} נק׳</span></div><div class="item-actions"><button class="delete-btn remove-gpx" data-id="${item.id}" type="button">הסר</button></div></div>`).join(''):'<div class="simple-item"><span>אין קבצים</span></div>';
-  $$('#gpxList .remove-gpx').forEach(b=>b.onclick=()=>{ gpxItems=gpxItems.filter(x=>x.id!==b.dataset.id); persistAll(); renderGpxList(); renderGpxMarkers(); });
+  if (!gpxItems.length) {
+    wrap.innerHTML = '<div class="simple-item"><span style="color:var(--muted)">אין קבצים שהועלו עדיין.</span></div>';
+    return;
+  }
+  wrap.innerHTML = gpxItems.map(item => `
+    <div class="simple-item" data-gpx-id="${item.id}">
+      <div class="item-main">
+        <span class="gpx-item-name">${item.type}</span>
+        <span class="item-sub">${item.name} · ${item.points.length} נק׳</span>
+      </div>
+      <div class="item-actions">
+        <button class="icon-btn rename-gpx" data-id="${item.id}" type="button" title="שנה שם שכבה">✏️</button>
+        <button class="delete-btn remove-gpx" data-id="${item.id}" type="button">הסר</button>
+      </div>
+    </div>
+    <div class="gpx-rename-row hidden" data-rename-id="${item.id}" style="display:none;gap:8px;padding:6px 0 8px;align-items:center">
+      <select class="gpx-rename-select" style="flex:1;background:#0d2440;border:1px solid rgba(40,147,255,.5);border-radius:8px;color:#fff;padding:6px 10px;font-size:14px;font-family:inherit"></select>
+      <button class="primary-btn gpx-rename-save" data-id="${item.id}" type="button" style="padding:6px 14px;font-size:13px">שמור</button>
+      <button class="ghost-btn gpx-rename-cancel" data-id="${item.id}" type="button" style="padding:6px 14px;font-size:13px">ביטול</button>
+    </div>
+  `).join('');
+
+  // Populate rename selects with managed layers
+  const builtInNonGpx = new Set(['דיווחי תושבים', 'מספרי בתים']);
+  const layerOptions = managedLayers.filter(l => !builtInNonGpx.has(l));
+
+  $$('#gpxList .gpx-rename-select').forEach(sel => {
+    sel.innerHTML = layerOptions.map(l => `<option value="${l}">${l}</option>`).join('');
+  });
+
+  $$('#gpxList .rename-gpx').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    const renameRow = wrap.querySelector(`.gpx-rename-row[data-rename-id="${id}"]`);
+    if (!renameRow) return;
+    const item = gpxItems.find(x => x.id === id);
+    if (item) { const sel = renameRow.querySelector('.gpx-rename-select'); if (sel) sel.value = item.type; }
+    renameRow.style.display = 'flex';
+  });
+
+  $$('#gpxList .gpx-rename-cancel').forEach(b => b.onclick = () => {
+    const renameRow = wrap.querySelector(`.gpx-rename-row[data-rename-id="${b.dataset.id}"]`);
+    if (renameRow) renameRow.style.display = 'none';
+  });
+
+  $$('#gpxList .gpx-rename-save').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    const renameRow = wrap.querySelector(`.gpx-rename-row[data-rename-id="${id}"]`);
+    const newType = renameRow?.querySelector('.gpx-rename-select')?.value;
+    if (!newType) return;
+    const idx = gpxItems.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    gpxItems[idx] = { ...gpxItems[idx], type: newType };
+    persistAll();
+    renderGpxList();
+    populateGpxLayerSelect();
+    renderGpxMarkers();
+  });
+
+  $$('#gpxList .remove-gpx').forEach(b => b.onclick = () => {
+    gpxItems = gpxItems.filter(x => x.id !== b.dataset.id);
+    persistAll();
+    renderGpxList();
+    populateGpxLayerSelect();
+    renderGpxMarkers();
+  });
 }
 function populateHouseForm(house={}, idx=null) {
   editingHouseIndex = idx;
@@ -848,7 +921,7 @@ function setupModals() {
     $(sel)?.addEventListener('click',e=>{ if(e.target===$(sel)) closeModal(sel); });
   });
   safe('openLinksManagerBtn')?.addEventListener('click',()=>openModal('#sharePanel'));
-  safe('openUploadsManagerBtn')?.addEventListener('click',()=>openModal('#uploadsPanel'));
+  safe('openUploadsManagerBtn')?.addEventListener('click',()=>{ openModal('#uploadsPanel'); populateGpxLayerSelect(); renderGpxList(); });
   safe('openHousesManagerBtn')?.addEventListener('click',()=>openModal('#housesPanel'));
   safe('openLayersManagerBtn')?.addEventListener('click',()=>openModal('#layersManagerPanel'));
   safe('openInfoManagerBtn')?.addEventListener('click',()=>openModal('#infoManagerPanel'));
@@ -1091,7 +1164,7 @@ function setupManagement() {
     const v=safe('newEventTypeInput').value.trim(); if(!v||eventTypes.includes(v)) return;
     eventTypes.push(v); persistAll(); renderEventTypes(); safe('newEventTypeInput').value='';
   });
-  renderManagedLayers(); renderGpxList(); renderHouses(); renderInfoAdmin(); renderEventTypes(); syncStreetOptions(); resetHouseForm(); renderLayersModal();
+  renderManagedLayers(); renderGpxList(); populateGpxLayerSelect(); renderHouses(); renderInfoAdmin(); renderEventTypes(); syncStreetOptions(); resetHouseForm(); renderLayersModal();
 }
 function setupControls() {
   safe('toggleSortBtn')?.addEventListener('click',()=>{ sortDirection=sortDirection==='desc'?'asc':'desc'; renderResidentMarkers(); });

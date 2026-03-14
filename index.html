@@ -293,7 +293,7 @@
             <button class="rail-btn active" data-view="reports" type="button">דיווחים</button>
             <button class="rail-btn" data-view="layers" type="button">שכבות</button>
             <button class="rail-btn" data-view="info" type="button">מידע</button>
-            <button class="rail-btn" data-view="management" type="button">ניהול</button>
+            <button class="rail-btn rail-btn-management" data-view="management" type="button">ניהול</button>
             <div class="side-rail-actions">
                 <button id="mobileLogoutBtn" class="mobile-logout-btn" type="button">התנתק</button>
             </div>
@@ -391,13 +391,12 @@
         <h2>העלאת קבצים</h2>
         <div class="grid-2">
             <select id="gpxLayerType">
-                <option value="נקודות דיווח">נקודות דיווח</option>
-                <option value="מצלמות">מצלמות</option>
-                <option value="הידרנטים">הידרנטים</option>
+                <option value="">בחר שכבה...</option>
             </select>
             <input id="gpxFileInput" type="file" accept=".gpx,.xml" />
         </div>
         <div class="inline-actions"><button id="saveGpxBtn" class="primary-btn" type="button">שמור קובץ</button></div>
+        <h3 style="font-size:15px;margin:16px 0 8px;color:var(--blue2)">קבצים שהועלו</h3>
         <div id="gpxList" class="stack-list compact-list"></div>
     </div>
 </div>

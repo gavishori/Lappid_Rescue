@@ -1018,6 +1018,18 @@ textarea { min-height: 100px; resize: vertical; }
     display: none !important;
   }
 
+  .mobile-readonly-mode .journal-col {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .mobile-readonly-mode .journal-table-wrap {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
   .mobile-readonly-mode .task-btns-row {
     font-size: 13px;
     color: var(--jmuted);
@@ -1053,6 +1065,11 @@ textarea { min-height: 100px; resize: vertical; }
   }
 
   #view-management .manage-grid > :not(#openLinksManagerBtn) {
+    display: none !important;
+  }
+
+  .rail-btn-management,
+  #view-management {
     display: none !important;
   }
 
