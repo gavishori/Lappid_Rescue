@@ -697,12 +697,21 @@ function moveLayer(idx,delta) {
 }
 function populateGpxLayerSelect() {
   const sel = safe('gpxLayerType'); if (!sel) return;
-  // Built-in non-GPX layers we don't show as upload targets
+  // Remove layers that are not upload targets
   const builtInNonGpx = new Set(['דיווחי תושבים', 'מספרי בתים']);
-  const options = managedLayers.filter(l => !builtInNonGpx.has(l));
+  const layerOptions = managedLayers.filter(l => !builtInNonGpx.has(l));
+  // Fixed streets/excel option
+  const STREETS_OPT = 'רחובות (אקסל)';
   const current = sel.value;
-  sel.innerHTML = '<option value="">בחר שכבה...</option>' + options.map(l => `<option value="${l}">${l}</option>`).join('');
-  if (options.includes(current)) sel.value = current;
+  sel.innerHTML = '<option value="">בחר שכבה...</option>'
+    + '<optgroup label="── שכבות GPX ──">'
+    + layerOptions.map(l => `<option value="${l}">${l}</option>`).join('')
+    + '</optgroup>'
+    + '<optgroup label="── קובץ נתונים ──">'
+    + `<option value="${STREETS_OPT}">${STREETS_OPT}</option>`
+    + '</optgroup>';
+  const allOpts = [...layerOptions, STREETS_OPT];
+  if (allOpts.includes(current)) sel.value = current;
 }
 
 function renderGpxList() {
@@ -1112,7 +1121,7 @@ function setupManagement() {
     if(!layerType){ if(errBox){errBox.textContent='נא לבחור שכבה / סוג קובץ'; errBox.classList.remove('hidden');} return; }
     if(!file){ if(errBox){errBox.textContent='נא לבחור קובץ'; errBox.classList.remove('hidden');} return; }
 
-    const isExcel = /\.(xlsx?|csv)$/i.test(file.name);
+    const isExcel = /\.(xlsx?|csv)$/i.test(file.name) || layerType === 'רחובות (אקסל)';
 
     if(isExcel){
       // Streets/coordinates Excel file → treat as streets lookup table
