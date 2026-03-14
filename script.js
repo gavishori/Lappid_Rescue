@@ -57,7 +57,6 @@ let activeLayers  = new Set(DEFAULT_ACTIVE_LAYERS);
 let managedInfoButtons = [...DEFAULT_INFO_BUTTONS];
 let managedHouses = [];
 let gpxItems      = [];
-let uploadedFiles = [];
 let rrmSnapshotsCache = [];
 let editingHouseIndex = null;
 
@@ -69,7 +68,6 @@ function buildConfigPayload() {
     infoButtons: managedInfoButtons,
     houses: managedHouses,
     gpxItems,
-    uploadedFiles,
     updatedAt: serverTimestamp()
   };
 }
@@ -106,178 +104,6 @@ function applyConfigData(d = {}) {
 
   if (Array.isArray(d.gpxItems)) gpxItems = d.gpxItems;
   else gpxItems = [];
-
-  if (Array.isArray(d.uploadedFiles)) uploadedFiles = d.uploadedFiles;
-  else uploadedFiles = [];
-
-  syncUploadedFilesRegistry();
-}
-
-
-function deriveUploadedFiles() {
-  const derived = [];
-  gpxItems.forEach(item => {
-    derived.push({
-      id: item.id,
-      sourceType: 'gpx',
-      displayName: item.name || item.type || 'קובץ GPX',
-      fileName: item.name || '',
-      layer: item.type || '',
-      pointsCount: Array.isArray(item.points) ? item.points.length : 0,
-      createdAt: item.createdAt || null
-    });
-  });
-  const hasAddressFile = uploadedFiles.some(f => f && f.sourceType === 'addresses');
-  if (!hasAddressFile && managedHouses.length) {
-    derived.push({
-      id: 'addresses-dataset',
-      sourceType: 'addresses',
-      displayName: 'מאגר כתובות פעיל',
-      fileName: 'נתוני כתובות שמורים',
-      rowsCount: managedHouses.length,
-      mapping: 'X/Y או lat/lng',
-      createdAt: null
-    });
-  }
-  return derived;
-}
-
-function syncUploadedFilesRegistry() {
-  const registry = Array.isArray(uploadedFiles) ? [...uploadedFiles] : [];
-  const byId = new Map(registry.filter(Boolean).map(item => [item.id, item]));
-
-  gpxItems.forEach(item => {
-    const prev = byId.get(item.id) || {};
-    byId.set(item.id, {
-      id: item.id,
-      sourceType: 'gpx',
-      displayName: prev.displayName || item.name || item.type || 'קובץ GPX',
-      fileName: item.name || prev.fileName || '',
-      layer: item.type || prev.layer || '',
-      pointsCount: Array.isArray(item.points) ? item.points.length : 0,
-      createdAt: prev.createdAt || item.createdAt || null
-    });
-  });
-
-  Array.from(byId.keys()).forEach(id => {
-    const item = byId.get(id);
-    if (item?.sourceType === 'gpx' && !gpxItems.some(g => g.id === id)) byId.delete(id);
-  });
-
-  const addressFiles = registry.filter(item => item?.sourceType === 'addresses');
-  if (addressFiles.length) {
-    const latest = addressFiles[0];
-    byId.set(latest.id, {
-      ...latest,
-      rowsCount: managedHouses.length,
-      mapping: latest.mapping || 'X/Y או lat/lng'
-    });
-    addressFiles.slice(1).forEach(item => byId.delete(item.id));
-  }
-
-  const derivedAddresses = deriveUploadedFiles().filter(item => item.sourceType === 'addresses');
-  if (!Array.from(byId.values()).some(item => item?.sourceType === 'addresses') && derivedAddresses[0]) {
-    byId.set(derivedAddresses[0].id, derivedAddresses[0]);
-  }
-
-  uploadedFiles = Array.from(byId.values()).sort((a,b) => {
-    const ta = a?.createdAt?.seconds || 0;
-    const tb = b?.createdAt?.seconds || 0;
-    if (tb !== ta) return tb - ta;
-    return String(a?.displayName || '').localeCompare(String(b?.displayName || ''), 'he');
-  });
-}
-
-function updateUploadsStats() {
-  syncUploadedFilesRegistry();
-  const filesCount = safe('uploadsFilesCountChip');
-  const rowsCount = safe('uploadsAddressRowsChip');
-  if (filesCount) filesCount.textContent = `${uploadedFiles.length} קבצים`;
-  if (rowsCount) rowsCount.textContent = `${managedHouses.length} כתובות`;
-}
-
-function renderUploadedFilesList() {
-  updateUploadsStats();
-  const wrap = safe('uploadedFilesList');
-  if (!wrap) return;
-  if (!uploadedFiles.length) {
-    wrap.innerHTML = '<div class="upload-empty-state">אין קבצים שנשמרו עדיין בפיירבייס.</div>';
-    return;
-  }
-
-  const builtInNonGpx = new Set(['דיווחי תושבים', 'מספרי בתים']);
-  const layerOptions = managedLayers.filter(l => !builtInNonGpx.has(l));
-
-  wrap.innerHTML = uploadedFiles.map(file => {
-    const isAddress = file.sourceType === 'addresses';
-    const meta = isAddress
-      ? `${file.fileName || 'קובץ כתובות'} · ${file.rowsCount || 0} שורות · התאמה לפי ${file.mapping || 'X/Y או lat/lng'}`
-      : `${file.fileName || 'קובץ GPX'} · ${file.pointsCount || 0} נקודות · שכבה: ${file.layer || '—'}`;
-    const selectHtml = isAddress ? '' : `
-      <select class="upload-file-layer" data-id="${file.id}">
-        <option value="">בחר שכבה...</option>
-        ${layerOptions.map(l => `<option value="${l}" ${l === (file.layer || '') ? 'selected' : ''}>${l}</option>`).join('')}
-      </select>`;
-    return `
-      <div class="upload-file-card ${isAddress ? 'is-address' : ''}" data-upload-id="${file.id}">
-        <div class="upload-file-main">
-          <div class="upload-file-title">${isAddress ? 'אקסל כתובות' : 'קובץ GPX'} · ${file.displayName || file.fileName || 'ללא שם'}</div>
-          <div class="upload-file-meta">${meta}</div>
-        </div>
-        <div class="upload-file-edit ${isAddress ? 'single' : ''}">
-          <input class="upload-file-name" data-id="${file.id}" type="text" value="${String(file.displayName || file.fileName || '').replace(/"/g, '&quot;')}" placeholder="שם תצוגה" />
-          ${selectHtml}
-        </div>
-        <div class="upload-file-actions">
-          <button class="primary-btn upload-file-save" data-id="${file.id}" type="button" style="padding:10px 14px;font-size:14px">שמור</button>
-          <button class="delete-btn upload-file-remove" data-id="${file.id}" type="button">הסר</button>
-        </div>
-      </div>`;
-  }).join('');
-
-  $$('#uploadedFilesList .upload-file-save').forEach(btn => btn.onclick = () => {
-    const id = btn.dataset.id;
-    const entry = uploadedFiles.find(item => item.id === id);
-    if (!entry) return;
-    const card = wrap.querySelector(`[data-upload-id="${id}"]`);
-    const displayName = card?.querySelector('.upload-file-name')?.value?.trim() || entry.displayName || entry.fileName || '';
-    const layer = card?.querySelector('.upload-file-layer')?.value || '';
-
-    if (entry.sourceType === 'gpx') {
-      const gpxIndex = gpxItems.findIndex(item => item.id === id);
-      if (gpxIndex >= 0) {
-        gpxItems[gpxIndex] = { ...gpxItems[gpxIndex], name: displayName || gpxItems[gpxIndex].name, type: layer || gpxItems[gpxIndex].type };
-      }
-      uploadedFiles = uploadedFiles.map(item => item.id === id ? { ...item, displayName: displayName || item.displayName, fileName: item.fileName || displayName, layer: layer || item.layer } : item);
-      populateGpxLayerSelect();
-      renderGpxMarkers();
-    } else {
-      uploadedFiles = uploadedFiles.map(item => item.id === id ? { ...item, displayName: displayName || item.displayName } : item);
-    }
-    persistAll();
-    renderUploadedFilesList();
-  });
-
-  $$('#uploadedFilesList .upload-file-remove').forEach(btn => btn.onclick = () => {
-    const id = btn.dataset.id;
-    const entry = uploadedFiles.find(item => item.id === id);
-    if (!entry) return;
-    if (entry.sourceType === 'addresses') {
-      managedHouses = [];
-      uploadedFiles = uploadedFiles.filter(item => item.id !== id && item.sourceType !== 'addresses');
-      renderHouses();
-      syncStreetOptions();
-      updateHouseStats();
-      renderResidentMarkers();
-    } else {
-      gpxItems = gpxItems.filter(item => item.id !== id);
-      uploadedFiles = uploadedFiles.filter(item => item.id !== id);
-      populateGpxLayerSelect();
-      renderGpxMarkers();
-    }
-    persistAll();
-    renderUploadedFilesList();
-  });
 }
 
 async function loadConfigFromFirestore() {
@@ -880,7 +706,79 @@ function populateGpxLayerSelect() {
 }
 
 function renderGpxList() {
-  renderUploadedFilesList();
+  const wrap=safe('gpxList'); if(!wrap) return;
+  const emptyHint = safe('gpxListEmpty');
+  const countChip = safe('gpxCountChip');
+  if (countChip) countChip.textContent = `${gpxItems.length} קבצים`;
+  if (!gpxItems.length) {
+    wrap.innerHTML = '';
+    if (emptyHint) emptyHint.style.display = '';
+    return;
+  }
+  if (emptyHint) emptyHint.style.display = 'none';
+  const fileIcon = item => /\.(xlsx?|csv)$/i.test(item.name) ? '📊' : '📍';
+  const pointsLabel = item => item.isStreets ? `${(item.data||[]).length} שורות` : `${(item.points||[]).length} נק׳`;
+  wrap.innerHTML = gpxItems.map(item => `
+    <div class="simple-item" data-gpx-id="${item.id}">
+      <div class="item-main">
+        <span class="gpx-item-name">${fileIcon(item)} ${item.type}</span>
+        <span class="item-sub">${item.name} · ${pointsLabel(item)}</span>
+      </div>
+      <div class="item-actions">
+        <button class="icon-btn rename-gpx" data-id="${item.id}" type="button" title="שנה שם שכבה">✏️</button>
+        <button class="delete-btn remove-gpx" data-id="${item.id}" type="button">הסר</button>
+      </div>
+    </div>
+    <div class="gpx-rename-row hidden" data-rename-id="${item.id}" style="display:none;gap:8px;padding:6px 0 8px;align-items:center">
+      <select class="gpx-rename-select" style="flex:1;background:#0d2440;border:1px solid rgba(40,147,255,.5);border-radius:8px;color:#fff;padding:6px 10px;font-size:14px;font-family:inherit"></select>
+      <button class="primary-btn gpx-rename-save" data-id="${item.id}" type="button" style="padding:6px 14px;font-size:13px">שמור</button>
+      <button class="ghost-btn gpx-rename-cancel" data-id="${item.id}" type="button" style="padding:6px 14px;font-size:13px">ביטול</button>
+    </div>
+  `).join('');
+
+  // Populate rename selects with managed layers
+  const builtInNonGpx = new Set(['דיווחי תושבים', 'מספרי בתים']);
+  const layerOptions = managedLayers.filter(l => !builtInNonGpx.has(l));
+
+  $$('#gpxList .gpx-rename-select').forEach(sel => {
+    sel.innerHTML = layerOptions.map(l => `<option value="${l}">${l}</option>`).join('');
+  });
+
+  $$('#gpxList .rename-gpx').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    const renameRow = wrap.querySelector(`.gpx-rename-row[data-rename-id="${id}"]`);
+    if (!renameRow) return;
+    const item = gpxItems.find(x => x.id === id);
+    if (item) { const sel = renameRow.querySelector('.gpx-rename-select'); if (sel) sel.value = item.type; }
+    renameRow.style.display = 'flex';
+  });
+
+  $$('#gpxList .gpx-rename-cancel').forEach(b => b.onclick = () => {
+    const renameRow = wrap.querySelector(`.gpx-rename-row[data-rename-id="${b.dataset.id}"]`);
+    if (renameRow) renameRow.style.display = 'none';
+  });
+
+  $$('#gpxList .gpx-rename-save').forEach(b => b.onclick = () => {
+    const id = b.dataset.id;
+    const renameRow = wrap.querySelector(`.gpx-rename-row[data-rename-id="${id}"]`);
+    const newType = renameRow?.querySelector('.gpx-rename-select')?.value;
+    if (!newType) return;
+    const idx = gpxItems.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    gpxItems[idx] = { ...gpxItems[idx], type: newType };
+    persistAll();
+    renderGpxList();
+    populateGpxLayerSelect();
+    renderGpxMarkers();
+  });
+
+  $$('#gpxList .remove-gpx').forEach(b => b.onclick = () => {
+    gpxItems = gpxItems.filter(x => x.id !== b.dataset.id);
+    persistAll();
+    renderGpxList();
+    populateGpxLayerSelect();
+    renderGpxMarkers();
+  });
 }
 function populateHouseForm(house={}, idx=null) {
   editingHouseIndex = idx;
@@ -1030,7 +928,7 @@ function setupModals() {
     $(sel)?.addEventListener('click',e=>{ if(e.target===$(sel)) closeModal(sel); });
   });
   safe('openLinksManagerBtn')?.addEventListener('click',()=>openModal('#sharePanel'));
-  safe('openUploadsManagerBtn')?.addEventListener('click',()=>{ openModal('#uploadsPanel'); populateGpxLayerSelect(); renderUploadedFilesList(); });
+  safe('openUploadsManagerBtn')?.addEventListener('click',()=>{ openModal('#uploadsPanel'); populateGpxLayerSelect(); renderGpxList(); });
   safe('openHousesManagerBtn')?.addEventListener('click',()=>openModal('#housesPanel'));
   safe('openLayersManagerBtn')?.addEventListener('click',()=>openModal('#layersManagerPanel'));
   safe('openInfoManagerBtn')?.addEventListener('click',()=>openModal('#infoManagerPanel'));
@@ -1159,8 +1057,7 @@ function upsertHouse(item) {
   return true;
 }
 function extractCell(row, aliases) {
-  const normalizedAliases = aliases.map(a => String(a).trim().toLowerCase());
-  const key = Object.keys(row).find(k => normalizedAliases.includes(String(k).trim().toLowerCase()));
+  const key = Object.keys(row).find(k => aliases.includes(String(k).trim().toLowerCase()));
   return key ? row[key] : undefined;
 }
 async function importHousesFromExcel(file) {
@@ -1173,64 +1070,97 @@ async function importHousesFromExcel(file) {
     const parsed = rows.map(row => ({
       street: extractCell(row, ['street','רחוב','street name','street_name','st']),
       house: extractCell(row, ['house','house number','house_number','number','מספר','מס בית','מספר בית']),
-      lat: extractCell(row, ['lat','latitude','קו רוחב','רוחב','y','coord_y','y_coord']),
-      lng: extractCell(row, ['lng','lon','long','longitude','קו אורך','אורך','x','coord_x','x_coord'])
+      lat: extractCell(row, ['lat','latitude','קו רוחב','רוחב','y']),
+      lng: extractCell(row, ['lng','lon','long','longitude','קו אורך','אורך','x'])
     })).filter(item => String(item.street ?? '').trim() && String(item.house ?? '').trim());
 
     let changed = 0;
     parsed.forEach(item => { if (upsertHouse(item)) changed += 1; });
     managedLayers = Array.from(new Set([...managedLayers, 'מספרי בתים']));
     activeLayers.add('מספרי בתים');
-
-    const addressFileId = crypto.randomUUID();
-    uploadedFiles = uploadedFiles.filter(item => item?.sourceType !== 'addresses');
-    uploadedFiles.unshift({
-      id: addressFileId,
-      sourceType: 'addresses',
-      displayName: file.name.replace(/\.[^.]+$/, ''),
-      fileName: file.name,
-      rowsCount: parsed.length,
-      mapping: 'X/Y או lat/lng',
-      createdAt: null
-    });
-
     persistAll();
     renderHouses();
     syncStreetOptions();
     renderLayersModal();
     renderResidentMarkers();
-    renderUploadedFilesList();
     if (changed) fitMapToHouseBounds();
-    if (status) status.textContent = changed ? `יובאו ${changed} כתובות מקובץ ${file.name}. דיווחי תושבים יוצמדו ל-X,Y במקרה של התאמה מלאה בין רחוב ומספר.` : 'לא נמצאו שורות תקינות לייבוא.';
+    if (status) status.textContent = changed ? `יובאו ${changed} בתים מקובץ ${file.name}` : 'לא נמצאו שורות תקינות לייבוא.';
   } catch (e) {
     console.error(e);
-    if (status) status.textContent = 'שגיאה בקריאת הקובץ. ודא שיש עמודות רחוב, מספר ו-X/Y או lat/lng.';
+    if (status) status.textContent = 'שגיאה בקריאת הקובץ. ודא שיש עמודות רחוב, מספר, lat, lng.';
   }
 }
 function setupManagement() {
   managedLayers = Array.from(new Set([...managedLayers, 'מספרי בתים']));
+
+  // File input: show selected filename in label
+  safe('gpxFileInput')?.addEventListener('change', () => {
+    const f = safe('gpxFileInput').files?.[0];
+    const disp = safe('uploadFileNameDisplay');
+    if (disp) {
+      if (f) { disp.textContent = f.name; disp.classList.add('has-file'); }
+      else { disp.textContent = 'לא נבחר קובץ'; disp.classList.remove('has-file'); }
+    }
+  });
+
   safe('saveGpxBtn')?.addEventListener('click',async()=>{
     const file=safe('gpxFileInput').files?.[0];
-    const layerType = safe('gpxLayerType').value;
-    if(!file || !layerType) return;
+    const layerType=safe('gpxLayerType')?.value;
+    const errBox=safe('uploadFormError');
+    if(errBox) errBox.classList.add('hidden');
+
+    if(!layerType){ if(errBox){errBox.textContent='נא לבחור שכבה / סוג קובץ'; errBox.classList.remove('hidden');} return; }
+    if(!file){ if(errBox){errBox.textContent='נא לבחור קובץ'; errBox.classList.remove('hidden');} return; }
+
+    const isExcel = /\.(xlsx?|csv)$/i.test(file.name);
+
+    if(isExcel){
+      // Streets/coordinates Excel file → treat as streets lookup table
+      try {
+        const data = await file.arrayBuffer();
+        const wb = XLSX.read(data, {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+        const streetData = rows.map(row => ({
+          street: extractCell(row, ['street','רחוב','street name','street_name','st']),
+          house:  extractCell(row, ['house','house number','house_number','number','מספר','מס בית','מספר בית']),
+          x:      extractCell(row, ['x','lng','lon','long','longitude','קו אורך','אורך']),
+          y:      extractCell(row, ['y','lat','latitude','קו רוחב','רוחב']),
+        })).filter(r => String(r.street??'').trim());
+        // Merge into managedHouses for resident-report coordinate matching
+        let changed = 0;
+        streetData.forEach(r => {
+          if(r.house && (r.x || r.y)) {
+            if(upsertHouse({street: r.street, house: r.house, lat: r.y, lng: r.x})) changed++;
+          }
+        });
+        gpxItems.unshift({id:crypto.randomUUID(), type:layerType, name:file.name, isStreets:true, data:streetData, points:[]});
+        persistAll(); renderGpxList(); renderGpxMarkers();
+        syncStreetOptions(); renderHouses();
+        safe('gpxFileInput').value='';
+        const disp=safe('uploadFileNameDisplay'); if(disp){disp.textContent='לא נבחר קובץ';disp.classList.remove('has-file');}
+        if(errBox){errBox.textContent=`✓ יובאו ${streetData.length} שורות מרחובות (${changed} בתים עודכנו)`;errBox.style.cssText='background:rgba(0,200,100,.12);border-color:rgba(0,200,100,.3);color:#5ef5a0';errBox.classList.remove('hidden');setTimeout(()=>errBox.classList.add('hidden'),4000);}
+      } catch(e){
+        console.error(e);
+        if(errBox){errBox.textContent='שגיאה בקריאת האקסל — ודא עמודות: רחוב, מספר, X, Y'; errBox.classList.remove('hidden');}
+      }
+      return;
+    }
+
+    // GPX/XML file
     const text=await file.text();
     const xml=new DOMParser().parseFromString(text,'application/xml');
     const points=Array.from(xml.querySelectorAll('wpt')).map((wpt,i)=>({
       lat:Number(wpt.getAttribute('lat')), lng:Number(wpt.getAttribute('lon')),
       name:wpt.querySelector('name')?.textContent||`${layerType} ${i+1}`
     })).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng));
-    const id = crypto.randomUUID();
-    gpxItems.unshift({id, type:layerType, name:file.name, points});
-    uploadedFiles.unshift({
-      id,
-      sourceType: 'gpx',
-      displayName: file.name.replace(/\.[^.]+$/, ''),
-      fileName: file.name,
-      layer: layerType,
-      pointsCount: points.length,
-      createdAt: null
-    });
-    persistAll(); renderUploadedFilesList(); renderGpxMarkers(); safe('gpxFileInput').value='';
+    if(!points.length){
+      if(errBox){errBox.textContent='לא נמצאו נקודות תקינות בקובץ GPX'; errBox.classList.remove('hidden');} return;
+    }
+    gpxItems.unshift({id:crypto.randomUUID(), type:layerType, name:file.name, points});
+    persistAll(); renderGpxList(); renderGpxMarkers();
+    safe('gpxFileInput').value='';
+    const disp=safe('uploadFileNameDisplay'); if(disp){disp.textContent='לא נבחר קובץ';disp.classList.remove('has-file');}
   });
   safe('addHouseBtn')?.addEventListener('click',()=>{
     const street=safe('houseStreetInput').value.trim();
@@ -2712,111 +2642,114 @@ window.updateHouseOptions = function() {
 document.addEventListener('DOMContentLoaded', async () => {
 
   setupReportForm();
-  await loadConfigFromFirestore();
-  syncStreetOptions();
 
-  // Hide splash after max 6 seconds no matter what
   const splash = document.getElementById('loading-splash');
-  const hideSplash = () => { if (splash) splash.style.display = 'none'; };
-  const splashTimeout = setTimeout(hideSplash, 6000);
+  let splashHidden = false;
+  const hideSplash = () => {
+    if (splashHidden || !splash) return;
+    splashHidden = true;
+    splash.style.display = 'none';
+    document.body.classList.add('app-ready');
+  };
+  const splashTimeout = setTimeout(hideSplash, 2500);
+  window.addEventListener('load', hideSplash, { once: true });
 
-  if(!auth||!db){
-    hideSplash();
-    clearTimeout(splashTimeout);
-    const em=safe('loginErrorMessage'); if(em) em.textContent='שגיאה: Firebase לא אותחל';
-    // Still show admin screen so user sees something
-    await bootAdmin(false);
-    return;
-  }
-
-  // Register auth state listener
-  onAuthStateChanged(auth, handleAuthState);
-
-  // Try auto sign-in with custom token if available
-  if(!auth.currentUser && initialAuthToken) {
-    try { await signInWithCustomToken(auth, initialAuthToken); } catch(e) { console.error('Auto sign-in error:', e); }
-  }
-
-  // For public modes (report form / shared map), skip auth entirely —
-  // anonymous sign-in is disabled; Firestore public paths are accessible without auth.
-  const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY);
-  if (needsPublicSession && !auth.currentUser) {
-    // Initialize Firestore collection refs so public reads/writes work without auth
-    if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-    // Resolve auth-ready immediately so we don't wait 5 seconds
-    firebaseAuthReadyResolve();
-  }
-
-  // Login form listener
-  safe('loginBtn')?.addEventListener('click', async () => {
-    const email=safe('loginEmail')?.value; const pass=safe('loginPassword')?.value;
-    const errEl=safe('loginErrorMessage'); if(errEl) errEl.textContent='';
-    if(!email||!pass){ if(errEl) errEl.textContent='נא להזין אימייל וסיסמה'; return; }
-    try { await signInWithEmailAndPassword(auth,email,pass); }
-    catch(e){
-      const msg=e.code==='auth/user-not-found'||e.code==='auth/wrong-password'?'אימייל או סיסמה שגויים':e.code==='auth/invalid-email'?'פורמט אימייל שגוי':e.code==='auth/too-many-requests'?'יותר מדי ניסיונות':e.message;
-      if(errEl) errEl.textContent='שגיאה: '+msg;
+  try {
+    if(!auth||!db){
+      const em=safe('loginErrorMessage'); if(em) em.textContent='שגיאה: Firebase לא אותחל';
+      await bootAdmin(false);
+      return;
     }
-  });
 
-  // Wait for first auth state with a 5 second timeout
-  await Promise.race([
-    firebaseAuthReady,
-    new Promise(r => setTimeout(r, 5000))
-  ]);
+    onAuthStateChanged(auth, handleAuthState);
 
-  hideSplash();
-  clearTimeout(splashTimeout);
-
-  // URL-mode routing
-  if (SHARE_TOKEN) {
-    const shareInfo = await verifyShareToken(SHARE_TOKEN);
-    if (!shareInfo?.eventId) { document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>'; return; }
-    activeEventId = shareInfo.eventId;
-    if (shareInfo.type === 'journal') {
-      if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-      await bootJournalReadOnly(activeEventId);
-    } else if (shareInfo.type === 'both') {
-      await bootAdmin(true);
-    } else {
-      await bootAdmin(true);
-    }
-    return;
-  }
-  if (MODE==='report'||REPORT_KEY) {
-    safe('screen-report')?.classList.add('active');
-    safe('screen-admin')?.classList.remove('active');
-
-    // Load houses from Firestore config, with optional URL override for lightweight resident links.
-    const housesParam = params.get('houses');
-    if (housesParam) {
-      try {
-        const packed = JSON.parse(decodeURIComponent(escape(atob(housesParam))));
-        if (Array.isArray(packed) && packed.length) {
-          managedHouses = packed.map(h => ({ street: h.s || '', house: h.n || '' }));
-        }
-      } catch(e) { console.warn('Could not decode houses from URL:', e); }
-    }
-    syncStreetOptions();
-    if (existingReportId) {
-      const snap=await getDoc(getReportDoc(existingReportId));
-      if(snap.exists()) {
-        const d=snap.data();
-        safe('city').value=d.city||'לפיד';
-        if (d.street) {
-          const sel = safe('street');
-          if(sel) { sel.value=d.street; window.updateHouseOptions(); }
-        }
-        if (d.house) { const houseSel=safe('house'); if(houseSel) houseSel.value=d.house; }
-        safe('soulsCount').value=d.souls||0; safe('freeText').value=d.note||'';
-        currentStatus=Array.isArray(d.statuses)?d.statuses:[];
-        $$('.status-btn').forEach(b=>b.classList.toggle('active',currentStatus.includes(b.dataset.status)));
+    safe('loginBtn')?.addEventListener('click', async () => {
+      const email=safe('loginEmail')?.value; const pass=safe('loginPassword')?.value;
+      const errEl=safe('loginErrorMessage'); if(errEl) errEl.textContent='';
+      if(!email||!pass){ if(errEl) errEl.textContent='נא להזין אימייל וסיסמה'; return; }
+      try { await signInWithEmailAndPassword(auth,email,pass); }
+      catch(e){
+        const msg=e.code==='auth/user-not-found'||e.code==='auth/wrong-password'?'אימייל או סיסמה שגויים':e.code==='auth/invalid-email'?'פורמט אימייל שגוי':e.code==='auth/too-many-requests'?'יותר מדי ניסיונות':e.message;
+        if(errEl) errEl.textContent='שגיאה: '+msg;
       }
+    });
+
+    if (!SHARE_TOKEN && MODE !== 'report' && !REPORT_KEY) {
+      await bootAdmin(false);
+      hideSplash();
     }
-    return;
+
+    if(!auth.currentUser && initialAuthToken) {
+      try { await signInWithCustomToken(auth, initialAuthToken); } catch(e) { console.error('Auto sign-in error:', e); }
+    }
+
+    const needsPublicSession = Boolean(SHARE_TOKEN || MODE === 'report' || REPORT_KEY);
+    if (needsPublicSession && !auth.currentUser) {
+      if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+      firebaseAuthReadyResolve();
+    }
+
+    await Promise.race([
+      firebaseAuthReady,
+      new Promise(r => setTimeout(r, 1200))
+    ]);
+
+    hideSplash();
+
+    if (SHARE_TOKEN) {
+      await ensureConfigLoaded();
+      const shareInfo = await verifyShareToken(SHARE_TOKEN);
+      if (!shareInfo?.eventId) { document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>'; return; }
+      activeEventId = shareInfo.eventId;
+      if (shareInfo.type === 'journal') {
+        if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+        await bootJournalReadOnly(activeEventId);
+      } else {
+        await bootAdmin(true);
+      }
+      return;
+    }
+
+    if (MODE==='report'||REPORT_KEY) {
+      await ensureConfigLoaded();
+      safe('screen-report')?.classList.add('active');
+      safe('screen-admin')?.classList.remove('active');
+
+      const housesParam = params.get('houses');
+      if (housesParam) {
+        try {
+          const packed = JSON.parse(decodeURIComponent(escape(atob(housesParam))));
+          if (Array.isArray(packed) && packed.length) {
+            managedHouses = packed.map(h => ({ street: h.s || '', house: h.n || '' }));
+          }
+        } catch(e) { console.warn('Could not decode houses from URL:', e); }
+      }
+      syncStreetOptions();
+      if (existingReportId) {
+        const snap=await getDoc(getReportDoc(existingReportId));
+        if(snap.exists()) {
+          const d=snap.data();
+          safe('city').value=d.city||'לפיד';
+          if (d.street) {
+            const sel = safe('street');
+            if(sel) { sel.value=d.street; window.updateHouseOptions(); }
+          }
+          if (d.house) { const houseSel=safe('house'); if(houseSel) houseSel.value=d.house; }
+          safe('soulsCount').value=d.souls||0; safe('freeText').value=d.note||'';
+          currentStatus=Array.isArray(d.statuses)?d.statuses:[];
+          $$('.status-btn').forEach(b=>b.classList.toggle('active',currentStatus.includes(b.dataset.status)));
+        }
+      }
+      return;
+    }
+  } catch (e) {
+    console.error('App boot error:', e);
+    const em=safe('loginErrorMessage'); if(em) em.textContent='שגיאה באתחול המערכת';
+    try { await bootAdmin(false); } catch(_) {}
+  } finally {
+    clearTimeout(splashTimeout);
+    hideSplash();
   }
-  // Default: admin boot (login will show if not authenticated)
-  await bootAdmin(false);
 });
 // ════════════════════════════════════════════════════════
 //  RESIDENT REPORTS MANAGER HELPERS

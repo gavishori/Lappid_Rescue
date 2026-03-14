@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>חפ"ק לפיד</title>
+    <link rel="icon" href="data:," />
 
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -279,7 +280,7 @@
                 <div class="view-title">ניהול</div>
                 <div class="manage-grid">
                     <button class="manage-card" id="openLinksManagerBtn" type="button"><strong>קישורים</strong><span>שיתוף מפה וקישור דיווח לתושב</span></button>
-                    <button class="manage-card" id="openUploadsManagerBtn" type="button"><strong>העלאת קבצים</strong><span>GPX ואקסל כתובות</span></button>
+                    <button class="manage-card" id="openUploadsManagerBtn" type="button"><strong>העלאת קבצים</strong><span>קבצי GPX לשכבות המפה</span></button>
                     <button class="manage-card" id="openHousesManagerBtn" type="button"><strong>ניהול בתים</strong><span>הוספה ועריכת מיקומים</span></button>
                     <button class="manage-card" id="openLayersManagerBtn" type="button"><strong>שכבות מידע</strong><span>סדר שכבות והפעלה</span></button>
                     <button class="manage-card" id="openInfoManagerBtn" type="button"><strong>מידע</strong><span>ניהול כפתורי קישור</span></button>
@@ -388,73 +389,37 @@
 <div id="uploadsPanel" class="overlay hidden">
     <div class="modal-box uploads-modal-box">
         <button class="modal-close" data-close="#uploadsPanel" type="button">×</button>
-        <div class="uploads-modal-head">
-            <div>
-                <h2>העלאת קבצים</h2>
-                <p>העלאת קבצי GPX ואקסל כתובות. כל הקבצים שנשמרו בפיירבייס יוצגו כאן, כולל קבצים עתידיים.</p>
+        <h2>העלאת קבצים</h2>
+
+        <div class="upload-form-grid">
+            <div class="upload-form-field">
+                <label class="upload-field-label">שכבה / סוג קובץ</label>
+                <select id="gpxLayerType" class="upload-select">
+                    <option value="">בחר שכבה...</option>
+                </select>
             </div>
-            <div class="uploads-stats">
-                <span id="uploadsFilesCountChip" class="stat-chip">0 קבצים</span>
-                <span id="uploadsAddressRowsChip" class="stat-chip">0 כתובות</span>
+            <div class="upload-form-field">
+                <label class="upload-field-label">בחר קובץ</label>
+                <label class="upload-file-label" id="uploadFileLabelBox">
+                    <span id="uploadFileNameDisplay">לא נבחר קובץ</span>
+                    <span class="upload-file-btn-inner">בחר קובץ</span>
+                    <input id="gpxFileInput" type="file" accept=".gpx,.xml,.xlsx,.xls" style="display:none" />
+                </label>
             </div>
         </div>
 
-        <div class="uploads-grid">
-            <section class="modal-section upload-card">
-                <div class="section-title-row">
-                    <div>
-                        <h3>קובץ GPX / XML</h3>
-                        <p>בחר שכבה, העלה קובץ, והנקודות יתווספו למפה.</p>
-                    </div>
-                </div>
-                <div class="upload-form-grid">
-                    <label class="upload-field">
-                        <span>שכבה</span>
-                        <select id="gpxLayerType">
-                            <option value="">בחר שכבה...</option>
-                        </select>
-                    </label>
-                    <label class="upload-field">
-                        <span>קובץ</span>
-                        <input id="gpxFileInput" type="file" accept=".gpx,.xml" />
-                    </label>
-                </div>
-                <div class="inline-actions upload-actions-row">
-                    <button id="saveGpxBtn" class="primary-btn" type="button">שמור קובץ GPX</button>
-                </div>
-            </section>
+        <div id="uploadFormError" class="upload-form-error hidden"></div>
 
-            <section class="modal-section upload-card">
-                <div class="section-title-row">
-                    <div>
-                        <h3>קובץ אקסל כתובות</h3>
-                        <p>המערכת תזהה עמודות רחוב, מספר, X ו-Y או lat/lng. בדיווח תושבים, אם רחוב ומספר זהים, הסמן ימוקם לפי X,Y.</p>
-                    </div>
-                </div>
-                <div class="excel-upload-box upload-address-box">
-                    <label class="upload-field">
-                        <span>קובץ אקסל / CSV</span>
-                        <input id="housesExcelInput" type="file" accept=".xlsx,.xls,.csv" />
-                    </label>
-                    <div class="excel-upload-meta">
-                        <strong>קובץ כתובות פעיל</strong>
-                        <span id="housesSelectedFileName">לא נבחר קובץ</span>
-                    </div>
-                    <button id="importHousesBtn" class="primary-btn" type="button">ייבא קובץ כתובות</button>
-                </div>
-                <div id="housesImportStatus" class="import-status">לא בוצע ייבוא עדיין.</div>
-            </section>
+        <div class="upload-actions-row">
+            <button id="saveGpxBtn" class="primary-btn upload-save-btn" type="button">שמור קובץ</button>
         </div>
 
-        <section class="modal-section uploads-list-card">
-            <div class="section-title-row">
-                <div>
-                    <h3>כל הקבצים שנשמרו</h3>
-                    <p>עריכת שם, שינוי שכבה והסרה. אקסל הכתובות הוא מאגר הכתובות הפעיל של המערכת.</p>
-                </div>
-            </div>
-            <div id="uploadedFilesList" class="uploaded-files-list"></div>
-        </section>
+        <div class="upload-list-header">
+            <h3>קבצים שהועלו</h3>
+            <span id="gpxCountChip" class="stat-chip">0 קבצים</span>
+        </div>
+        <div id="gpxList" class="stack-list compact-list upload-files-list"></div>
+        <p id="gpxListEmpty" class="upload-empty-hint">אין קבצים שהועלו עדיין.</p>
     </div>
 </div>
 
@@ -497,7 +462,23 @@
                     <button id="closePickMapBtn" class="ghost-btn" style="margin-top:8px;width:100%" type="button">סגור מפה</button>
                 </div>
             </section>
-
+            <section class="modal-section houses-card import-card">
+                <div class="section-title-row">
+                    <div>
+                        <h3>ייבוא קובץ אקסל</h3>
+                        <p>עמודות נתמכות: רחוב, מספר, lat, lng.</p>
+                    </div>
+                </div>
+                <div class="excel-upload-box">
+                    <input id="housesExcelInput" type="file" accept=".xlsx,.xls,.csv" />
+                    <div class="excel-upload-meta">
+                        <strong>קובץ כתובות</strong>
+                        <span id="housesSelectedFileName">לא נבחר קובץ</span>
+                    </div>
+                    <button id="importHousesBtn" class="primary-btn" type="button">ייבא אקסל</button>
+                </div>
+                <div id="housesImportStatus" class="import-status">לא בוצע ייבוא עדיין.</div>
+            </section>
         </div>
         <section class="modal-section houses-card houses-list-card">
             <div class="section-title-row">
@@ -713,6 +694,18 @@
         </div>
     </div>
 </div>
+
+<script>
+(function(){
+  const hide = () => {
+    const splash = document.getElementById('loading-splash');
+    if (splash) splash.style.display = 'none';
+    document.body.classList.add('app-ready');
+  };
+  window.addEventListener('load', hide, { once: true });
+  setTimeout(hide, 3000);
+})();
+</script>
 
 <script type="module" src="firebase.js"></script>
 <script type="module" src="script.js"></script>
