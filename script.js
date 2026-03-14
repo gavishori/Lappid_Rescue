@@ -1356,9 +1356,19 @@ function filterToTodayAndYesterday(data) {
 function applyMobileReadOnlyMode() {
   const admin = safe('screen-admin');
   if (!admin) return;
-  admin.classList.toggle('mobile-readonly-mode', isMobileViewport());
-  if (!isMobileViewport()) mobilePaneMode = null;
-  if (!isMobileViewport()) admin.classList.remove('pane-map-full', 'pane-journal-full');
+  // readonly mode only for shared/public views — not for logged-in admin
+  const isAdmin = hasJournalAccess(auth?.currentUser) && !isSharedLinkView;
+  if (isMobileViewport()) {
+    if (isAdmin) {
+      admin.classList.remove('mobile-readonly-mode');
+    } else {
+      admin.classList.add('mobile-readonly-mode');
+    }
+  } else {
+    admin.classList.remove('mobile-readonly-mode');
+    mobilePaneMode = null;
+    admin.classList.remove('pane-map-full', 'pane-journal-full');
+  }
 }
 
 function togglePaneMode(which) {
@@ -1571,6 +1581,7 @@ function startEditReport(id) {
   const diff=(new Date()-new Date(r.timestamp))/(1000*60*60);
   if(diff>=48){ showCustomAlert('לא ניתן לערוך דיווחים בני יותר מ-48 שעות'); return; }
   editingReportId=id;
+  // Desktop: fill main form
   const ta=safe('generalTextInput'); if(ta) ta.value=r.description;
   const rep=safe('filterReporter'); if(rep) rep.value=r.reporter;
   const lt=safe('filterLogType');   if(lt)  lt.value=r.logType;
@@ -1578,10 +1589,13 @@ function startEditReport(id) {
   const tm=safe('newTime');         if(tm)  tm.value=r.time;
   const mb=safe('mainActionBtn');   if(mb)  mb.textContent='עדכן';
   const cb=safe('cancelEditBtn');   if(cb)  cb.classList.remove('hidden');
-  
   safe('dateTimeToggleLabel')?.classList.remove('hidden');
-  
-  ta?.scrollIntoView({behavior:'smooth',block:'center'});
+  // Mobile: open drawer
+  if (isMobileViewport()) {
+    openMobileJournalDrawer();
+  } else {
+    ta?.scrollIntoView({behavior:'smooth',block:'center'});
+  }
 }
 
 // ── reporters (Firestore) ──────────────────────────────
@@ -1591,9 +1605,15 @@ function populateReportersDropdown(names) {
   sel.innerHTML='<option value="">מדווח</option>';
   names.sort((a,b)=>a.localeCompare(b,'he')).forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
   sel.value=cur;
+  // sync mobile drawer
+  const mjdRep = safe('mjdReporter');
+  if (mjdRep) { const mc=mjdRep.value; mjdRep.innerHTML=sel.innerHTML; if(mc) mjdRep.value=mc; }
 }
 function populateLogTypesDropdowns(arr) {
-  const lt=safe('filterLogType'); if(lt){ const cv=lt.value; lt.innerHTML='<option value="">שיוך</option>'; arr.sort((a,b)=>a.name.localeCompare(b.name,'he')).forEach(x=>{ const o=document.createElement('option'); o.value=x.name; o.textContent=x.name; lt.appendChild(o); }); lt.value=cv; }
+  const lt=safe('filterLogType'); if(lt){ const cv=lt.value; lt.innerHTML='<option value="">שיוך</option>'; arr.sort((a,b)=>a.name.localeCompare(b.name,'he')).forEach(x=>{ const o=document.createElement('option'); o.value=x.name; o.textContent=x.name; lt.appendChild(o); }); lt.value=cv;
+    // sync mobile drawer
+    const mjdLt = safe('mjdLogType'); if(mjdLt){ const mc=mjdLt.value; mjdLt.innerHTML=lt.innerHTML; if(mc) mjdLt.value=mc; }
+  }
   const stf=safe('selectTaskTypeForSettings'); if(stf){ const cv=stf.value; stf.innerHTML='<option value="">בחר שיוך</option>'; arr.sort((a,b)=>a.name.localeCompare(b.name,'he')).forEach(x=>{ const o=document.createElement('option'); o.value=x.name; o.textContent=x.name; stf.appendChild(o); }); stf.value=cv; }
 }
 function renderReportersInModal(arr) {
@@ -2061,9 +2081,14 @@ const handleAuthState = async (user) => {
 
     if(!canUseJournal) {
       teardownJournalAccess();
+      const fab = safe('mobileAdminFab'); if(fab) fab.style.display='none';
       firebaseAuthReadyResolve();
       return;
     }
+
+    // show FAB for admin on mobile
+    const fab = safe('mobileAdminFab');
+    if(fab && !isSharedLinkView) fab.style.display = '';
 
     if(!unsubJournalReports) {
       unsubJournalReports=onSnapshot(reportsColRef,snap=>{
@@ -2101,7 +2126,11 @@ const handleAuthState = async (user) => {
     const em=safe('headerUserEmail'); if(em) em.textContent='';
     teardownJournalAccess();
     setJournalLockedState(true);
+    // hide FAB when logged out
+    const fab = safe('mobileAdminFab'); if(fab) fab.style.display='none';
   }
+  // refresh mobile layout based on new auth state
+  applyMobileReadOnlyMode();
   firebaseAuthReadyResolve();
 };
 
@@ -2285,6 +2314,155 @@ function setupJournalInlineListeners() {
 }
 
 // ════════════════════════════════════════════════════════
+//  MOBILE ADMIN JOURNAL DRAWER (כפתור + צף)
+// ════════════════════════════════════════════════════════
+function openMobileJournalDrawer() {
+  const drawer = safe('mobileJournalDrawer'); if (!drawer) return;
+  drawer.classList.remove('hidden');
+  // sync dropdowns from main dropdowns
+  syncMobileDrawerDropdowns();
+  // sync title & button state
+  const fab = safe('mobileAdminFab');
+  if (editingReportId) {
+    if (safe('mjdTitle')) safe('mjdTitle').textContent = 'עריכת דיווח';
+    if (safe('mjdSubmitBtn')) safe('mjdSubmitBtn').textContent = 'עדכן';
+    if (safe('mjdCancelBtn')) safe('mjdCancelBtn').classList.remove('hidden');
+    if (fab) fab.classList.add('is-editing');
+    // fill drawer fields from editing state
+    const r = journalReports.find(x => x.id === editingReportId);
+    if (r) {
+      if (safe('mjdText'))     safe('mjdText').value = r.description || '';
+      if (safe('mjdReporter')) safe('mjdReporter').value = r.reporter || '';
+      if (safe('mjdLogType'))  safe('mjdLogType').value = r.logType || '';
+      if (safe('mjdDate'))     safe('mjdDate').value = r.date || '';
+      if (safe('mjdTime'))     safe('mjdTime').value = r.time || '';
+    }
+  } else {
+    if (safe('mjdTitle')) safe('mjdTitle').textContent = 'הזנת דיווח ליומן';
+    if (safe('mjdSubmitBtn')) safe('mjdSubmitBtn').textContent = 'הזן דיווח';
+    if (safe('mjdCancelBtn')) safe('mjdCancelBtn').classList.add('hidden');
+    if (fab) fab.classList.remove('is-editing');
+    // set default date/time
+    const now = new Date();
+    const d = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const t = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    if (safe('mjdDate')) safe('mjdDate').value = d;
+    if (safe('mjdTime')) safe('mjdTime').value = t;
+    if (safe('mjdText')) safe('mjdText').value = '';
+    if (safe('mjdError')) safe('mjdError').textContent = '';
+    // restore last used reporter/logType
+    setTimeout(() => {
+      if (safe('mjdReporter') && lastReporter) safe('mjdReporter').value = lastReporter;
+      if (safe('mjdLogType')  && lastLogType)  safe('mjdLogType').value  = lastLogType;
+    }, 0);
+  }
+  setTimeout(() => safe('mjdText')?.focus(), 120);
+}
+
+function closeMobileJournalDrawer() {
+  const drawer = safe('mobileJournalDrawer');
+  if (drawer) drawer.classList.add('hidden');
+  const fab = safe('mobileAdminFab');
+  if (fab) fab.classList.remove('is-editing');
+}
+
+function syncMobileDrawerDropdowns() {
+  // Sync reporter options
+  const mjdRep = safe('mjdReporter');
+  const mainRep = safe('filterReporter');
+  if (mjdRep && mainRep) {
+    const cur = mjdRep.value;
+    mjdRep.innerHTML = mainRep.innerHTML;
+    if (cur) mjdRep.value = cur;
+  }
+  // Sync logType options
+  const mjdLt = safe('mjdLogType');
+  const mainLt = safe('filterLogType');
+  if (mjdLt && mainLt) {
+    const cur = mjdLt.value;
+    mjdLt.innerHTML = mainLt.innerHTML;
+    if (cur) mjdLt.value = cur;
+  }
+}
+
+async function submitMobileDrawer() {
+  const desc = safe('mjdText')?.value.trim();
+  const rep  = safe('mjdReporter')?.value;
+  const lt   = safe('mjdLogType')?.value;
+  const err  = safe('mjdError');
+  if (!desc) { if (err) err.textContent = 'נא להזין תיאור דיווח'; return; }
+  if (!rep)  { if (err) err.textContent = 'נא לבחור מדווח'; return; }
+  if (!lt)   { if (err) err.textContent = 'נא לבחור שיוך'; return; }
+
+  let date = safe('mjdDate')?.value;
+  let time = safe('mjdTime')?.value;
+  if (!date || !time) {
+    const n = new Date();
+    date = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+    time = `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+  }
+  if (!isValidTimeFormat(time)) { if (err) err.textContent = 'פורמט שעה שגוי (HH:MM)'; return; }
+  if (err) err.textContent = '';
+  lastReporter = rep;
+  lastLogType  = lt;
+
+  const btn = safe('mjdSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'שומר...'; }
+
+  try {
+    if (editingReportId) {
+      const existing = journalReports.find(r => r.id === editingReportId);
+      if (!existing) { showCustomAlert('דיווח לא נמצא'); closeMobileJournalDrawer(); return; }
+      const diff = (new Date() - new Date(existing.timestamp)) / (1000*60*60);
+      if (diff >= 48) { showCustomAlert('לא ניתן לערוך דיווחים בני יותר מ-48 שעות'); closeMobileJournalDrawer(); return; }
+      await setDoc(getReportDoc(editingReportId), {description:desc,date,time,reporter:rep,logType:lt}, {merge:true});
+      lastAddedReportId = editingReportId;
+      collapsedGroups.delete(date);
+      editingReportId = null;
+    } else {
+      const payload = {description:desc, date, time, reporter:rep, logType:lt, creatorId:currentUserId, timestamp:new Date().toISOString()};
+      const ref = await addDoc(reportsColRef, payload);
+      lastAddedReportId = ref.id;
+      collapsedGroups.delete(date);
+    }
+    closeMobileJournalDrawer();
+  } catch(e) {
+    if (err) err.textContent = 'שגיאה בשמירה: ' + e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = editingReportId ? 'עדכן' : 'הזן דיווח'; }
+  }
+}
+
+function setupMobileAdminDrawer() {
+  // FAB button — open drawer
+  safe('mobileAdminFab')?.addEventListener('click', () => openMobileJournalDrawer());
+
+  // Close drawer
+  safe('mjdCloseBtn')?.addEventListener('click', () => {
+    closeMobileJournalDrawer();
+    if (editingReportId) { editingReportId = null; }
+  });
+  safe('mjdBackdrop')?.addEventListener('click', () => {
+    closeMobileJournalDrawer();
+    if (editingReportId) { editingReportId = null; }
+  });
+
+  // Cancel edit
+  safe('mjdCancelBtn')?.addEventListener('click', () => {
+    editingReportId = null;
+    closeMobileJournalDrawer();
+  });
+
+  // Submit
+  safe('mjdSubmitBtn')?.addEventListener('click', submitMobileDrawer);
+
+  // DateTime toggle
+  safe('mjdShowDateTime')?.addEventListener('change', e => {
+    safe('mjdDateTimeRow')?.classList.toggle('hidden', !e.target.checked);
+  });
+}
+
+// ════════════════════════════════════════════════════════
 //  BOOT ADMIN
 // ════════════════════════════════════════════════════════
 async function bootJournalReadOnly(eventId) {
@@ -2339,6 +2517,7 @@ async function bootAdmin(sharedOnly=false) {
   setupJournalManagerTabs();
   setupJournalManagerListeners();
   setupJournalInlineListeners();
+  setupMobileAdminDrawer();
   setDefaultDateTime();
   resetForm();
   assessmentTime.setMinutes(assessmentTime.getMinutes()+30); assessmentTime.setSeconds(0);
@@ -2346,8 +2525,11 @@ async function bootAdmin(sharedOnly=false) {
   setInterval(updateAssessmentDisplay, 1000);
   await getOrCreateActiveEvent();
   await subscribeVillageReports();
-  await subscribeActiveEvent(); // מתחיל להאזין לעדכוני שעת הערכת המצב מ-Firestore
-  
+  await subscribeActiveEvent();
+
+  // הצג/הסתר FAB בהתאם לסטטוס התחברות
+  const fab = safe('mobileAdminFab');
+  if (fab) fab.style.display = (!sharedOnly && hasJournalAccess(auth?.currentUser)) ? '' : 'none';
 
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
@@ -2357,14 +2539,10 @@ async function bootAdmin(sharedOnly=false) {
     const logoutMobile = safe('mobileLogoutBtn'); if(logoutMobile) logoutMobile.style.display='none';
     const plusBtn = safe('assessmentTimePlusBtn'); if(plusBtn) plusBtn.style.display='none';
     const minusBtn = safe('assessmentTimeMinusBtn'); if(minusBtn) minusBtn.style.display='none';
-    
-    // הסתרת האימייל של המשתמש
     const emailEl = safe('headerUserEmail'); if (emailEl) emailEl.style.display='none';
-    
-    // הסתרת אזור הזנת הנתונים כולו
     const inputBox = document.querySelector('.journal-input-box'); if (inputBox) inputBox.style.display='none';
+    if (fab) fab.style.display = 'none';
 
-    // הבטחת טעינת הנתונים למשתמשים לא מחוברים בקישור שיתוף ציבורי
     if (!unsubJournalReports) {
       if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
       unsubJournalReports = onSnapshot(reportsColRef, snap => {
@@ -2373,7 +2551,7 @@ async function bootAdmin(sharedOnly=false) {
       });
     }
   }
-  
+
   setTimeout(()=>map.invalidateSize(),150);
 }
 

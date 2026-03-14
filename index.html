@@ -633,6 +633,46 @@
     </main>
 </div>
 
+<!-- ══ Mobile Admin: כפתור + צף + Drawer הזנת יומן ══ -->
+<button id="mobileAdminFab" class="mobile-admin-fab" type="button" aria-label="הוסף דיווח ליומן">
+    <i class="fas fa-plus"></i>
+</button>
+
+<div id="mobileJournalDrawer" class="mobile-journal-drawer hidden">
+    <div class="mjd-backdrop" id="mjdBackdrop"></div>
+    <div class="mjd-sheet">
+        <div class="mjd-handle"></div>
+        <div class="mjd-header">
+            <span class="mjd-title" id="mjdTitle">הזנת דיווח ליומן</span>
+            <button class="mjd-close" id="mjdCloseBtn" type="button">✕</button>
+        </div>
+        <div class="mjd-body">
+            <textarea id="mjdText" class="mjd-textarea" rows="3" placeholder="פרטי דיווח..."></textarea>
+            <div class="mjd-row">
+                <select id="mjdLogType" class="mjd-select">
+                    <option value="">שיוך</option>
+                </select>
+                <select id="mjdReporter" class="mjd-select">
+                    <option value="">מדווח</option>
+                </select>
+            </div>
+            <label class="mjd-dt-toggle">
+                <input type="checkbox" id="mjdShowDateTime" />
+                שנה תאריך/שעה
+            </label>
+            <div id="mjdDateTimeRow" class="mjd-datetime hidden">
+                <input type="date" id="mjdDate" class="mjd-dt-input" />
+                <input type="text" id="mjdTime" class="mjd-dt-input" placeholder="HH:MM" />
+            </div>
+            <div id="mjdError" class="mjd-error"></div>
+            <div class="mjd-actions">
+                <button id="mjdCancelBtn" class="mjd-cancel-btn hidden" type="button">ביטול עריכה</button>
+                <button id="mjdSubmitBtn" class="mjd-submit-btn" type="button">הזן דיווח</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module" src="firebase.js"></script>
 <script type="module" src="script.js"></script>
 </body>
