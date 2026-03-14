@@ -677,6 +677,8 @@ function renderLayersModal() {
     if(cb.checked) activeLayers.add(l); else activeLayers.delete(l);
     persistAll();
     renderResidentMarkers();
+    renderGpxMarkers();
+    setTimeout(() => map?.invalidateSize(), 80);
     if(cb.checked) fitMapToLayerBounds(l);
   });
 }
