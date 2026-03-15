@@ -2162,11 +2162,6 @@ async function handleTaskCheck(taskId, logType, taskText, checked) {
 function updateTasksButtonStates() {
   const con=safe('taskButtonsContainer'); if(!con) return;
   con.innerHTML='';
-  const shouldHideTasksRow = isSharedLinkView && isMobileViewport();
-  if (shouldHideTasksRow) {
-    con.style.display = 'none';
-    return;
-  }
   const today=new Date();
   const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>r.logType));
@@ -2186,7 +2181,6 @@ function updateTasksButtonStates() {
     });
     con.appendChild(btn);
   });
-  con.style.display = sorted.length ? 'flex' : 'none';
 }
 
 // ── clocks ────────────────────────────────────────────
@@ -2202,19 +2196,15 @@ function updateCurrentTime() {
 function updateAssessmentDisplay() {
   const el=safe('assessmentTimeDisplay'); if(!el) return;
   const mob=safe('mobileAssessmentDisplay');
-  const now = new Date();
-  const diff=(assessmentTime-now)/(1000*60);
-  const shouldShowUnset = !assessmentTimeIsManual || diff <= 0;
-
-  if(shouldShowUnset){
+  if(!assessmentTimeIsManual){
     el.textContent='טרם נקבע'; el.classList.remove('blinking-red');
     if(mob){ mob.textContent='טרם נקבע'; mob.classList.remove('blinking-red'); }
     return;
   }
-
   const val=`${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}`;
   el.textContent=val;
   if(mob) mob.textContent=val;
+  const diff=(assessmentTime-new Date())/(1000*60);
   if(diff>0&&diff<=5){ el.classList.add('blinking-red'); if(mob) mob.classList.add('blinking-red'); }
   else { el.classList.remove('blinking-red'); if(mob) mob.classList.remove('blinking-red'); }
 }
