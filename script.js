@@ -956,6 +956,46 @@ function setupModals() {
   safe('openResidentReportsManagerBtn')?.addEventListener('click', async ()=>{ openModal('#residentReportsManagerPanel'); updateRrmStats(); await loadRrmSnapshotsFromFirestore(); renderRrmSnapshots(); });
   safe('lockEventBtn')?.addEventListener('click',()=>openModal('#lockPanel'));
 
+  // ── Resident Reports Excel Export ──
+  safe('rrmExportExcelBtn')?.addEventListener('click', () => {
+    const qs = window._reportQuestionsConfig || DEFAULT_REPORT_QUESTIONS;
+    // Collect all custom question labels
+    const customLabels = qs.filter(q => !q.builtin && !q.hidden).map(q => q.label);
+
+    // Use live reportCache OR latest snapshot
+    let reports = reportCache;
+    if (!reports || !reports.length) {
+      const latest = rrmSnapshotsCache[0];
+      reports = latest?.reports || [];
+    }
+    if (!reports.length) { showCustomAlert('אין דיווחים לייצוא'); return; }
+
+    const now = new Date();
+    const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    // Build header
+    const headers = ['רחוב', 'מספר', 'יישוב', 'מצב', 'נפשות בבית', 'הערות', 'תאריך ושעת דיווח', ...customLabels];
+
+    const rows = reports.map(r => {
+      const statuses = (r.statuses || []).map(s => s === 'ok' ? 'תקין' : s === 'injury' ? 'פגיעה בנפש' : s === 'property' ? 'נזק לרכוש' : s).join(' + ') || 'לא צוין';
+      const ts = r.updatedAt?.toDate ? r.updatedAt.toDate() : (r.createdAt?.toDate ? r.createdAt.toDate() : null);
+      const tsStr = ts ? `${String(ts.getDate()).padStart(2,'0')}/${String(ts.getMonth()+1).padStart(2,'0')}/${ts.getFullYear()} ${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '';
+      const customVals = customLabels.map(lbl => r.customAnswers?.[lbl] ?? '');
+      return [r.street || '', r.house || '', r.city || '', statuses, r.souls ?? 0, r.note || '', tsStr, ...customVals];
+    });
+
+    // Build CSV with BOM
+    const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers, ...rows].map(row => row.map(escape).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `דיווחי_תושבים_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
   // ── Status popup toggle ──
   const statusToggleBtn = safe('statusBarToggleBtn');
   const statusPopup = safe('statusPopup');
@@ -2292,6 +2332,102 @@ const handleAuthState = async (user) => {
 // ════════════════════════════════════════════════════════
 //  RESIDENT REPORT FORM SETUP
 // ════════════════════════════════════════════════════════
+function applyReportQuestionsToForm() {
+  const qs = Array.isArray(window._reportQuestionsConfig) && window._reportQuestionsConfig.length
+    ? window._reportQuestionsConfig
+    : (Array.isArray(reportQuestions) && reportQuestions.length ? reportQuestions : DEFAULT_REPORT_QUESTIONS);
+
+  // Builtin sections
+  const statusSection = document.querySelector('.rc-section-status')?.closest('.rc-row2') || document.querySelector('.rc-row2');
+  const soulsSection = document.querySelector('.rc-section-souls');
+  const statusSectionInner = document.querySelector('.rc-section-status');
+  const noteSection = safe('freeText')?.closest('.rc-section');
+
+  const qStatus  = qs.find(q => q.id === 'builtin_status');
+  const qSouls   = qs.find(q => q.id === 'builtin_souls');
+  const qNote    = qs.find(q => q.id === 'builtin_note');
+
+  // Show/hide status block
+  if (statusSectionInner) {
+    statusSectionInner.style.display = (qStatus && qStatus.hidden) ? 'none' : '';
+    const lbl = statusSectionInner.querySelector('.rc-label');
+    if (lbl && qStatus) lbl.textContent = qStatus.label;
+  }
+  // Show/hide souls block
+  if (soulsSection) {
+    soulsSection.style.display = (qSouls && qSouls.hidden) ? 'none' : '';
+    const lbl = soulsSection.querySelector('.rc-label');
+    if (lbl && qSouls) lbl.textContent = qSouls.label;
+  }
+  // If both hidden, hide the entire row
+  if (statusSection) {
+    const bothHidden = (qStatus?.hidden) && (qSouls?.hidden);
+    statusSection.style.display = bothHidden ? 'none' : '';
+  }
+  // Show/hide note
+  if (noteSection) {
+    noteSection.style.display = (qNote && qNote.hidden) ? 'none' : '';
+    const lbl = noteSection.querySelector('.rc-label');
+    if (lbl && qNote) lbl.textContent = qNote.label;
+  }
+
+  // Render custom questions
+  const customContainer = safe('customQuestionsContainer');
+  if (!customContainer) return;
+  customContainer.innerHTML = '';
+
+  const customQs = qs.filter(q => !q.builtin && !q.hidden);
+  customQs.forEach(q => {
+    const section = document.createElement('div');
+    section.className = 'rc-section';
+    section.dataset.qid = q.id;
+
+    let inputHtml = '';
+    if (q.type === 'text') {
+      inputHtml = `<textarea class="rc-textarea cq-input" data-qid="${q.id}" rows="2" placeholder="${q.label}${q.required?' (חובה)':''}"></textarea>`;
+    } else if (q.type === 'number') {
+      inputHtml = `<input type="number" class="rc-textarea cq-input" data-qid="${q.id}" placeholder="0" style="max-width:120px" />`;
+    } else if (q.type === 'yesno') {
+      inputHtml = `<div style="display:flex;gap:10px">
+        <button type="button" class="rc-pill cq-yesno cq-input" data-qid="${q.id}" data-val="כן">כן</button>
+        <button type="button" class="rc-pill cq-yesno cq-input" data-qid="${q.id}" data-val="לא">לא</button>
+      </div>`;
+    } else if (q.type === 'select' && q.options) {
+      inputHtml = `<select class="rc-select cq-input" data-qid="${q.id}" style="width:100%;max-width:300px">
+        <option value="">בחר...</option>
+        ${q.options.map(o => `<option value="${o}">${o}</option>`).join('')}
+      </select>`;
+    }
+
+    section.innerHTML = `<span class="rc-label">${q.label}${q.required ? ' *' : ''}</span>${inputHtml}`;
+    customContainer.appendChild(section);
+  });
+
+  // Yes/No toggle
+  customContainer.querySelectorAll('.cq-yesno').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const qid = btn.dataset.qid;
+      customContainer.querySelectorAll(`.cq-yesno[data-qid="${qid}"]`).forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+}
+
+function collectCustomAnswers() {
+  const answers = {};
+  const qs = window._reportQuestionsConfig || [];
+  qs.filter(q => !q.builtin && !q.hidden).forEach(q => {
+    if (q.type === 'yesno') {
+      const active = document.querySelector(`.cq-yesno.active[data-qid="${q.id}"]`);
+      answers[q.label] = active ? active.dataset.val : '';
+    } else {
+      const el = document.querySelector(`.cq-input[data-qid="${q.id}"]`);
+      answers[q.label] = el ? (el.value || '') : '';
+    }
+  });
+  return answers;
+}
+
 function setupReportForm() {
   const addressBtn=safe('locAddressBtn'); const gpsBtn=safe('locGpsBtn');
   const manual=safe('manualAddressFields'); const gpsBox=safe('gpsBox');
@@ -2319,20 +2455,36 @@ function setupReportForm() {
     $$('.status-btn').forEach(b=>b.classList.toggle('active',currentStatus.includes(b.dataset.status)));
     safe('statusHint').textContent=currentStatus.length>1?'נבחרו מספר מצבים':'';
   }));
+
+  // Apply question config to form
+  applyReportQuestionsToForm();
+
   safe('submitBtn')?.addEventListener('click',async()=>{
     const err=safe('formError'); err.classList.add('hidden');
     const city=safe('city').value.trim()||'לפיד';
     const street=safe('street').value.trim(); const house=safe('house').value.trim();
     const souls2=+safe('soulsCount').value||0; const note=safe('freeText').value.trim();
+    const qs = window._reportQuestionsConfig || DEFAULT_REPORT_QUESTIONS;
+    const qStatus = qs.find(q => q.id === 'builtin_status');
+    const statusRequired = qStatus ? (qStatus.required !== false && !qStatus.hidden) : true;
     if(!street){ err.textContent='נא להזין רחוב'; err.classList.remove('hidden'); return; }
-    if(!currentStatus.length){ err.textContent='נא לבחור מצב'; err.classList.remove('hidden'); return; }
+    if(statusRequired && !currentStatus.length){ err.textContent='נא לבחור מצב'; err.classList.remove('hidden'); return; }
+    // Validate required custom questions
+    const customQs = qs.filter(q => !q.builtin && !q.hidden && q.required);
+    for (const q of customQs) {
+      const el = document.querySelector(`.cq-input[data-qid="${q.id}"]`);
+      const yesnoActive = document.querySelector(`.cq-yesno.active[data-qid="${q.id}"]`);
+      const val = q.type === 'yesno' ? (yesnoActive ? yesnoActive.dataset.val : '') : (el ? el.value.trim() : '');
+      if (!val) { err.textContent = `נא למלא: ${q.label}`; err.classList.remove('hidden'); return; }
+    }
     try {
       let coords=gpsCoords;
       if(locationType==='address') {
-        // Only use exact coordinates from managedHouses — no external geocoding
         coords = lookupHouseCoords(street, house) || null;
       }
-      await submitVillageReport({city,street,house,souls:souls2,note,statuses:currentStatus,lat:coords?.lat||null,lng:coords?.lng||null});
+      const customAnswers = collectCustomAnswers();
+      const statuses = currentStatus.length ? currentStatus : (qStatus?.hidden ? [] : currentStatus);
+      await submitVillageReport({city,street,house,souls:souls2,note,statuses,lat:coords?.lat||null,lng:coords?.lng||null,customAnswers});
       safe('successBox').classList.remove('hidden');
     } catch(e){ err.textContent=e?.message||'שגיאה בשליחה'; err.classList.remove('hidden'); }
   });
@@ -2418,9 +2570,18 @@ function setupJournalInlineListeners() {
   safe('showDateTimeToggle')?.addEventListener('change',e=>{ const wrap=safe('dateTimeInputsWrapper'); if(wrap) wrap.classList.toggle('hidden',!e.target.checked); });
   
   safe('assessmentTimePlusBtn')?.addEventListener('click', async ()=>{ 
-      if(!assessmentTimeIsManual){assessmentTime=new Date();} 
-      assessmentTime.setMinutes(assessmentTime.getMinutes()+5); 
-      assessmentTime.setSeconds(0); 
+      if(!assessmentTimeIsManual){
+        // First press: round up to the next 5-minute mark from now
+        const now = new Date();
+        const mins = now.getMinutes();
+        const nextMark = Math.ceil((mins + 1) / 5) * 5;
+        assessmentTime = new Date(now);
+        assessmentTime.setMinutes(nextMark);
+        assessmentTime.setSeconds(0);
+      } else {
+        assessmentTime.setMinutes(assessmentTime.getMinutes()+5); 
+        assessmentTime.setSeconds(0); 
+      }
       assessmentTimeIsManual=true;
       updateAssessmentDisplay(); 
       if (activeEventId) await updateDoc(getEventDoc(activeEventId), { assessmentTime: assessmentTime.getTime(), assessmentTimeIsManual: true });
@@ -2618,7 +2779,212 @@ function setupMobileAdminDrawer() {
 }
 
 // ════════════════════════════════════════════════════════
-//  BOOT ADMIN
+//  REPORT QUESTIONS MANAGER
+// ════════════════════════════════════════════════════════
+// Default built-in questions (always shown, cannot be deleted, but label is editable)
+const DEFAULT_REPORT_QUESTIONS = [
+  { id: 'builtin_status',  label: 'מצב',           type: 'status',  builtin: true,  required: true,  hidden: false },
+  { id: 'builtin_souls',   label: 'נפשות בבית',     type: 'counter', builtin: true,  required: false, hidden: false },
+  { id: 'builtin_note',    label: 'פרטים נוספים',   type: 'text',    builtin: true,  required: false, hidden: false },
+];
+
+let reportQuestions = [];  // loaded from Firestore config
+let _rqLoaded = false;
+
+function getReportQuestionsFromConfig() {
+  return Array.isArray(window._reportQuestionsConfig) ? window._reportQuestionsConfig : DEFAULT_REPORT_QUESTIONS;
+}
+
+async function loadReportQuestions() {
+  if (!db) return;
+  try {
+    const snap = await getDoc(getConfigDoc());
+    const data = snap.exists() ? snap.data() : {};
+    if (Array.isArray(data.reportQuestions) && data.reportQuestions.length) {
+      reportQuestions = data.reportQuestions;
+    } else {
+      reportQuestions = [...DEFAULT_REPORT_QUESTIONS];
+    }
+    window._reportQuestionsConfig = reportQuestions;
+    _rqLoaded = true;
+  } catch(e) {
+    reportQuestions = [...DEFAULT_REPORT_QUESTIONS];
+    window._reportQuestionsConfig = reportQuestions;
+  }
+}
+
+async function saveReportQuestions() {
+  window._reportQuestionsConfig = reportQuestions;
+  if (!db) return;
+  await setDoc(getConfigDoc(), { reportQuestions }, { merge: true }).catch(e => console.error('Failed to save report questions:', e));
+}
+
+function renderRqmList() {
+  const wrap = safe('rqm-questions-list'); if (!wrap) return;
+  if (!reportQuestions.length) { wrap.innerHTML = '<div style="color:#8da8c5;text-align:center;padding:12px">אין שאלות. הוסף למטה.</div>'; return; }
+
+  wrap.innerHTML = reportQuestions.map((q, idx) => {
+    const typeLabel = { status: 'מצב (מובנה)', counter: 'מונה (מובנה)', text: 'טקסט חופשי', select: 'בחירה', yesno: 'כן/לא', number: 'מספר' }[q.type] || q.type;
+    const optStr = q.options ? ` · ${q.options.join(', ')}` : '';
+    const isHidden = q.hidden === true;
+    return `<div class="rqm-item" data-idx="${idx}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${isHidden?'#0d1e30':'#15304f'};border:1px solid ${isHidden?'rgba(255,255,255,.04)':'rgba(255,255,255,.08)'};border-radius:12px;opacity:${isHidden?'0.55':'1'}">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-weight:700;color:#eef5ff;font-size:14px;${isHidden?'text-decoration:line-through;color:#8da8c5':''}">${q.label}</span>
+          ${q.required && !isHidden ? '<span style="color:#f4c246;font-size:11px">(חובה)</span>' : ''}
+          ${q.builtin ? '<span style="color:#7ec8ff;font-size:11px;background:rgba(40,147,255,.15);padding:2px 6px;border-radius:6px">מובנה</span>' : ''}
+          ${isHidden ? '<span style="color:#8da8c5;font-size:11px;background:rgba(255,255,255,.07);padding:2px 6px;border-radius:6px">מוסתר</span>' : ''}
+        </div>
+        <div style="color:#8da8c5;font-size:12px;margin-top:2px">${typeLabel}${optStr}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        ${!q.builtin && idx > 0 && !isHidden ? `<button class="icon-btn rqm-up" data-idx="${idx}" type="button" title="הזז למעלה">↑</button>` : ''}
+        ${!q.builtin && idx < reportQuestions.length - 1 && !isHidden ? `<button class="icon-btn rqm-down" data-idx="${idx}" type="button" title="הזז למטה">↓</button>` : ''}
+        <button class="icon-btn rqm-toggle-hidden" data-idx="${idx}" type="button" style="font-size:12px;padding:4px 8px;background:${isHidden?'rgba(40,147,255,.2)':'rgba(255,255,255,.06)'};border:1px solid ${isHidden?'rgba(40,147,255,.5)':'rgba(255,255,255,.1)'};color:${isHidden?'#7ec8ff':'#8da8c5'}" title="${isHidden?'הצג בטופס':'הסתר מהטופס'}">${isHidden ? '👁 הצג' : '🙈 הסתר'}</button>
+        <button class="icon-btn rqm-edit" data-idx="${idx}" type="button" style="font-size:12px;padding:4px 8px">ערוך</button>
+        ${!q.builtin ? `<button class="delete-btn rqm-del" data-idx="${idx}" type="button" style="font-size:12px;padding:4px 8px">מחק</button>` : ''}
+      </div>
+    </div>
+    <div class="rqm-edit-row" data-edit-idx="${idx}" style="display:none;padding:10px 12px;background:#0d2440;border:1px solid rgba(40,147,255,.4);border-radius:12px;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input class="rqm-edit-label" value="${q.label}" style="flex:1;min-width:140px;background:#15304f;border:1px solid rgba(40,147,255,.5);border-radius:8px;color:#fff;padding:6px 10px;font-size:14px;font-family:inherit" />
+        ${!q.builtin ? `<select class="rqm-edit-type" style="background:#15304f;border:1px solid rgba(40,147,255,.4);border-radius:8px;color:#fff;padding:6px 8px;font-size:13px;font-family:inherit">
+          <option value="text" ${q.type==='text'?'selected':''}>טקסט חופשי</option>
+          <option value="select" ${q.type==='select'?'selected':''}>בחירה מרשימה</option>
+          <option value="yesno" ${q.type==='yesno'?'selected':''}>כן / לא</option>
+          <option value="number" ${q.type==='number'?'selected':''}>מספר</option>
+        </select>` : ''}
+        <label style="display:flex;align-items:center;gap:5px;color:#8da8c5;font-size:13px;cursor:pointer">
+          <input type="checkbox" class="rqm-edit-required" ${q.required ? 'checked' : ''} ${q.builtin && q.type === 'status' ? 'disabled' : ''} /> חובה
+        </label>
+      </div>
+      ${!q.builtin ? `<input class="rqm-edit-options" value="${(q.options||[]).join(', ')}" placeholder="אפשרויות מופרדות בפסיק (רק לסוג 'בחירה')" style="background:#15304f;border:1px solid rgba(40,147,255,.3);border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box" />` : ''}
+      <div style="display:flex;gap:8px">
+        <button class="primary-btn rqm-edit-save" data-idx="${idx}" type="button" style="padding:6px 16px;font-size:13px">שמור</button>
+        <button class="ghost-btn rqm-edit-cancel" data-idx="${idx}" type="button" style="padding:6px 14px;font-size:13px">ביטול</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Bind events
+  wrap.querySelectorAll('.rqm-toggle-hidden').forEach(b => b.onclick = async () => {
+    const i = +b.dataset.idx;
+    reportQuestions[i].hidden = !reportQuestions[i].hidden;
+    // if making status required+hidden, un-require it
+    if (reportQuestions[i].hidden && reportQuestions[i].id === 'builtin_status') {
+      reportQuestions[i].required = false;
+    }
+    await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
+  });
+  wrap.querySelectorAll('.rqm-up').forEach(b => b.onclick = async () => {
+    const i = +b.dataset.idx;
+    [reportQuestions[i-1], reportQuestions[i]] = [reportQuestions[i], reportQuestions[i-1]];
+    await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
+  });
+  wrap.querySelectorAll('.rqm-down').forEach(b => b.onclick = async () => {
+    const i = +b.dataset.idx;
+    [reportQuestions[i], reportQuestions[i+1]] = [reportQuestions[i+1], reportQuestions[i]];
+    await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
+  });
+  wrap.querySelectorAll('.rqm-del').forEach(b => b.onclick = async () => {
+    reportQuestions.splice(+b.dataset.idx, 1);
+    await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
+  });
+  wrap.querySelectorAll('.rqm-edit').forEach(b => b.onclick = () => {
+    const idx = +b.dataset.idx;
+    wrap.querySelectorAll('.rqm-edit-row').forEach(r => r.style.display = 'none');
+    const editRow = wrap.querySelector(`.rqm-edit-row[data-edit-idx="${idx}"]`);
+    if (editRow) editRow.style.display = 'flex';
+  });
+  wrap.querySelectorAll('.rqm-edit-cancel').forEach(b => b.onclick = () => {
+    wrap.querySelectorAll('.rqm-edit-row').forEach(r => r.style.display = 'none');
+  });
+  wrap.querySelectorAll('.rqm-edit-save').forEach(b => b.onclick = async () => {
+    const idx = +b.dataset.idx;
+    const editRow = wrap.querySelector(`.rqm-edit-row[data-edit-idx="${idx}"]`);
+    if (!editRow) return;
+    const newLabel = editRow.querySelector('.rqm-edit-label')?.value.trim();
+    if (!newLabel) return;
+    const q = reportQuestions[idx];
+    q.label = newLabel;
+    const typeEl = editRow.querySelector('.rqm-edit-type');
+    if (typeEl) q.type = typeEl.value;
+    const reqEl = editRow.querySelector('.rqm-edit-required');
+    if (reqEl) q.required = reqEl.checked;
+    const optEl = editRow.querySelector('.rqm-edit-options');
+    if (optEl && q.type === 'select') {
+      q.options = optEl.value.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (q.type !== 'select') {
+      delete q.options;
+    }
+    await saveReportQuestions();
+    renderRqmList();
+    applyReportQuestionsToForm();
+  });
+}
+
+function setupReportQuestionsManager() {
+  // Load questions and bind open button
+  loadReportQuestions().then(() => renderRqmList());
+
+  safe('openReportQuestionsManagerBtn')?.addEventListener('click', async () => {
+    await loadReportQuestions();
+    renderRqmList();
+    openModal('#reportQuestionsManagerPanel');
+  });
+
+  // Close panel
+  safe('reportQuestionsManagerPanel')?.addEventListener('click', e => {
+    if (e.target === safe('reportQuestionsManagerPanel')) closeModal('#reportQuestionsManagerPanel');
+  });
+  safe('reportQuestionsManagerPanel')?.querySelector('[data-close="#reportQuestionsManagerPanel"]')
+    ?.addEventListener('click', () => closeModal('#reportQuestionsManagerPanel'));
+
+  // Type change: show/hide options field
+  safe('rqmNewType')?.addEventListener('change', () => {
+    const t = safe('rqmNewType').value;
+    const row = safe('rqmOptionsRow');
+    if (row) row.style.display = t === 'select' ? 'block' : 'none';
+  });
+
+  safe('rqmSaveBtn')?.addEventListener('click', async () => {
+    const errEl = safe('rqmError');
+    if (errEl) errEl.textContent = '';
+    window._reportQuestionsConfig = [...reportQuestions];
+    await saveReportQuestions();
+    renderRqmList();
+    applyReportQuestionsToForm();
+    showCustomAlert('השאלות נשמרו');
+  });
+
+  // Add question
+  safe('rqmAddQuestionBtn')?.addEventListener('click', async () => {
+    const label = safe('rqmNewLabel')?.value.trim();
+    const type  = safe('rqmNewType')?.value || 'text';
+    const required = safe('rqmNewRequired')?.checked || false;
+    const errEl = safe('rqmError');
+    if (!label) { if (errEl) errEl.textContent = 'נא להזין תווית לשאלה'; return; }
+    if (errEl) errEl.textContent = '';
+    const newQ = { id: `q_${Date.now()}`, label, type, required };
+    if (type === 'select') {
+      const opts = safe('rqmOptionsInput')?.value.split(',').map(s => s.trim()).filter(Boolean);
+      if (!opts || !opts.length) { if (errEl) errEl.textContent = 'נא להזין אפשרויות לבחירה'; return; }
+      newQ.options = opts;
+    }
+    reportQuestions.push(newQ);
+    window._reportQuestionsConfig = [...reportQuestions];
+    await saveReportQuestions();
+    renderRqmList();
+    applyReportQuestionsToForm();
+    applyReportQuestionsToForm();
+    if (safe('rqmNewLabel')) safe('rqmNewLabel').value = '';
+    if (safe('rqmOptionsInput')) safe('rqmOptionsInput').value = '';
+    if (safe('rqmNewRequired')) safe('rqmNewRequired').checked = false;
+    const optRow = safe('rqmOptionsRow'); if (optRow) optRow.style.display = 'none';
+    const typeEl = safe('rqmNewType'); if (typeEl) typeEl.value = 'text';
+  });
+}
+
 // ════════════════════════════════════════════════════════
 async function bootJournalReadOnly(eventId) {
   safe('screen-report')?.classList.remove('active');
@@ -2673,9 +3039,10 @@ async function bootAdmin(sharedOnly=false) {
   setupJournalManagerListeners();
   setupJournalInlineListeners();
   setupMobileAdminDrawer();
+  setupReportQuestionsManager();
   setDefaultDateTime();
   resetForm();
-  assessmentTime.setMinutes(assessmentTime.getMinutes()+30); assessmentTime.setSeconds(0);
+  // assessmentTime remains "טרם נקבע" (assessmentTimeIsManual=false) until + is pressed
   setInterval(updateCurrentTime, 1000);
   setInterval(updateAssessmentDisplay, 1000);
   await getOrCreateActiveEvent();
@@ -2886,6 +3253,39 @@ function updateRrmStats() {
   updateMapStatusBar();
 }
 
+function exportSnapshotToExcel(snapshot) {
+  const qs = window._reportQuestionsConfig || DEFAULT_REPORT_QUESTIONS;
+  const reports = snapshot.reports || [];
+  if (!reports.length) { showCustomAlert('אין דיווחים בסנפשוט זה'); return; }
+
+  // Collect all unique custom-answer keys from this snapshot's reports
+  const customKeysSet = new Set();
+  reports.forEach(r => { if (r.customAnswers) Object.keys(r.customAnswers).forEach(k => customKeysSet.add(k)); });
+  // Order: prefer question order from config, then anything extra
+  const configLabels = qs.filter(q => !q.builtin).map(q => q.label);
+  const customKeys = [...configLabels.filter(l => customKeysSet.has(l)), ...[...customKeysSet].filter(l => !configLabels.includes(l))];
+
+  const headers = ['רחוב', 'מספר', 'יישוב', 'מצב', 'נפשות בבית', 'הערות', 'תאריך ושעת דיווח', ...customKeys];
+  const rows = reports.map(r => {
+    const statuses = (r.statuses || []).map(s => s === 'ok' ? 'תקין' : s === 'injury' ? 'פגיעה בנפש' : s === 'property' ? 'נזק לרכוש' : s).join(' + ') || 'לא צוין';
+    const ts = r.updatedAt?.toDate ? r.updatedAt.toDate() : (r.createdAt?.toDate ? r.createdAt.toDate() : null);
+    const tsStr = ts ? `${String(ts.getDate()).padStart(2,'0')}/${String(ts.getMonth()+1).padStart(2,'0')}/${ts.getFullYear()} ${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '';
+    const customVals = customKeys.map(k => r.customAnswers?.[k] ?? '');
+    return [r.street || '', r.house || '', r.city || '', statuses, r.souls ?? 0, r.note || '', tsStr, ...customVals];
+  });
+
+  const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = [headers, ...rows].map(row => row.map(escape).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeLabel = (snapshot.dateLabel || 'snapshot').replace(/[/:]/g, '-');
+  a.download = `דיווחי_תושבים_${safeLabel}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function renderRrmSnapshots() {
   const wrap = safe('rrmSnapshotsList'); if(!wrap) return;
   const snapshots = Array.isArray(rrmSnapshotsCache) ? rrmSnapshotsCache : [];
@@ -2901,9 +3301,21 @@ function renderRrmSnapshots() {
           <span class="prop-pill">${s.property} נזק לרכוש</span>
         </div>
       </div>
-      <button class="rrm-snapshot-show-btn" data-idx="${idx}" type="button">הצג על המפה</button>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="rrm-snapshot-show-btn" data-idx="${idx}" type="button">הצג על המפה</button>
+        <button class="rrm-snapshot-export-btn" data-idx="${idx}" type="button" style="background:rgba(40,180,80,.15);border:1px solid rgba(40,180,80,.4);color:#6fbf7a;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit">📊 אקסל</button>
+      </div>
     </div>
   `).join('');
+
+  wrap.querySelectorAll('.rrm-snapshot-export-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = +btn.dataset.idx;
+      const snapshot = snapshots[idx];
+      if (!snapshot || !snapshot.reports) { showCustomAlert('אין נתונים לייצוא'); return; }
+      exportSnapshotToExcel(snapshot);
+    });
+  });
 
   wrap.querySelectorAll('.rrm-snapshot-show-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -2935,7 +3347,16 @@ function renderRrmSnapshots() {
         const color=iconColor(dotClass(r.statuses||[]));
         const markerId='snap_'+r.id;
         residentMarkers[markerId]=L.marker([lat,lng],{icon:makeMarkerIcon(color)}).addTo(map);
-        residentMarkers[markerId].bindPopup(popupHtml(`${r.city||''}, ${r.street||''} ${r.house||''}`,`${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,r.note||''));
+        // Build popup with original question answers from snapshot
+        let extraHtml = r.note ? `<div style='color:#8da8c5;margin-top:4px'>${r.note}</div>` : '';
+        if (r.customAnswers && typeof r.customAnswers === 'object') {
+          const answerLines = Object.entries(r.customAnswers)
+            .filter(([,v]) => v !== '' && v != null)
+            .map(([label, val]) => `<div style='color:#b0d4f7;font-size:12px;margin-top:2px'><span style='color:#8da8c5'>${label}:</span> ${val}</div>`)
+            .join('');
+          if (answerLines) extraHtml += `<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${answerLines}</div>`;
+        }
+        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong><div>${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות</div>${extraHtml}</div>`);
       });
       setTimeout(()=>map?.invalidateSize(),80);
     });

@@ -92,6 +92,8 @@
             <textarea id="freeText" class="rc-textarea" placeholder="תיאור קצר של המצב" rows="2"></textarea>
         </div>
 
+        <div id="customQuestionsContainer"></div>
+
         <div id="formError" class="error-box hidden"></div>
         <button id="submitBtn" class="rc-submit" type="button">שלח דיווח</button>
         <div id="successBox" class="rc-success hidden">
@@ -287,6 +289,7 @@
                     <button class="manage-card" id="openEventTypesManagerBtn" type="button"><strong>סוגי אירוע</strong><span>ניהול סוגי אירועים</span></button>
                     <button class="manage-card" id="openJournalManagerBtn" type="button"><strong>נהל יומן</strong><span>מדווחים, שיוכים ומשימות</span></button>
                     <button class="manage-card" id="openResidentReportsManagerBtn" type="button"><strong>ניהול דיווחי תושבים</strong><span>שמירה, נעילה ואיפוס דיווחים</span></button>
+                    <button class="manage-card" id="openReportQuestionsManagerBtn" type="button"><strong>שאלות טופס דיווח</strong><span>התאמת שדות ושאלות לתושב</span></button>
                 </div>
             </section>
 
@@ -612,6 +615,7 @@
 
         <div class="rrm-actions">
             <button id="rrmSaveBtn" class="primary-btn" type="button">🔒 נעל ושמור דיווחים</button>
+            <button id="rrmExportExcelBtn" class="primary-btn" type="button" style="background:rgba(40,180,80,.2);border-color:rgba(40,180,80,.5);color:#6fbf7a">📊 ייצא לאקסל</button>
             <button id="rrmResetBtn" class="danger-btn" type="button">🗑 אפס דיווחים</button>
         </div>
 
@@ -622,6 +626,39 @@
 </div>
 <div id="taskSettingsModal" class="hidden"></div>
 <input type="file" id="importExcelBtn" style="display:none" />
+
+<!-- ══ Report Questions Manager Panel ══ -->
+<div id="reportQuestionsManagerPanel" class="overlay hidden">
+    <div class="modal-box" style="max-width:560px">
+        <button class="modal-close" data-close="#reportQuestionsManagerPanel" type="button">×</button>
+        <h2>שאלות טופס דיווח תושב</h2>
+        <p style="color:#8da8c5;font-size:13px;margin-bottom:16px">ערוך את שדות ושאלות שמוצגות לתושב בעת הדיווח. שינויים ייכנסו לתוקף מיד עבור דיווחים חדשים.</p>
+        <div id="rqm-questions-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+        <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px">
+            <div style="font-weight:700;color:#7ec8ff;margin-bottom:10px;font-size:14px">הוסף שאלה / שדה חדש</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                <input type="text" id="rqmNewLabel" placeholder="תווית השאלה (למשל: יש לך גנרטור?)" style="flex:1;min-width:180px;background:#0d2440;border:1px solid rgba(40,147,255,.4);border-radius:8px;color:#fff;padding:8px 12px;font-size:14px;font-family:inherit" />
+                <select id="rqmNewType" style="background:#0d2440;border:1px solid rgba(40,147,255,.4);border-radius:8px;color:#fff;padding:8px 10px;font-size:14px;font-family:inherit">
+                    <option value="text">טקסט חופשי</option>
+                    <option value="select">בחירה מרשימה</option>
+                    <option value="yesno">כן / לא</option>
+                    <option value="number">מספר</option>
+                </select>
+            </div>
+            <div id="rqmOptionsRow" style="display:none;margin-bottom:8px">
+                <input type="text" id="rqmOptionsInput" placeholder="אפשרויות מופרדות בפסיק: חסום,בוצר,פינוי" style="width:100%;box-sizing:border-box;background:#0d2440;border:1px solid rgba(40,147,255,.4);border-radius:8px;color:#fff;padding:8px 12px;font-size:13px;font-family:inherit" />
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+                <label style="display:flex;align-items:center;gap:6px;color:#8da8c5;font-size:13px;cursor:pointer">
+                    <input type="checkbox" id="rqmNewRequired" /> חובה
+                </label>
+                <button id="rqmAddQuestionBtn" class="primary-btn" type="button" style="margin-right:auto">+ הוסף שאלה</button>
+                <button id="rqmSaveBtn" class="primary-btn" type="button" style="background:rgba(40,147,255,.18);border:1px solid rgba(40,147,255,.45)">שמור</button>
+            </div>
+        </div>
+        <p id="rqmError" style="color:#ff9aaa;font-size:13px;margin-top:8px"></p>
+    </div>
+</div>
 
 <div id="customAlert" class="overlay hidden">
     <div class="modal-box compact-box" style="text-align:center">
