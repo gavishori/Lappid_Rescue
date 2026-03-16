@@ -1113,9 +1113,17 @@ textarea { min-height: 100px; resize: vertical; }
     font-size: 16px;
   }
 
-  .rail-btn-management,
-  #view-management {
+  .mobile-readonly-mode .rail-btn-management,
+  .mobile-readonly-mode #view-management {
     display: none !important;
+  }
+
+  #screen-admin:not(.mobile-readonly-mode) #view-management .manage-card {
+    display: none !important;
+  }
+
+  #screen-admin:not(.mobile-readonly-mode) #view-management .manage-card-mobile-only-links {
+    display: flex !important;
   }
 
   .overlay, .modal-box {
