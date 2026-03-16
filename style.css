@@ -345,10 +345,17 @@ textarea { min-height: 100px; resize: vertical; }
   color: var(--jtext); font-family: 'Assistant', sans-serif;
 }
 .journal-top-bar {
-  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
-  background: #fff; border-bottom: 1px solid var(--jborder); flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 0; padding: 6px 12px;
+  background: #fff; border-bottom: 1px solid var(--jborder);
 }
-.task-btns-row { display: flex; flex-direction: row; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: flex-end; }
+.journal-top-row1 {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 2px 0;
+}
+.journal-top-row2 {
+  display: flex; align-items: center; width: 100%;
+}
+.journal-top-row2:has(.task-btns-row:empty) { display: none; }
+.task-btns-row { display: flex; flex-direction: row; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: flex-start; padding: 3px 0; }
 .task-type-button {
   padding: 6px 10px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 700;
   border: none; cursor: pointer; background: #EAE2D9; color: var(--jhead); transition: background .2s;

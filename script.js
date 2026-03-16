@@ -2229,8 +2229,19 @@ function updateAssessmentDisplay() {
   const val=`${String(assessmentTime.getHours()).padStart(2,'0')}:${String(assessmentTime.getMinutes()).padStart(2,'0')}`;
   el.textContent=val;
   if(mob) mob.textContent=val;
-  const diff=(assessmentTime-new Date())/(1000*60);
-  if(diff>0&&diff<=5){ el.classList.add('blinking-red'); if(mob) mob.classList.add('blinking-red'); }
+  const now=new Date();
+  const diff=(assessmentTime-now)/(1000*60);
+  // Auto-reset to "טרם נקבע" when current time reaches or passes the set assessment time
+  if(diff<=0){
+    assessmentTimeIsManual=false;
+    el.textContent='טרם נקבע'; el.classList.remove('blinking-red');
+    if(mob){ mob.textContent='טרם נקבע'; mob.classList.remove('blinking-red'); }
+    if(activeEventId && db){
+      updateDoc(getEventDoc(activeEventId),{assessmentTimeIsManual:false,assessmentTime:null}).catch(()=>{});
+    }
+    return;
+  }
+  if(diff<=5){ el.classList.add('blinking-red'); if(mob) mob.classList.add('blinking-red'); }
   else { el.classList.remove('blinking-red'); if(mob) mob.classList.remove('blinking-red'); }
 }
 
