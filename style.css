@@ -650,6 +650,20 @@ textarea { min-height: 100px; resize: vertical; }
 .rsb-total    { color: #5b7a99; font-weight: 800; }
 
 /* הסתרת עמודת פעולות ביומן במובייל */
+
+#screen-admin.pane-map-full .map-journal-split {
+  grid-template-columns: minmax(0, 1fr);
+}
+#screen-admin.pane-map-full .journal-col {
+  display: none !important;
+}
+#screen-admin.pane-journal-full .map-journal-split {
+  grid-template-columns: minmax(0, 1fr);
+}
+#screen-admin.pane-journal-full .map-col {
+  display: none !important;
+}
+
 @media (max-width: 800px) {
   .jt-hide-mobile-journal { display: none !important; }
 }
@@ -811,7 +825,7 @@ textarea { min-height: 100px; resize: vertical; }
 
 @media (min-width: 801px) {
   .desktop-ham { display: none !important; }
-  .mobile-header-top, .mobile-menu-overlay, .mobile-ham, .pane-toggle-btn { display: none !important; }
+  .mobile-header-top, .mobile-menu-overlay, .mobile-ham { display: none !important; }
   .side-rail { position: static; transform: none; opacity: 1; pointer-events: auto; }
 }
 
@@ -830,7 +844,7 @@ textarea { min-height: 100px; resize: vertical; }
   font-size: 18px;
   font-weight: 800;
   cursor: pointer;
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   backdrop-filter: blur(8px);

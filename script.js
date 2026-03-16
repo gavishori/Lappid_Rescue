@@ -157,7 +157,7 @@ let currentUserId           = null;
 let definedLogTypes         = [];
 let completedTasks          = {};
 let currentReporters        = [];
-let mobilePaneMode          = null;
+let activePaneMode          = null;
 
 let reportsColRef           = null;
 let reportersColRef         = null;
@@ -1029,6 +1029,7 @@ function setupModals() {
 
   safe('toggleMapPaneBtn')?.addEventListener('click', () => togglePaneMode('map'));
   safe('toggleJournalPaneBtn')?.addEventListener('click', () => togglePaneMode('journal'));
+  updatePaneToggleButtons();
   window.addEventListener('resize', () => {
     applyMobileReadOnlyMode();
     renderTable(safe('searchInput')?.value || '');
@@ -1561,19 +1562,37 @@ function applyMobileReadOnlyMode() {
     }
   } else {
     admin.classList.remove('mobile-readonly-mode');
-    mobilePaneMode = null;
+    activePaneMode = null;
     admin.classList.remove('pane-map-full', 'pane-journal-full');
   }
 }
 
 function togglePaneMode(which) {
-  if (!isMobileViewport()) return;
   const admin = safe('screen-admin');
   if (!admin) return;
-  mobilePaneMode = mobilePaneMode === which ? null : which;
-  admin.classList.toggle('pane-map-full', mobilePaneMode === 'map');
-  admin.classList.toggle('pane-journal-full', mobilePaneMode === 'journal');
+  activePaneMode = activePaneMode === which ? null : which;
+  admin.classList.toggle('pane-map-full', activePaneMode === 'map');
+  admin.classList.toggle('pane-journal-full', activePaneMode === 'journal');
+  updatePaneToggleButtons();
   setTimeout(() => map?.invalidateSize(), 120);
+}
+
+function updatePaneToggleButtons() {
+  const mapBtn = safe('toggleMapPaneBtn');
+  const journalBtn = safe('toggleJournalPaneBtn');
+  const isMapFull = activePaneMode === 'map';
+  const isJournalFull = activePaneMode === 'journal';
+
+  if (mapBtn) {
+    mapBtn.textContent = isMapFull ? '⤡' : '⤢';
+    mapBtn.setAttribute('aria-label', isMapFull ? 'החזר לפיצול רגיל' : 'הגדל את המפה');
+    mapBtn.title = isMapFull ? 'החזר לפיצול רגיל' : 'הגדל את המפה';
+  }
+  if (journalBtn) {
+    journalBtn.textContent = isJournalFull ? '⤡' : '⤢';
+    journalBtn.setAttribute('aria-label', isJournalFull ? 'החזר לפיצול רגיל' : 'הגדל את היומן');
+    journalBtn.title = isJournalFull ? 'החזר לפיצול רגיל' : 'הגדל את היומן';
+  }
 }
 
 // ── render journal table ──────────────────────────────
@@ -2162,11 +2181,17 @@ async function handleTaskCheck(taskId, logType, taskText, checked) {
 function updateTasksButtonStates() {
   const con=safe('taskButtonsContainer'); if(!con) return;
   con.innerHTML='';
+  con.style.display = 'flex';
   const today=new Date();
   const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>r.logType));
   const order=["בטחוני","שריפה","נעדר","שגרה"];
   const sorted=[...definedLogTypes].sort((a,b)=>{ const ia=order.indexOf(a.name),ib=order.indexOf(b.name); if(ia===-1&&ib===-1) return a.name.localeCompare(b.name,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
+  if (!sorted.length) {
+    con.style.display = 'none';
+    return;
+  }
+
   sorted.forEach(lt=>{
     const tasks=lt.tasks||[];
     let allDone=tasks.length>0, someChecked=false, hasIncomplete=false;
