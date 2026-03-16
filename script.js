@@ -1669,16 +1669,21 @@ function renderTable(searchTerm='') {
     sorted.forEach(report=>{
       const diff=(new Date()-new Date(report.timestamp))/(1000*60*60);
       const canEdit=diff<48;
-      const tr=document.createElement('tr');
-      tr.innerHTML=`
-        <td class="journal-table-td">${hl(report.description,searchTerm)}</td>
+      const techRow=document.createElement('tr');
+      techRow.className='journal-tech-row';
+      techRow.innerHTML=`
         <td class="journal-table-td" style="text-align:center">${report.time || ''}</td>
         <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.reporter,searchTerm)}</td>
         <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.logType,searchTerm)}</td>
         <td class="journal-table-td jt-hide-mobile-journal" style="text-align:center">
           ${canEdit?`<button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button>`:`<span style="color:#aaa;font-size:11px">—</span>`}
         </td>`;
-      innerB.appendChild(tr);
+      const reportRow=document.createElement('tr');
+      reportRow.className='journal-report-row';
+      reportRow.innerHTML=`
+        <td class="journal-table-td journal-report-cell" colspan="4"><span class="journal-report-label">דיווח:</span>${hl(report.description,searchTerm)}</td>`;
+      innerB.appendChild(techRow);
+      innerB.appendChild(reportRow);
     });
     innerT.appendChild(innerB); cell.appendChild(innerT); cRow.appendChild(cell); tableBody.appendChild(cRow);
 

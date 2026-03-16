@@ -391,6 +391,10 @@ textarea { min-height: 100px; resize: vertical; }
 .header-search-btn { padding: 4px 8px; border-radius: 6px; background: #EAE2D9; border: none; cursor: pointer; color: var(--jhead); }
 .journal-search { padding: 4px 8px; height: 28px; font-size: 12px; width: 120px; margin: 0; background: #fff; color: var(--jtext); border: 1px solid var(--jborder); border-radius: 6px; }
 .journal-table td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--jborder); color: var(--jtext); vertical-align: top; word-break: break-word; }
+.journal-tech-row td { border-bottom: none; padding-bottom: 4px; color: var(--jhead); font-size: 13px; }
+.journal-report-row td { padding-top: 0; font-size: 15px; }
+.journal-report-cell { color: var(--jtext); line-height: 1.65; }
+.journal-report-label { display: inline-block; margin-left: 8px; color: var(--jmuted); font-weight: 700; }
 .journal-table tr:hover td { background: #F8F5F1; }
 .journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 50%; }
 .journal-table th:nth-child(2), .journal-table td:nth-child(2) { width: 10%; text-align: center; }
@@ -1054,6 +1058,8 @@ textarea { min-height: 100px; resize: vertical; }
   /* compact table font for mobile */
   .journal-table { font-size: 12px; }
   .journal-table th, .journal-table td { padding: 6px 6px; }
+  .journal-tech-row td { font-size: 11px; }
+  .journal-report-row td { font-size: 13px; }
   .journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 40%; }
   .journal-table th:nth-child(2), .journal-table td:nth-child(2) { width: 12%; text-align: center; }
   .journal-table th:nth-child(3), .journal-table td:nth-child(3) { width: 16%; text-align: center; }
@@ -1113,16 +1119,11 @@ textarea { min-height: 100px; resize: vertical; }
     font-size: 16px;
   }
 
-  .mobile-readonly-mode .rail-btn-management,
-  .mobile-readonly-mode #view-management {
+  #screen-admin.mobile-readonly-mode #view-management .manage-card {
     display: none !important;
   }
 
-  #screen-admin:not(.mobile-readonly-mode) #view-management .manage-card {
-    display: none !important;
-  }
-
-  #screen-admin:not(.mobile-readonly-mode) #view-management .manage-card-mobile-only-links {
+  #screen-admin.mobile-readonly-mode #view-management .manage-card-mobile-only-links {
     display: flex !important;
   }
 
