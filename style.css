@@ -355,7 +355,7 @@ textarea { min-height: 100px; resize: vertical; }
   display: flex; align-items: center; width: 100%;
 }
 .journal-top-row2:has(.task-btns-row:empty) { display: none; }
-.task-btns-row { display: flex; flex-direction: row; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: flex-start; padding: 3px 0; }
+.task-btns-row { display: flex; flex-direction: row; gap: 6px; flex-wrap: wrap; flex: 1; justify-content: flex-start; padding: 3px 0; min-width: 0; }
 .task-type-button {
   padding: 6px 10px; border-radius: 8px; font: inherit; font-size: 13px; font-weight: 700;
   border: none; cursor: pointer; background: #EAE2D9; color: var(--jhead); transition: background .2s;
@@ -412,7 +412,7 @@ textarea { min-height: 100px; resize: vertical; }
 /* ════════════════════════════════════════════
    TASKS PANEL
 ════════════════════════════════════════════ */
-.tasks-panel { position: fixed; inset: 0; background: rgba(0,0,0,.62); z-index: 900; display: flex; align-items: center; justify-content: center; padding: 20px; transition: opacity .25s ease; opacity: 0; pointer-events: none; }
+.tasks-panel { position: fixed; inset: 0; background: rgba(0,0,0,.62); z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 20px; transition: opacity .25s ease; opacity: 0; pointer-events: none; }
 .tasks-panel:not(.hidden) { pointer-events: auto; }
 .tasks-panel.is-open { opacity: 1; }
 .tasks-panel-inner { background: #102b49; border: 1px solid rgba(255,255,255,.12); border-radius: 22px; padding: 0; width: min(520px, 92vw); max-height: min(92vh, 900px); display: flex; flex-direction: column; box-shadow: 0 24px 72px rgba(0,0,0,.55); overflow: visible; }
@@ -836,11 +836,19 @@ textarea { min-height: 100px; resize: vertical; }
   .side-rail { position: static; transform: none; opacity: 1; pointer-events: auto; }
 }
 
+.rail-btn-management,
+#view-management {
+  display: flex;
+}
+#view-management {
+  flex-direction: column;
+}
+
 .pane-toggle-btn {
   position: absolute;
   top: 10px;
   right: 10px;
-  z-index: 650;
+  z-index: 300;
   width: 38px;
   height: 38px;
   border-radius: 12px;
@@ -1032,39 +1040,35 @@ textarea { min-height: 100px; resize: vertical; }
 
   .journal-top-bar {
     justify-content: space-between;
-    padding: 4px 8px;
+    padding: 6px 10px;
     flex-shrink: 0;
-    min-height: 38px;
-  }
-
-  .journal-top-row1 {
-    gap: 6px;
-    padding: 1px 0;
+    min-height: 44px;
+    overflow: hidden;
   }
 
   .journal-top-row2 {
     min-width: 0;
+    overflow: hidden;
   }
 
   .task-btns-row {
-    width: 100%;
-    gap: 4px;
     flex-wrap: nowrap;
-    align-items: stretch;
-    padding: 1px 0 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 0 2px;
+  }
+
+  .task-btns-row::-webkit-scrollbar {
+    display: none;
   }
 
   .task-type-button {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: 5px 2px;
-    border-radius: 10px;
-    font-size: 10px;
-    line-height: 1.05;
-    letter-spacing: -0.01em;
+    flex: 0 0 auto;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 12px;
+    padding: 8px 12px;
   }
 
   /* hide input box — replaced by FAB drawer */
@@ -1143,8 +1147,7 @@ textarea { min-height: 100px; resize: vertical; }
     font-size: 16px;
   }
 
-  .rail-btn-management,
-  #view-management {
+  #screen-admin.mobile-readonly-mode .manage-card:not(#openLinksManagerBtn) {
     display: none !important;
   }
 
