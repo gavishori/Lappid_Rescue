@@ -1874,6 +1874,7 @@ async function addDefaultLogTypesIfEmpty() {
     const snap=await getDocs(logTypesColRef);
     if(snap.empty){
       const defaults=[
+        {name:"שגרה",    tasks:[{id:'r1',text:'בדיקת תקינות מערכות'},{id:'r2',text:'עדכון סטטוס משימות'},{id:'r3',text:'ביצוע סיור תקופתי'},{id:'r4',text:'הכנת ציוד'}]},
         {name:"בטחוני",  tasks:[{id:'s1',text:'בדיקת קשר עם מפקדה'},{id:'s2',text:'אבטחת שטח'},{id:'s3',text:'פריסת כוחות'},{id:'s4',text:'תיאום עם ביטחון'},{id:'s5',text:'הערכת מצב ראשונית'}]},
         {name:"שריפה",   tasks:[{id:'f1',text:'הודעה לכבאות'},{id:'f2',text:'פינוי נפגעים'},{id:'f3',text:'הגדרת קווי אש'},{id:'f4',text:'אבטחת גישה'},{id:'f5',text:'כיבוי ראשוני'}]},
         {name:"נעדר",    tasks:[{id:'m1',text:'פרטים מזהים'},{id:'m2',text:'נסיבות ההיעלמות'},{id:'m3',text:'סריקה ראשונית'},{id:'m4',text:'הודעה למשטרה'},{id:'m5',text:'גיוס כוחות חיפוש'}]},
@@ -2184,7 +2185,7 @@ function updateTasksButtonStates() {
   const today=new Date();
   const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>r.logType));
-  const order=["בטחוני","שריפה","נעדר"];
+  const order=["בטחוני","שריפה","נעדר","שגרה"];
   const sorted=[...definedLogTypes].sort((a,b)=>{ const ia=order.indexOf(a.name),ib=order.indexOf(b.name); if(ia===-1&&ib===-1) return a.name.localeCompare(b.name,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
   if (!sorted.length) {
     con.style.display = 'none';
@@ -2342,9 +2343,7 @@ const handleAuthState = async (user) => {
     }
     if(!unsubLogTypes) {
       unsubLogTypes=onSnapshot(logTypesColRef,async snap=>{
-        definedLogTypes=snap.docs
-          .map(d=>({id:d.id,...d.data()}))
-          .filter(item => item.name !== 'שגרה');
+        definedLogTypes=snap.docs.map(d=>({id:d.id,...d.data()}));
         populateLogTypesDropdowns(definedLogTypes);
         updateTasksButtonStates();
         renderLogtypesList();
