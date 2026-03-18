@@ -368,7 +368,14 @@ textarea { min-height: 100px; resize: vertical; }
   display: flex; flex-direction: column; gap: 7px; flex-shrink: 0;
 }
 .journal-entry-top { display: flex; align-items: stretch; gap: 10px; }
-.journal-textarea { flex: 1 1 auto; width: auto; background: #fff; color: var(--jtext); border: 1px solid var(--jborder); border-radius: 10px; padding: 8px 12px; font: inherit; font-size: 14px; resize: none; }
+.journal-textarea {
+  flex: 1 1 auto; width: auto; background: #fff; color: var(--jtext);
+  border: 1px solid var(--jborder); border-radius: 10px; padding: 8px 12px;
+  font: inherit; font-size: 14px; resize: none;
+  min-height: calc(3 * 1.5em + 16px); /* 3 rows */
+  overflow-y: hidden; transition: height 0.1s ease;
+  line-height: 1.5;
+}
 .journal-side-stack { flex: 0 0 120px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
 .compact-stack-select { width: 100%; min-width: 0; background: #fff; color: var(--jtext); border: 1px solid var(--jborder); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; }
 .compact-stack-btn { width: 100%; min-width: 0; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 7px 16px; border-radius: 8px; border: none;}
@@ -391,12 +398,17 @@ textarea { min-height: 100px; resize: vertical; }
 .header-search-btn { padding: 4px 8px; border-radius: 6px; background: #EAE2D9; border: none; cursor: pointer; color: var(--jhead); }
 .journal-search { padding: 4px 8px; height: 28px; font-size: 12px; width: 120px; margin: 0; background: #fff; color: var(--jtext); border: 1px solid var(--jborder); border-radius: 6px; }
 .journal-table td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--jborder); color: var(--jtext); vertical-align: top; word-break: break-word; }
+.journal-tech-row td { border-bottom: none; padding-bottom: 2px; color: var(--jmuted); font-size: 12px; }
+.journal-meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.journal-meta-item { display: inline-flex; align-items: center; gap: 3px; color: var(--jmuted); font-size: 12px; white-space: nowrap; }
+.journal-meta-item strong { color: var(--jhead); font-weight: 700; }
+.journal-meta-sep { color: var(--jborder); }
+.journal-meta-actions { margin-right: auto; display: inline-flex; gap: 4px; }
+.journal-report-row td { padding-top: 2px; padding-bottom: 8px; font-size: 14px; }
+.journal-report-cell { color: var(--jtext); line-height: 1.65; }
+.journal-report-label { display: inline-block; margin-left: 8px; color: var(--jmuted); font-weight: 700; }
 .journal-table tr:hover td { background: #F8F5F1; }
-.journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 50%; }
-.journal-table th:nth-child(2), .journal-table td:nth-child(2) { width: 10%; text-align: center; }
-.journal-table th:nth-child(3), .journal-table td:nth-child(3) { width: 15%; text-align: center; }
-.journal-table th:nth-child(4), .journal-table td:nth-child(4) { width: 12%; text-align: center; }
-.journal-table th:nth-child(5), .journal-table td:nth-child(5) { width: 13%; text-align: center; }
+.journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 100%; }
 .journal-empty { text-align: center; color: #aaa; padding: 24px; }
 .date-group-header { cursor: pointer; }
 .date-group-header:hover td { background: #e9e5e0; }
@@ -669,6 +681,39 @@ textarea { min-height: 100px; resize: vertical; }
 }
 #screen-admin.pane-journal-full .map-col {
   display: none !important;
+}
+/* Full journal: two-column layout — input left, table right */
+#screen-admin.pane-journal-full .journal-col {
+  display: grid !important;
+  grid-template-rows: auto auto 1fr;
+  grid-template-columns: 320px 1fr;
+  grid-template-areas:
+    "topbar topbar"
+    "input  table"
+    "input  table";
+  gap: 0;
+  overflow: hidden;
+}
+#screen-admin.pane-journal-full .journal-top-bar {
+  grid-area: topbar;
+}
+#screen-admin.pane-journal-full .journal-input-box {
+  grid-area: input;
+  border-bottom: none;
+  border-left: 1px solid var(--jborder);
+  overflow-y: auto;
+  align-self: stretch;
+  flex: unset;
+  height: 100%;
+}
+#screen-admin.pane-journal-full .journal-input-box .journal-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+#screen-admin.pane-journal-full .journal-table-wrap {
+  grid-area: table;
+  overflow-y: auto;
+  height: 100%;
 }
 
 @media (max-width: 800px) {
@@ -1054,11 +1099,9 @@ textarea { min-height: 100px; resize: vertical; }
   /* compact table font for mobile */
   .journal-table { font-size: 12px; }
   .journal-table th, .journal-table td { padding: 6px 6px; }
-  .journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 40%; }
-  .journal-table th:nth-child(2), .journal-table td:nth-child(2) { width: 12%; text-align: center; }
-  .journal-table th:nth-child(3), .journal-table td:nth-child(3) { width: 16%; text-align: center; }
-  .journal-table th:nth-child(4), .journal-table td:nth-child(4) { width: 16%; text-align: center; }
-  .journal-table th:nth-child(5), .journal-table td:nth-child(5) { width: 16%; text-align: center; }
+  .journal-tech-row td { font-size: 11px; }
+  .journal-report-row td { font-size: 13px; }
+  .journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 100%; }
 
   .pane-toggle-btn { display: inline-flex; }
 
@@ -1080,9 +1123,7 @@ textarea { min-height: 100px; resize: vertical; }
   .mobile-readonly-mode .journal-search,
   .mobile-readonly-mode #toggleAllGroupsBtn { display: none !important; }
   .mobile-readonly-mode .journal-table th:nth-child(1),
-  .mobile-readonly-mode .journal-table td:nth-child(1) { width: 72%; }
-  .mobile-readonly-mode .journal-table th:nth-child(2),
-  .mobile-readonly-mode .journal-table td:nth-child(2) { width: 28%; }
+  .mobile-readonly-mode .journal-table td:nth-child(1) { width: 100%; }
   .mobile-readonly-mode .task-btns-row { font-size: 13px; color: var(--jmuted); }
 
   /* ── FAB כפתור + צף ── */
@@ -1113,16 +1154,11 @@ textarea { min-height: 100px; resize: vertical; }
     font-size: 16px;
   }
 
-  .mobile-readonly-mode .rail-btn-management,
-  .mobile-readonly-mode #view-management {
+  #screen-admin.mobile-readonly-mode #view-management .manage-card {
     display: none !important;
   }
 
-  #screen-admin:not(.mobile-readonly-mode) #view-management .manage-card {
-    display: none !important;
-  }
-
-  #screen-admin:not(.mobile-readonly-mode) #view-management .manage-card-mobile-only-links {
+  #screen-admin.mobile-readonly-mode #view-management .manage-card-mobile-only-links {
     display: flex !important;
   }
 

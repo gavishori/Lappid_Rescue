@@ -1510,7 +1510,7 @@ let lastReporter = '';
 let lastLogType  = '';
 
 function resetForm() {
-  const ta=safe('generalTextInput'); if(ta){ ta.value=''; ta.style.height='auto'; }
+  const ta=safe('generalTextInput'); if(ta){ ta.value=''; ta.style.height='auto'; if(window._resetJournalTaHeight) window._resetJournalTaHeight(); }
   // Restore last-used reporter and logType
   editingReportId=null;
   const mb=safe('mainActionBtn');   if(mb) mb.textContent='הזן';
@@ -1669,16 +1669,24 @@ function renderTable(searchTerm='') {
     sorted.forEach(report=>{
       const diff=(new Date()-new Date(report.timestamp))/(1000*60*60);
       const canEdit=diff<48;
-      const tr=document.createElement('tr');
-      tr.innerHTML=`
-        <td class="journal-table-td">${hl(report.description,searchTerm)}</td>
-        <td class="journal-table-td" style="text-align:center">${report.time || ''}</td>
-        <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.reporter,searchTerm)}</td>
-        <td class="journal-table-td jt-hide-sm" style="text-align:center">${hl(report.logType,searchTerm)}</td>
-        <td class="journal-table-td jt-hide-mobile-journal" style="text-align:center">
-          ${canEdit?`<button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button>`:`<span style="color:#aaa;font-size:11px">—</span>`}
-        </td>`;
-      innerB.appendChild(tr);
+      const techRow=document.createElement('tr');
+      techRow.className='journal-tech-row';
+      const metaParts = [];
+      if(report.time) metaParts.push(`<span class="journal-meta-item"><strong>${report.time}</strong></span>`);
+      if(report.reporter) metaParts.push(`<span class="journal-meta-sep"> · </span><span class="journal-meta-item">${hl(report.reporter,searchTerm)}</span>`);
+      if(report.logType) metaParts.push(`<span class="journal-meta-sep"> · </span><span class="journal-meta-item">${hl(report.logType,searchTerm)}</span>`);
+      const actionsHtml = canEdit
+        ? `<span class="journal-meta-actions"><button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button></span>`
+        : '';
+      techRow.innerHTML=`<td colspan="5" style="padding-bottom:2px">
+        <div class="journal-meta-row">${metaParts.join('')}${actionsHtml}</div>
+      </td>`;
+      const reportRow=document.createElement('tr');
+      reportRow.className='journal-report-row';
+      reportRow.innerHTML=`
+        <td class="journal-table-td journal-report-cell" colspan="5">${hl(report.description,searchTerm)}</td>`;
+      innerB.appendChild(techRow);
+      innerB.appendChild(reportRow);
     });
     innerT.appendChild(innerB); cell.appendChild(innerT); cRow.appendChild(cell); tableBody.appendChild(cRow);
 
@@ -1734,6 +1742,25 @@ document.addEventListener('DOMContentLoaded',()=>{
   const style=document.createElement('style');
   style.textContent=`.journal-table-td{padding:7px 10px;border-bottom:1px solid #EAE2D9;color:#4A443E;vertical-align:top;word-break:break-word}`;
   document.head.appendChild(style);
+  // auto-grow textarea
+  function autoGrowJournalTa() {
+    const ta = document.getElementById('generalTextInput');
+    if (!ta) return;
+    ta.style.height = 'auto';
+    const lineH = parseFloat(getComputedStyle(ta).lineHeight) || 21;
+    const padV = (parseFloat(getComputedStyle(ta).paddingTop)||0) + (parseFloat(getComputedStyle(ta).paddingBottom)||0);
+    const minH = lineH * 3 + padV;
+    ta.style.height = Math.max(ta.scrollHeight, minH) + 'px';
+  }
+  const journalTa = document.getElementById('generalTextInput');
+  if (journalTa) {
+    journalTa.addEventListener('input', autoGrowJournalTa);
+    autoGrowJournalTa();
+  }
+  window._resetJournalTaHeight = function() {
+    const ta = document.getElementById('generalTextInput');
+    if (ta) { ta.style.height = 'auto'; autoGrowJournalTa(); }
+  };
 });
 
 // ── add / edit report ─────────────────────────────────
@@ -1874,6 +1901,7 @@ async function addDefaultLogTypesIfEmpty() {
     const snap=await getDocs(logTypesColRef);
     if(snap.empty){
       const defaults=[
+        {name:"שגרה",    tasks:[{id:'r1',text:'בדיקת תקינות מערכות'},{id:'r2',text:'עדכון סטטוס משימות'},{id:'r3',text:'ביצוע סיור תקופתי'},{id:'r4',text:'הכנת ציוד'}]},
         {name:"בטחוני",  tasks:[{id:'s1',text:'בדיקת קשר עם מפקדה'},{id:'s2',text:'אבטחת שטח'},{id:'s3',text:'פריסת כוחות'},{id:'s4',text:'תיאום עם ביטחון'},{id:'s5',text:'הערכת מצב ראשונית'}]},
         {name:"שריפה",   tasks:[{id:'f1',text:'הודעה לכבאות'},{id:'f2',text:'פינוי נפגעים'},{id:'f3',text:'הגדרת קווי אש'},{id:'f4',text:'אבטחת גישה'},{id:'f5',text:'כיבוי ראשוני'}]},
         {name:"נעדר",    tasks:[{id:'m1',text:'פרטים מזהים'},{id:'m2',text:'נסיבות ההיעלמות'},{id:'m3',text:'סריקה ראשונית'},{id:'m4',text:'הודעה למשטרה'},{id:'m5',text:'גיוס כוחות חיפוש'}]},
@@ -2184,7 +2212,7 @@ function updateTasksButtonStates() {
   const today=new Date();
   const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>r.logType));
-  const order=["בטחוני","שריפה","נעדר"];
+  const order=["בטחוני","שריפה","נעדר","שגרה"];
   const sorted=[...definedLogTypes].sort((a,b)=>{ const ia=order.indexOf(a.name),ib=order.indexOf(b.name); if(ia===-1&&ib===-1) return a.name.localeCompare(b.name,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
   if (!sorted.length) {
     con.style.display = 'none';
@@ -2342,9 +2370,7 @@ const handleAuthState = async (user) => {
     }
     if(!unsubLogTypes) {
       unsubLogTypes=onSnapshot(logTypesColRef,async snap=>{
-        definedLogTypes=snap.docs
-          .map(d=>({id:d.id,...d.data()}))
-          .filter(item => item.name !== 'שגרה');
+        definedLogTypes=snap.docs.map(d=>({id:d.id,...d.data()}));
         populateLogTypesDropdowns(definedLogTypes);
         updateTasksButtonStates();
         renderLogtypesList();
