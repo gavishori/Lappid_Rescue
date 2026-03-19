@@ -1103,9 +1103,10 @@ textarea { min-height: 100px; resize: vertical; }
   .date-group-header { display: block; }
   .date-group-header td { display: flex; align-items: center; gap: 6px; padding: 10px 12px; }
   .date-group-content td { padding: 0 8px 8px; }
+  .jm-cards-wrap { padding: 8px; display: flex; flex-direction: column; gap: 7px; }
   .jm-card {
     background: #fff; border-radius: 12px; padding: 10px 13px;
-    margin-bottom: 7px; border: 1px solid #EAE2D9;
+    border: 1px solid #EAE2D9;
     box-shadow: 0 1px 4px rgba(0,0,0,.06);
   }
   .jm-card-meta {
@@ -1150,8 +1151,9 @@ textarea { min-height: 100px; resize: vertical; }
   .mobile-readonly-mode .journal-table td:nth-child(1) { width: 100%; }
   .mobile-readonly-mode .task-btns-row { font-size: 13px; color: var(--jmuted); }
 
-  /* ── FAB כפתור + צף ── */
-  .mobile-admin-fab { display: flex; }
+  /* ── FAB כפתור + צף — רק ביומן מלא ── */
+  .mobile-admin-fab { display: none !important; }
+  body.journal-full-active .mobile-admin-fab { display: flex !important; }
 
   /* ── Side rail ── */
   .side-rail {
@@ -1236,34 +1238,47 @@ textarea { min-height: 100px; resize: vertical; }
   align-items: center;
   justify-content: center;
   padding: 16px;
+  /* visibility/opacity instead of display:none so animation works */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .2s ease, visibility 0s linear .2s;
 }
-.mobile-journal-drawer.hidden { display: none; }
+.mobile-journal-drawer.hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+.mobile-journal-drawer:not(.hidden) {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity .2s ease, visibility 0s linear 0s;
+  pointer-events: auto;
+}
 
 .mjd-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,.62);
-  backdrop-filter: blur(3px);
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(2px);
 }
 
 .mjd-sheet {
   position: relative;
   z-index: 1;
   background: #f5f2ee;
-  border-radius: 22px;
+  border-radius: 20px;
   padding: 0;
-  box-shadow: 0 12px 60px rgba(0,0,0,.5);
-  transform: scale(.92) translateY(20px);
+  box-shadow: 0 16px 60px rgba(0,0,0,.45);
+  transform: scale(.93) translateY(16px);
   opacity: 0;
-  transition: transform .25s cubic-bezier(.32,1,.55,1), opacity .22s ease;
+  transition: transform .26s cubic-bezier(.34,1.4,.64,1), opacity .22s ease;
   direction: rtl;
   font-family: 'Assistant', sans-serif;
   width: 100%;
-  max-width: 480px;
-  max-height: 90dvh;
+  max-width: 460px;
+  max-height: 88dvh;
   overflow-y: auto;
 }
-
 .mobile-journal-drawer:not(.hidden) .mjd-sheet {
   transform: scale(1) translateY(0);
   opacity: 1;

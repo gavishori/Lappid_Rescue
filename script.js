@@ -1604,6 +1604,7 @@ function applyMobileReadOnlyMode() {
     admin.classList.remove('mobile-readonly-mode');
     activePaneMode = null;
     admin.classList.remove('pane-map-full', 'pane-journal-full');
+    document.body.classList.remove('journal-full-active');
   }
 }
 
@@ -1613,6 +1614,8 @@ function togglePaneMode(which) {
   activePaneMode = activePaneMode === which ? null : which;
   admin.classList.toggle('pane-map-full', activePaneMode === 'map');
   admin.classList.toggle('pane-journal-full', activePaneMode === 'journal');
+  // body class drives FAB visibility (sibling selector doesn't work cross-stacking contexts)
+  document.body.classList.toggle('journal-full-active', activePaneMode === 'journal' && isMobileViewport());
   updatePaneToggleButtons();
   setTimeout(() => map?.invalidateSize(), 120);
 }
@@ -1696,8 +1699,10 @@ function renderTable(searchTerm='') {
     cRow.className=`date-group-content${isCollapsed?' hidden':''}`;
     cRow.dataset.contentDate=dateKey;
     const cell=document.createElement('td'); cell.colSpan=5; cell.style.padding='0';
+    // mobile: use div container; desktop: use table
     const innerT=document.createElement('table'); innerT.style.cssText='width:100%;border-collapse:collapse;table-layout:auto';
-    const innerB=document.createElement('tbody');
+    const innerB = isMobile ? document.createElement('div') : document.createElement('tbody');
+    if(isMobile) innerB.className='jm-cards-wrap';
 
     const sorted=[...reps].sort((a,b)=>a.time>b.time?-1:a.time<b.time?1:0);
     const hl=(value,term)=>{
