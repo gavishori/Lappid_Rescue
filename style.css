@@ -391,7 +391,7 @@ textarea { min-height: 100px; resize: vertical; }
 .journal-error { color: #ef4444; font-size: 12px; min-height: 16px; }
 
 .journal-table-wrap { flex: 1; min-height: 0; overflow-y: auto; padding: 0 4px 4px; }
-.journal-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+.journal-table { width: 100%; border-collapse: collapse; table-layout: auto; font-size: 13px; }
 .journal-table th { background: #F8F5F1; color: var(--jhead); padding: 8px 10px; text-align: right; border-bottom: 2px solid var(--jborder); font-weight: 700; position: sticky; top: 0; z-index: 2; }
 .th-report-content { display: flex; align-items: center; gap: 8px; }
 .th-search-wrap { display: flex; align-items: center; gap: 6px; margin-right: auto; }
@@ -1073,6 +1073,7 @@ textarea { min-height: 100px; resize: vertical; }
     flex-direction: column;
     min-height: 0;
     height: 100%;
+    overflow: hidden;
   }
 
   .journal-top-bar {
@@ -1096,12 +1097,35 @@ textarea { min-height: 100px; resize: vertical; }
     overflow-y: auto;
   }
 
+  /* ── Mobile journal: card layout ── */
+  .journal-table thead { display: none; }
+  .journal-table, .journal-table tbody, .journal-table tr, .journal-table td { display: block; width: 100%; }
+  .date-group-header { display: block; }
+  .date-group-header td { display: flex; align-items: center; gap: 6px; padding: 10px 12px; }
+  .date-group-content td { padding: 0 8px 8px; }
+  .jm-card {
+    background: #fff; border-radius: 12px; padding: 10px 13px;
+    margin-bottom: 7px; border: 1px solid #EAE2D9;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .jm-card-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; color: #8C7A6B; font-weight: 600; margin-bottom: 5px;
+    gap: 8px;
+  }
+  .jm-card-meta-inner { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .jm-card-meta strong { color: #4A443E; font-size: 13px; }
+  .jm-card-text { font-size: 14px; color: #4A443E; line-height: 1.55; }
   /* compact table font for mobile */
-  .journal-table { font-size: 12px; }
-  .journal-table th, .journal-table td { padding: 6px 6px; }
+  .journal-table { font-size: 12px; table-layout: auto; }
+  .journal-table th, .journal-table td { padding: 6px 8px; }
   .journal-tech-row td { font-size: 11px; }
   .journal-report-row td { font-size: 13px; }
   .journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 100%; }
+  /* fix date-group header on mobile */
+  .date-group-header td { white-space: normal; word-break: break-word; }
+  .journal-meta-row { flex-wrap: wrap; gap: 4px; }
+  .journal-meta-item { font-size: 11px; }
 
   .pane-toggle-btn { display: inline-flex; }
 
@@ -1203,48 +1227,49 @@ textarea { min-height: 100px; resize: vertical; }
   box-shadow: 0 6px 24px rgba(140,122,107,.5);
 }
 
-/* Drawer overlay */
+/* Popup modal overlay */
 .mobile-journal-drawer {
   position: fixed;
   inset: 0;
   z-index: 820;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
 }
 .mobile-journal-drawer.hidden { display: none; }
 
 .mjd-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,.55);
+  background: rgba(0,0,0,.62);
+  backdrop-filter: blur(3px);
 }
 
 .mjd-sheet {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
+  z-index: 1;
   background: #f5f2ee;
-  border-radius: 22px 22px 0 0;
-  padding: 0 0 env(safe-area-inset-bottom, 16px);
-  box-shadow: 0 -12px 48px rgba(0,0,0,.4);
-  transform: translateY(100%);
-  transition: transform .28s cubic-bezier(.32,1,.55,1);
+  border-radius: 22px;
+  padding: 0;
+  box-shadow: 0 12px 60px rgba(0,0,0,.5);
+  transform: scale(.92) translateY(20px);
+  opacity: 0;
+  transition: transform .25s cubic-bezier(.32,1,.55,1), opacity .22s ease;
   direction: rtl;
   font-family: 'Assistant', sans-serif;
-  max-height: 85dvh;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
   overflow-y: auto;
 }
 
 .mobile-journal-drawer:not(.hidden) .mjd-sheet {
-  transform: translateY(0);
+  transform: scale(1) translateY(0);
+  opacity: 1;
 }
 
-.mjd-handle {
-  width: 40px;
-  height: 4px;
-  border-radius: 99px;
-  background: #ccc;
-  margin: 12px auto 0;
-}
+.mjd-handle { display: none; }
 
 .mjd-header {
   display: flex;
@@ -1371,6 +1396,44 @@ textarea { min-height: 100px; resize: vertical; }
   cursor: pointer;
 }
 
+
+/* ══ Event Types Manager ══ */
+.et-item {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px; padding: 10px 14px; margin-bottom: 8px;
+  transition: background .15s;
+}
+.et-item:hover { background: rgba(255,255,255,.09); }
+.et-order-btns { display: flex; flex-direction: column; gap: 3px; flex-shrink: 0; }
+.et-order-btn {
+  background: rgba(255,255,255,.1); border: none; color: #aac4e0;
+  width: 26px; height: 22px; border-radius: 6px; font-size: 11px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.et-order-btn:hover:not(:disabled) { background: rgba(40,147,255,.35); color: #fff; }
+.et-order-btn:disabled { opacity: .28; cursor: default; }
+.et-name { flex: 1; font-size: 15px; font-weight: 600; color: #e8f0fa; }
+.et-inline-input {
+  flex: 1; background: rgba(255,255,255,.08); border: 1px solid rgba(40,147,255,.5);
+  border-radius: 8px; color: #fff; padding: 4px 10px; font: inherit; font-size: 15px;
+}
+.et-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.et-edit-btn {
+  background: rgba(40,147,255,.18); border: 1px solid rgba(40,147,255,.4);
+  color: #7ec8ff; border-radius: 8px; padding: 5px 12px;
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background .15s;
+}
+.et-edit-btn:hover { background: rgba(40,147,255,.35); color: #fff; }
+.et-del-btn {
+  background: rgba(220,60,60,.15); border: 1px solid rgba(220,60,60,.35);
+  color: #f87171; border-radius: 8px; padding: 5px 12px;
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background .15s;
+}
+.et-del-btn:hover { background: rgba(220,60,60,.3); color: #fff; }
 
 /* ══ Uploads Panel Redesign ══ */
 .uploads-modal-box { width: min(560px, 94vw); }

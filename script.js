@@ -885,8 +885,48 @@ function renderInfoAdmin() {
 }
 function renderEventTypes() {
   const wrap=safe('eventTypesList'); if(!wrap) return;
-  wrap.innerHTML=eventTypes.length?eventTypes.map((name,idx)=>`<div class="simple-item"><div class="item-main"><span>${name}</span></div><div class="item-actions"><button class="delete-btn remove-type" data-idx="${idx}" type="button">הסר</button></div></div>`).join(''):'<div class="simple-item"><span>אין סוגים</span></div>';
-  $$('#eventTypesList .remove-type').forEach(b=>b.onclick=()=>{ eventTypes=eventTypes.filter((_,i)=>i!==+b.dataset.idx); if(!eventTypes.length) eventTypes=['נפילת טיל']; persistAll(); renderEventTypes(); });
+  if(!eventTypes.length){ wrap.innerHTML='<div class="simple-item"><span>אין סוגים</span></div>'; return; }
+  wrap.innerHTML=eventTypes.map((name,idx)=>`
+    <div class="et-item" data-idx="${idx}">
+      <div class="et-order-btns">
+        <button class="et-order-btn" data-action="up" data-idx="${idx}" type="button" ${idx===0?'disabled':''}>▲</button>
+        <button class="et-order-btn" data-action="down" data-idx="${idx}" type="button" ${idx===eventTypes.length-1?'disabled':''}>▼</button>
+      </div>
+      <span class="et-name" id="et-name-${idx}">${name}</span>
+      <div class="et-actions">
+        <button class="et-edit-btn" data-idx="${idx}" type="button">עריכה</button>
+        <button class="et-del-btn" data-idx="${idx}" type="button">הסר</button>
+      </div>
+    </div>`).join('');
+  // order buttons
+  wrap.querySelectorAll('.et-order-btn').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.idx, dir=b.dataset.action;
+    if(dir==='up'&&i>0){ [eventTypes[i-1],eventTypes[i]]=[eventTypes[i],eventTypes[i-1]]; }
+    else if(dir==='down'&&i<eventTypes.length-1){ [eventTypes[i+1],eventTypes[i]]=[eventTypes[i],eventTypes[i+1]]; }
+    persistAll(); renderEventTypes();
+  });
+  // edit buttons — inline rename
+  wrap.querySelectorAll('.et-edit-btn').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.idx;
+    const span=wrap.querySelector(`#et-name-${i}`);
+    const cur=eventTypes[i];
+    const inp=document.createElement('input');
+    inp.value=cur; inp.className='et-inline-input';
+    span.replaceWith(inp); inp.focus(); inp.select();
+    b.textContent='שמור';
+    b.onclick=()=>{
+      const v=inp.value.trim();
+      if(v&&v!==cur){ eventTypes[i]=v; }
+      persistAll(); renderEventTypes();
+    };
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') b.click(); if(e.key==='Escape'){ renderEventTypes(); } });
+  });
+  // delete buttons
+  wrap.querySelectorAll('.et-del-btn').forEach(b=>b.onclick=()=>{
+    eventTypes=eventTypes.filter((_,i)=>i!==+b.dataset.idx);
+    if(!eventTypes.length) eventTypes=['נפילת טיל'];
+    persistAll(); renderEventTypes();
+  });
 }
 
 function setupNavigation() {
@@ -1597,6 +1637,7 @@ function updatePaneToggleButtons() {
 
 // ── render journal table ──────────────────────────────
 function renderTable(searchTerm='') {
+  const isMobile = window.innerWidth <= 800;
   const tableBody=safe('reportTableBody'); if(!tableBody) return;
   tableBody.innerHTML='';
   const emptyRow=safe('empty-state');
@@ -1654,8 +1695,8 @@ function renderTable(searchTerm='') {
     const cRow=document.createElement('tr');
     cRow.className=`date-group-content${isCollapsed?' hidden':''}`;
     cRow.dataset.contentDate=dateKey;
-    const cell=document.createElement('td'); cell.colSpan=5; cell.className='p-0';
-    const innerT=document.createElement('table'); innerT.className='w-full';
+    const cell=document.createElement('td'); cell.colSpan=5; cell.style.padding='0';
+    const innerT=document.createElement('table'); innerT.style.cssText='width:100%;border-collapse:collapse;table-layout:auto';
     const innerB=document.createElement('tbody');
 
     const sorted=[...reps].sort((a,b)=>a.time>b.time?-1:a.time<b.time?1:0);
@@ -1669,26 +1710,39 @@ function renderTable(searchTerm='') {
     sorted.forEach(report=>{
       const diff=(new Date()-new Date(report.timestamp))/(1000*60*60);
       const canEdit=diff<48;
-      const techRow=document.createElement('tr');
-      techRow.className='journal-tech-row';
       const metaParts = [];
-      if(report.time) metaParts.push(`<span class="journal-meta-item"><strong>${report.time}</strong></span>`);
-      if(report.reporter) metaParts.push(`<span class="journal-meta-sep"> · </span><span class="journal-meta-item">${hl(report.reporter,searchTerm)}</span>`);
-      if(report.logType) metaParts.push(`<span class="journal-meta-sep"> · </span><span class="journal-meta-item">${hl(report.logType,searchTerm)}</span>`);
+      if(report.time) metaParts.push(`<strong>${report.time}</strong>`);
+      if(report.reporter) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.reporter,searchTerm)}</span>`);
+      if(report.logType) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.logType,searchTerm)}</span>`);
       const actionsHtml = canEdit
         ? `<span class="journal-meta-actions"><button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button></span>`
         : '';
-      techRow.innerHTML=`<td colspan="5" style="padding-bottom:2px">
-        <div class="journal-meta-row">${metaParts.join('')}${actionsHtml}</div>
-      </td>`;
-      const reportRow=document.createElement('tr');
-      reportRow.className='journal-report-row';
-      reportRow.innerHTML=`
-        <td class="journal-table-td journal-report-cell" colspan="5">${hl(report.description,searchTerm)}</td>`;
-      innerB.appendChild(techRow);
-      innerB.appendChild(reportRow);
+      if(isMobile) {
+        // Mobile: render as div card
+        const card = document.createElement('div');
+        card.className = 'jm-card';
+        card.innerHTML = `
+          <div class="jm-card-meta"><span class="jm-card-meta-inner">${metaParts.join(' ')}</span>${actionsHtml}</div>
+          <div class="jm-card-text">${hl(report.description,searchTerm)}</div>`;
+        innerB.appendChild(card);
+      } else {
+        const techRow=document.createElement('tr');
+        techRow.className='journal-tech-row';
+        techRow.innerHTML=`<td colspan="5" style="padding-bottom:2px">
+          <div class="journal-meta-row"><span class="journal-meta-item">${metaParts.join(' ')}</span>${actionsHtml}</div>
+        </td>`;
+        const reportRow=document.createElement('tr');
+        reportRow.className='journal-report-row';
+        reportRow.innerHTML=`<td class="journal-table-td journal-report-cell" colspan="5">${hl(report.description,searchTerm)}</td>`;
+        innerB.appendChild(techRow);
+        innerB.appendChild(reportRow);
+      }
     });
-    innerT.appendChild(innerB); cell.appendChild(innerT); cRow.appendChild(cell); tableBody.appendChild(cRow);
+    if(isMobile) {
+      cell.appendChild(innerB); cRow.appendChild(cell); tableBody.appendChild(cRow);
+    } else {
+      innerT.appendChild(innerB); cell.appendChild(innerT); cRow.appendChild(cell); tableBody.appendChild(cRow);
+    }
 
     if(!isToday&&!collapsedGroups.has(dateKey)&&!searchTerm&&!forceAllOpen) {
       collapsedGroups.add(dateKey);
