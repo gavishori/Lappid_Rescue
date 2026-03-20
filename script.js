@@ -916,16 +916,29 @@ function renderEventTypes() {
     b.textContent='שמור';
     b.onclick=()=>{
       const v=inp.value.trim();
-      if(v&&v!==cur){ eventTypes[i]=v; }
+      if(v&&v!==cur){
+        eventTypes[i]=v;
+        // סנכרון שינוי שם ב-definedLogTypes
+        if(logTypesColRef && auth?.currentUser){
+          const lt=definedLogTypes.find(l=>l.name===cur);
+          if(lt?.id){ updateDoc(doc(logTypesColRef,lt.id),{name:v}).catch(e=>console.error('sync logType rename:',e)); }
+        }
+      }
       persistAll(); renderEventTypes();
     };
     inp.addEventListener('keydown',e=>{ if(e.key==='Enter') b.click(); if(e.key==='Escape'){ renderEventTypes(); } });
   });
   // delete buttons
   wrap.querySelectorAll('.et-del-btn').forEach(b=>b.onclick=()=>{
+    const removedName = eventTypes[+b.dataset.idx];
     eventTypes=eventTypes.filter((_,i)=>i!==+b.dataset.idx);
     if(!eventTypes.length) eventTypes=['נפילת טיל'];
     persistAll(); renderEventTypes();
+    // סנכרון מחיקה מ-definedLogTypes
+    if(logTypesColRef && auth?.currentUser && removedName){
+      const lt=definedLogTypes.find(l=>l.name===removedName);
+      if(lt?.id){ deleteDoc(doc(logTypesColRef,lt.id)).catch(e=>console.error('sync logType del:',e)); }
+    }
   });
 }
 
@@ -1399,6 +1412,10 @@ function setupManagement() {
   safe('addEventTypeBtn')?.addEventListener('click',()=>{
     const v=safe('newEventTypeInput').value.trim(); if(!v||eventTypes.includes(v)) return;
     eventTypes.push(v); persistAll(); renderEventTypes(); safe('newEventTypeInput').value='';
+    // סנכרון עם definedLogTypes (שיוכים ביומן)
+    if(logTypesColRef && auth?.currentUser && !definedLogTypes.some(l=>l.name===v)){
+      addDoc(logTypesColRef,{name:v,tasks:[]}).catch(e=>console.error('sync logType add:',e));
+    }
   });
   renderManagedLayers(); renderGpxList(); populateGpxLayerSelect(); renderHouses(); renderInfoAdmin(); renderEventTypes(); syncStreetOptions(); resetHouseForm(); renderLayersModal();
 }

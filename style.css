@@ -1123,8 +1123,17 @@ textarea { min-height: 100px; resize: vertical; }
   .journal-tech-row td { font-size: 11px; }
   .journal-report-row td { font-size: 13px; }
   .journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 100%; }
-  /* fix date-group header on mobile */
-  .date-group-header td { white-space: normal; word-break: break-word; }
+  /* fix date-group header on mobile — prevent vertical text */
+  .date-group-header { display: block; width: 100%; }
+  .date-group-header td {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    width: 100% !important;
+    white-space: nowrap;
+    word-break: normal;
+    overflow: hidden;
+  }
   .journal-meta-row { flex-wrap: wrap; gap: 4px; }
   .journal-meta-item { font-size: 11px; }
 
