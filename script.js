@@ -2286,42 +2286,51 @@ function updateTasksButtonStates() {
   const con=safe('taskButtonsContainer'); if(!con) return;
   con.innerHTML='';
   con.style.display = 'flex';
+
   const today=new Date();
   const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-  const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>r.logType));
+  const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>String(r.logType||'').trim()).filter(Boolean));
 
-  const eventOrder = Array.isArray(eventTypes) ? eventTypes.map(x => String(x || '').trim()).filter(Boolean) : [];
-  const eventSet = new Set(eventOrder);
+  const orderedNames = Array.isArray(eventTypes)
+    ? eventTypes.map(x => String(x || '').trim()).filter(Boolean)
+    : [];
 
-  let sorted = [...definedLogTypes];
-  if (eventOrder.length) {
-    sorted = sorted
-      .filter(lt => eventSet.has(String(lt?.name || '').trim()))
-      .sort((a,b) => eventOrder.indexOf(String(a.name || '').trim()) - eventOrder.indexOf(String(b.name || '').trim()));
-  } else {
-    const fallbackOrder=["בטחוני","שריפה","נעדר","שגרה"];
-    sorted = sorted.sort((a,b)=>{ const ia=fallbackOrder.indexOf(a.name),ib=fallbackOrder.indexOf(b.name); if(ia===-1&&ib===-1) return a.name.localeCompare(b.name,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
-  }
+  const fallbackOrder=["בטחוני","שריפה","נעדר","שגרה"];
+  const names = orderedNames.length
+    ? orderedNames
+    : [...new Set(definedLogTypes.map(lt => String(lt?.name || '').trim()).filter(Boolean))]
+        .sort((a,b)=>{ const ia=fallbackOrder.indexOf(a),ib=fallbackOrder.indexOf(b); if(ia===-1&&ib===-1) return a.localeCompare(b,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
 
-  if (!sorted.length) {
+  if (!names.length) {
     con.style.display = 'none';
     return;
   }
 
-  sorted.forEach(lt=>{
-    const tasks=lt.tasks||[];
+  const logTypeMap = new Map(
+    definedLogTypes
+      .map(lt => [String(lt?.name || '').trim(), lt])
+      .filter(([name]) => Boolean(name))
+  );
+
+  names.forEach(name => {
+    const lt = logTypeMap.get(name) || { name, tasks: [] };
+    const tasks = Array.isArray(lt.tasks) ? lt.tasks : [];
     let allDone=tasks.length>0, someChecked=false, hasIncomplete=false;
-    tasks.forEach(t=>{ const done=completedTasks[lt.name]&&completedTasks[lt.name][t.id]; if(done) someChecked=true; else{allDone=false;hasIncomplete=true;} });
+    tasks.forEach(t=>{ const done=completedTasks[name]&&completedTasks[name][t.id]; if(done) someChecked=true; else{allDone=false;hasIncomplete=true;} });
     const btn=document.createElement('button');
-    btn.className='task-type-button'; btn.dataset.logType=lt.name; btn.textContent=lt.name;
+    btn.className='task-type-button'; btn.dataset.logType=name; btn.textContent=name;
     if(tasks.length>0&&allDone) btn.classList.add('all-tasks-completed');
-    else if(tasks.length>0&&someChecked&&hasIncomplete&&repToday.has(lt.name)) btn.classList.add('tasks-incomplete-with-reports');
+    else if(tasks.length>0&&someChecked&&hasIncomplete&&repToday.has(name)) btn.classList.add('tasks-incomplete-with-reports');
     btn.addEventListener('click',()=>{
-      const open=safe('tasksPanel')?.classList.contains('is-open')&&safe('tasksLogTypeDisplay')?.textContent===lt.name;
-      if(open) toggleTasksPanel(false); else { renderTasksPanel(lt.name); toggleTasksPanel(true); }
+      const open=safe('tasksPanel')?.classList.contains('is-open')&&safe('tasksLogTypeDisplay')?.textContent===name;
+      if(open) toggleTasksPanel(false); else { renderTasksPanel(name); toggleTasksPanel(true); }
     });
     con.appendChild(btn);
   });
+
+  if (window.innerWidth <= 900) {
+    con.scrollLeft = 0;
+  }
 }
 
 // ── clocks ────────────────────────────────────────────

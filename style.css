@@ -875,7 +875,7 @@ textarea { min-height: 100px; resize: vertical; }
 .mobile-logout-btn:hover { background: #2d4f7a; }
 
 
-@media (min-width: 801px) {
+@media (min-width: 901px) {
   .desktop-ham { display: none !important; }
   .mobile-header-top, .mobile-menu-overlay, .mobile-ham { display: none !important; }
   .side-rail { position: static; transform: none; opacity: 1; pointer-events: auto; }
@@ -1101,7 +1101,11 @@ textarea { min-height: 100px; resize: vertical; }
   .task-btns-row {
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
     padding-bottom: 2px;
+    justify-content: flex-start;
+    scrollbar-width: thin;
+    direction: rtl;
   }
 
   .task-type-button {
