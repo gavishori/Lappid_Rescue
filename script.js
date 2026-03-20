@@ -20,6 +20,7 @@ const REPORT_KEY  = params.get('rkey');
 const $   = (s)  => document.querySelector(s);
 const $$  = (s)  => Array.from(document.querySelectorAll(s));
 const safe = (id) => document.getElementById(id);
+const MOBILE_BREAKPOINT = 900;
 
 const storage = {
   _mem: new Map(),
@@ -978,7 +979,7 @@ function setupNavigation() {
     // סגירת התפריט בלחיצה על אחד מכפתורי הניווט (רק במובייל)
     $$('.rail-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        if(window.innerWidth <= 800 && sideRail.classList.contains('is-open')) {
+        if(window.innerWidth <= MOBILE_BREAKPOINT && sideRail.classList.contains('is-open')) {
           toggleMenu();
         }
       });
@@ -1592,7 +1593,7 @@ function fullResetForm() {
 }
 
 function isMobileViewport() {
-  return window.innerWidth <= 800;
+  return window.innerWidth <= MOBILE_BREAKPOINT;
 }
 
 function filterToTodayAndYesterday(data) {
@@ -1657,7 +1658,7 @@ function updatePaneToggleButtons() {
 
 // ── render journal table ──────────────────────────────
 function renderTable(searchTerm='') {
-  const isMobile = window.innerWidth <= 800;
+  const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
   const tableBody=safe('reportTableBody'); if(!tableBody) return;
   tableBody.innerHTML='';
   const emptyRow=safe('empty-state');
@@ -2288,8 +2289,20 @@ function updateTasksButtonStates() {
   const today=new Date();
   const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>r.logType));
-  const order=["בטחוני","שריפה","נעדר","שגרה"];
-  const sorted=[...definedLogTypes].sort((a,b)=>{ const ia=order.indexOf(a.name),ib=order.indexOf(b.name); if(ia===-1&&ib===-1) return a.name.localeCompare(b.name,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
+
+  const eventOrder = Array.isArray(eventTypes) ? eventTypes.map(x => String(x || '').trim()).filter(Boolean) : [];
+  const eventSet = new Set(eventOrder);
+
+  let sorted = [...definedLogTypes];
+  if (eventOrder.length) {
+    sorted = sorted
+      .filter(lt => eventSet.has(String(lt?.name || '').trim()))
+      .sort((a,b) => eventOrder.indexOf(String(a.name || '').trim()) - eventOrder.indexOf(String(b.name || '').trim()));
+  } else {
+    const fallbackOrder=["בטחוני","שריפה","נעדר","שגרה"];
+    sorted = sorted.sort((a,b)=>{ const ia=fallbackOrder.indexOf(a.name),ib=fallbackOrder.indexOf(b.name); if(ia===-1&&ib===-1) return a.name.localeCompare(b.name,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
+  }
+
   if (!sorted.length) {
     con.style.display = 'none';
     return;

@@ -716,7 +716,7 @@ textarea { min-height: 100px; resize: vertical; }
   height: 100%;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .jt-hide-mobile-journal { display: none !important; }
 }
 .jro-screen { position: fixed; inset: 0; background: #04192d; display: none; flex-direction: column; z-index: 10; overflow: hidden; }
@@ -912,7 +912,7 @@ textarea { min-height: 100px; resize: vertical; }
   color: var(--jhead);
 }
 
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   html, body {
     width: 100%;
     max-width: 100%;
@@ -1057,7 +1057,7 @@ textarea { min-height: 100px; resize: vertical; }
   /* ── פיצול מפה/יומן במובייל ── */
   .map-journal-split {
     grid-template-columns: 1fr;
-    grid-template-rows: 42dvh minmax(0, 1fr);
+    grid-template-rows: 34dvh minmax(0, 1fr);
     gap: 8px;
     min-height: calc(100dvh - 132px);
     max-height: calc(100dvh - 132px);
@@ -1082,6 +1082,32 @@ textarea { min-height: 100px; resize: vertical; }
     flex-shrink: 0;
     min-height: 44px;
   }
+  .journal-top-row1 {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .journal-top-row2 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .resident-status-bar {
+    gap: 4px;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .task-btns-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .task-type-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
 
   /* hide input box — replaced by FAB drawer */
   .journal-input-box { display: none !important; }
@@ -1095,6 +1121,8 @@ textarea { min-height: 100px; resize: vertical; }
     flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
+    border-radius: 14px;
+    background: #f8f5f1;
   }
 
   /* ── Mobile journal: card layout ── */
@@ -1103,6 +1131,7 @@ textarea { min-height: 100px; resize: vertical; }
   .date-group-header { display: block; }
   .date-group-header td { display: flex; align-items: center; gap: 6px; padding: 10px 12px; }
   .date-group-content td { padding: 0 8px 8px; }
+  .date-group-content { width: 100%; }
   .jm-cards-wrap { padding: 8px; display: flex; flex-direction: column; gap: 7px; }
   .jm-card {
     background: #fff; border-radius: 12px; padding: 10px 13px;
