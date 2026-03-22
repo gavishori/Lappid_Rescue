@@ -1531,6 +1531,8 @@ const showCustomAlert = (msg) => {
 };
 
 const formatAsDDMMYYYY = (ds) => {
+  const parts = ds.split('-');
+  if(parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
   const d=new Date(ds);
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 };
@@ -1707,7 +1709,7 @@ function renderTable(searchTerm='') {
     hRow.dataset.toggleDate = dateKey;
     hRow.innerHTML=`<td colspan="5">
       <span class="toggle-day-icon">${isCollapsed?'◀':'▼'}</span>
-      ${formatAsDDMMYYYY(dateKey)}
+      <span class="date-label">${formatAsDDMMYYYY(dateKey)}</span>
       <span class="daily-summary ${isCollapsed?'':'hidden'}">${summary}</span>
       ${auth.currentUser?.email==='gavishori@gmail.com'?`<button class="delete-btn delete-day-btn" data-date="${dateKey}" style="margin-right:10px;font-size:12px;padding:3px 8px">מחק יום</button>`:''}
     </td>`;

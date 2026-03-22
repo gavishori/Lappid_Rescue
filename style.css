@@ -1165,7 +1165,11 @@ textarea { min-height: 100px; resize: vertical; }
     width: 100% !important;
     white-space: nowrap;
     word-break: normal;
-    overflow: hidden;
+    overflow: visible;
+    flex-wrap: nowrap;
+  }
+  .date-group-header .date-label {
+    flex-shrink: 0;
   }
   .journal-meta-row { flex-wrap: wrap; gap: 4px; }
   .journal-meta-item { font-size: 11px; }
