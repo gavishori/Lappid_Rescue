@@ -16,6 +16,16 @@ const MODE        = params.get('mode');
 const SHARE_TOKEN = params.get('token');
 const REPORT_KEY  = params.get('rkey');
 
+const sharedViewConfig = {
+  type: 'map',
+  includeMap: true,
+  includeJournal: false,
+  layers: null,
+  journalScope: 'today'
+};
+let userLocationMarker = null;
+let userLocationWatchId = null;
+
 // ── helpers ─────────────────────────────────────────────
 const $   = (s)  => document.querySelector(s);
 const $$  = (s)  => Array.from(document.querySelectorAll(s));
@@ -59,6 +69,7 @@ let managedInfoButtons = [...DEFAULT_INFO_BUTTONS];
 let managedHouses = [];
 let gpxItems      = [];
 let rrmSnapshotsCache = [];
+let refreshShareInfoPanel = () => {};
 let editingHouseIndex = null;
 
 function buildConfigPayload() {
@@ -264,63 +275,30 @@ function makeMarkerIcon(color) {
     iconSize:[16,16], iconAnchor:[8,8]
   });
 }
-function popupHtml(title, sub='', extra='') {
-  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${title}</strong><div>${sub}</div>${extra?`<div style='margin-top:6px'>${extra}</div>`:''}</div>`;
-}
-
-function escapeHtml(v='') {
-  return String(v)
+function escapeHtml(value) {
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
-function normalizeReportQuestionsOrder(list = []) {
-  const arr = Array.isArray(list) ? list.map(q => ({ ...q })) : [];
-  const byId = new Map(arr.map(q => [q.id, q]));
-  const status = byId.get('builtin_status') || { id: 'builtin_status', label: 'מצב', type: 'status', builtin: true, required: true, hidden: false };
-  const souls  = byId.get('builtin_souls')  || { id: 'builtin_souls', label: 'נפשות בבית', type: 'counter', builtin: true, required: false, hidden: false };
-  const note   = byId.get('builtin_note')   || { id: 'builtin_note', label: 'פרטים נוספים', type: 'text', builtin: true, required: false, hidden: false };
-  const custom = arr.filter(q => !['builtin_status','builtin_souls','builtin_note'].includes(q.id));
-  return [status, ...custom, souls, note].filter(Boolean).map(q => {
-    if (q.id === 'builtin_status') return { ...q, builtin: true, type: 'status', required: q.hidden ? false : (q.required !== false) };
-    if (q.id === 'builtin_souls') return { ...q, builtin: true, type: 'counter', required: false };
-    if (q.id === 'builtin_note') return { ...q, builtin: true, type: 'text', required: false };
-    return q;
-  });
-}
-
-function buildResidentAnswersHtml(report = {}) {
+function buildReportAnswersHtml(report) {
   const lines = [];
-  const qs = Array.isArray(window._reportQuestionsConfig) && window._reportQuestionsConfig.length
-    ? window._reportQuestionsConfig
-    : (Array.isArray(reportQuestions) && reportQuestions.length ? reportQuestions : DEFAULT_REPORT_QUESTIONS);
-
-  qs.forEach(q => {
-    if (!q || q.hidden) return;
-    if (q.id === 'builtin_status') {
-      const val = statusLabel(report.statuses || []);
-      if (val) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
-      return;
-    }
-    if (q.id === 'builtin_souls') {
-      const val = report.souls;
-      if (val !== '' && val != null) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
-      return;
-    }
-    if (q.id === 'builtin_note') {
-      const val = report.note;
-      if (val) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
-      return;
-    }
-    const val = report.customAnswers?.[q.label];
-    if (val !== '' && val != null) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
-  });
-
-  if (!lines.length) return '';
-  return `<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${lines.join('')}</div>`;
+  if (report.note) {
+    lines.push(`<div style='color:#8da8c5;margin-top:4px'>${escapeHtml(report.note)}</div>`);
+  }
+  if (report.customAnswers && typeof report.customAnswers === 'object') {
+    const qa = Object.entries(report.customAnswers)
+      .filter(([, value]) => value !== '' && value != null)
+      .map(([label, value]) => `<div style='color:#b0d4f7;font-size:12px;margin-top:2px'><span style='color:#8da8c5'>${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`)
+      .join('');
+    if (qa) lines.push(`<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${qa}</div>`);
+  }
+  return lines.join('');
+}
+function popupHtml(title, sub='', extra='') {
+  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${escapeHtml(title)}</strong><div>${escapeHtml(sub)}</div>${extra || ''}</div>`;
 }
 
 function defaultMapCenter() {
@@ -362,12 +340,30 @@ function fitMapToLayerBounds(layerName) {
   if (pts.length === 1) { map.setView(pts[0], Math.max(map.getZoom(), 17)); return; }
   map.fitBounds(pts, {padding:[36,36], maxZoom:18});
 }
+function ensureUserLocationTracking() {
+  if (!map || !navigator.geolocation || userLocationWatchId !== null) return;
+  userLocationWatchId = navigator.geolocation.watchPosition(pos => {
+    const latlng = [pos.coords.latitude, pos.coords.longitude];
+    if (!userLocationMarker) {
+      userLocationMarker = L.circleMarker(latlng, {
+        radius: 9,
+        color: '#ffffff',
+        weight: 3,
+        fillColor: '#32d16d',
+        fillOpacity: 1
+      }).addTo(map).bindPopup('המיקום הנוכחי שלי');
+    } else {
+      userLocationMarker.setLatLng(latlng);
+    }
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 });
+}
 function initMap() {
-  if (map) return;
+  if (map) { ensureUserLocationTracking(); return; }
   map = L.map('map',{zoomControl:true}).setView(defaultMapCenter(),15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors', maxZoom:19
   }).addTo(map);
+  ensureUserLocationTracking();
   if (managedHouses.length) setTimeout(fitMapToHouseBounds, 0);
 }
 
@@ -404,7 +400,14 @@ async function verifyShareToken(token) {
   if (!snap.exists()) return null;
   const d = snap.data();
   if (d.expiresAt?.toDate && d.expiresAt.toDate()<new Date()) return null;
-  return { eventId: d.eventId||null, type: d.type||'map' };
+  return {
+    eventId: d.eventId || null,
+    type: d.type || 'map',
+    includeMap: d.includeMap !== false,
+    includeJournal: d.includeJournal === true || d.type === 'both' || d.type === 'journal',
+    layers: Array.isArray(d.layers) ? d.layers : null,
+    journalScope: d.journalScope || 'today'
+  };
 }
 async function createTimedShare(untilDate) {
   if (!activeEventId) await getOrCreateActiveEvent();
@@ -412,13 +415,17 @@ async function createTimedShare(untilDate) {
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
-async function createUnifiedShare(untilDate, includeMap, includeJournal) {
+async function createUnifiedShare(untilDate, includeMap, includeJournal, layers = []) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
   const type = (includeMap && includeJournal) ? 'both' : includeJournal ? 'journal' : 'map';
   await setDoc(getShareDoc(token), {
     eventId: activeEventId,
     type,
+    includeMap,
+    includeJournal,
+    layers: includeMap ? layers : [],
+    journalScope: includeJournal ? 'today' : null,
     expiresAt: Timestamp.fromDate(untilDate),
     createdAt: serverTimestamp()
   });
@@ -687,11 +694,13 @@ async function renderResidentMarkers() {
       } else {
         residentMarkers[r.id].setLatLng([lat,lng]).setIcon(makeMarkerIcon(color));
       }
-      residentMarkers[r.id].bindPopup(popupHtml(
-        `${r.city||''}, ${r.street||''} ${r.house||''}`,
-        'תשובות הדיווח',
-        buildResidentAnswersHtml(r)
-      ));
+      residentMarkers[r.id].bindPopup(
+        popupHtml(
+          `${r.city||''}, ${r.street||''} ${r.house||''}`,
+          `${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,
+          buildReportAnswersHtml(r)
+        )
+      );
     }
     const ids=new Set(reps.map(r=>r.id));
     Object.keys(residentMarkers).forEach(id=>{ if(!ids.has(id)&&!id.startsWith('noreport_')){map.removeLayer(residentMarkers[id]);delete residentMarkers[id];} });
@@ -735,6 +744,7 @@ function renderInfoView() {
   $$('#infoButtonsView .info-link-btn').forEach(btn=>btn.addEventListener('click',()=>{
     const u=btn.dataset.url; if(!u||u==='#') return; window.open(u,'_blank','noopener');
   }));
+  refreshShareInfoPanel();
 }
 
 function renderLayersModal() {
@@ -1527,13 +1537,38 @@ function setupShareUi() {
     btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
   };
 
-  // Resident report URL
-  const refreshReportUrl = () => setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
-  refreshReportUrl();
-  safe('openLinksManagerBtn')?.addEventListener('click', refreshReportUrl);
-  safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
+  const renderShareLayersOptions = () => {
+    const wrap = safe('shareLayersOptions');
+    if (!wrap) return;
+    const shareableLayers = managedLayers.filter(Boolean);
+    wrap.innerHTML = shareableLayers.map(name => `
+      <label class="share-layer-item">
+        <input type="checkbox" data-share-layer="${name}" checked />
+        <span>${name}</span>
+      </label>`).join('');
+  };
 
-  // Unified share (map + journal checkboxes)
+  const toggleShareOptions = () => {
+    const mapChecked = safe('shareIncludeMap')?.checked !== false;
+    const journalChecked = safe('shareIncludeJournal')?.checked === true;
+    const layersBox = safe('shareLayersChooser');
+    const journalHint = safe('shareJournalTodayHint');
+    if (layersBox) layersBox.style.display = mapChecked ? '' : 'none';
+    if (journalHint) journalHint.style.display = journalChecked ? '' : 'none';
+  };
+
+  refreshShareInfoPanel = () => {
+    renderShareLayersOptions();
+    toggleShareOptions();
+    setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
+  };
+  refreshShareInfoPanel();
+
+  safe('openLinksManagerBtn')?.addEventListener('click', refreshShareInfoPanel);
+  safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
+  safe('shareIncludeMap')?.addEventListener('change', toggleShareOptions);
+  safe('shareIncludeJournal')?.addEventListener('change', toggleShareOptions);
+
   const now = new Date(); now.setHours(now.getHours() + 3);
   if (safe('shareDateInput')) safe('shareDateInput').value = now.toISOString().slice(0,10);
   if (safe('shareTimeInput')) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1546,11 +1581,15 @@ function setupShareUi() {
     if (!includeMap && !includeJournal) {
       safe('createShareBtn').textContent = 'בחר לפחות אחד'; setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1500); return;
     }
-    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal);
+    const layers = includeMap
+      ? $$('#shareLayersOptions input[data-share-layer]:checked').map(cb => cb.dataset.shareLayer)
+      : [];
+    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal, layers);
     setUrlDisplay('generatedShareUrlDisplay', 'generatedShareUrl', url);
   });
   safe('copyShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedShareUrl', 'copyShareBtn'));
 }
+
 async function subscribeVillageReports() {
   if (unsubReports) unsubReports();
   if (!activeEventId) return;
@@ -1657,15 +1696,11 @@ function isMobileViewport() {
   return window.innerWidth <= MOBILE_BREAKPOINT;
 }
 
-function filterToTodayAndYesterday(data) {
+function filterToToday(data) {
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
-  const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const todayStr = localDate(now);
-  const yest = new Date(now); yest.setDate(now.getDate() - 1);
-  const yesterdayStr = localDate(yest);
-  const allowed = new Set([todayStr, yesterdayStr]);
-  return data.filter(r => allowed.has(r.date));
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  return data.filter(r => r.date === todayStr);
 }
 
 function applyMobileReadOnlyMode() {
@@ -1728,9 +1763,8 @@ function renderTable(searchTerm='') {
 
   let data=[...journalReports];
 
-  // סינון ליומיים האחרונים בלבד עבור צופים דרך קישור משותף
   if (isSharedLinkView) {
-    data = filterToTodayAndYesterday(data);
+    data = sharedViewConfig.journalScope === 'today' ? filterToToday(data) : filterToLastTwoDays(data);
   }
 
   if(searchTerm) {
@@ -2625,10 +2659,6 @@ function applyReportQuestionsToForm() {
     customContainer.appendChild(section);
   });
 
-  if (noteSection && noteSection.parentElement) {
-    noteSection.parentElement.appendChild(noteSection);
-  }
-
   // Yes/No toggle
   customContainer.querySelectorAll('.cq-yesno').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -3040,8 +3070,7 @@ async function loadReportQuestions() {
 }
 
 async function saveReportQuestions() {
-  reportQuestions = normalizeReportQuestionsOrder(reportQuestions);
-  window._reportQuestionsConfig = [...reportQuestions];
+  window._reportQuestionsConfig = reportQuestions;
   if (!db) return;
   await setDoc(getConfigDoc(), { reportQuestions }, { merge: true }).catch(e => console.error('Failed to save report questions:', e));
 }
@@ -3222,8 +3251,7 @@ async function bootJournalReadOnly(eventId) {
   const q = query(getReportsCol(), where('eventId', '==', eventId));
   onSnapshot(q, snap => {
     let entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
-    // סינון ליומיים האחרונים בתצוגת קריאה בלבד נפרדת
-    entries = filterToLastTwoDays(entries);
+    entries = sharedViewConfig.journalScope === 'today' ? filterToToday(entries) : filterToLastTwoDays(entries);
     renderJournalReadOnly(entries);
   });
 }
@@ -3251,6 +3279,12 @@ async function bootAdmin(sharedOnly=false) {
   if (sharedOnly) {
     isSharedLinkView = true;
   } else {
+    isSharedLinkView = false;
+    sharedViewConfig.type = 'both';
+    sharedViewConfig.includeMap = true;
+    sharedViewConfig.includeJournal = true;
+    sharedViewConfig.layers = null;
+    sharedViewConfig.journalScope = 'today';
     setJournalLockedState(!hasJournalAccess(auth?.currentUser));
   }
 
@@ -3281,7 +3315,20 @@ async function bootAdmin(sharedOnly=false) {
   if (fab) fab.style.display = (!sharedOnly && hasJournalAccess(auth?.currentUser)) ? '' : 'none';
 
   if(sharedOnly) {
-    const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
+    const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='';
+    const mgmtRailBtn = document.querySelector('.rail-btn[data-view="management"]'); if (mgmtRailBtn) mgmtRailBtn.style.display = 'none';
+    const reportsRailBtn = document.querySelector('.rail-btn[data-view="reports"]'); if (reportsRailBtn) reportsRailBtn.style.display = sharedViewConfig.includeMap || sharedViewConfig.includeJournal ? '' : 'none';
+    const infoRailBtn = document.querySelector('.rail-btn[data-view="info"]'); if (infoRailBtn) infoRailBtn.style.display = '';
+    const mapCol = document.querySelector('.map-col');
+    const journalCol = document.querySelector('.journal-col');
+    if (mapCol) mapCol.style.display = sharedViewConfig.includeMap ? '' : 'none';
+    if (journalCol) journalCol.style.display = sharedViewConfig.includeJournal ? '' : 'none';
+    if (sharedViewConfig.layers) {
+      activeLayers = new Set(sharedViewConfig.layers.filter(Boolean));
+      renderLayersModal();
+      renderResidentMarkers();
+      renderGpxMarkers();
+    }
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
     const topBar = document.querySelector('.journal-top-bar'); if(topBar) topBar.style.display='none';
     const logoutDesktop = safe('logoutBtn'); if(logoutDesktop) logoutDesktop.style.display='none';
@@ -3301,6 +3348,12 @@ async function bootAdmin(sharedOnly=false) {
     }
   }
 
+  if (!sharedOnly) {
+    const mgmtRailBtn = document.querySelector('.rail-btn[data-view="management"]'); if (mgmtRailBtn) mgmtRailBtn.style.display = '';
+    const reportsRailBtn = document.querySelector('.rail-btn[data-view="reports"]'); if (reportsRailBtn) reportsRailBtn.style.display = '';
+    const mapCol = document.querySelector('.map-col'); if (mapCol) mapCol.style.display = '';
+    const journalCol = document.querySelector('.journal-col'); if (journalCol) journalCol.style.display = '';
+  }
   setTimeout(()=>map.invalidateSize(),150);
 }
 
@@ -3385,6 +3438,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const shareInfo = await verifyShareToken(SHARE_TOKEN);
       if (!shareInfo?.eventId) { document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>'; return; }
       activeEventId = shareInfo.eventId;
+      sharedViewConfig.type = shareInfo.type || 'map';
+      sharedViewConfig.includeMap = shareInfo.includeMap !== false;
+      sharedViewConfig.includeJournal = shareInfo.includeJournal === true || shareInfo.type === 'both' || shareInfo.type === 'journal';
+      sharedViewConfig.layers = Array.isArray(shareInfo.layers) ? shareInfo.layers : null;
+      sharedViewConfig.journalScope = shareInfo.journalScope || 'today';
       if (shareInfo.type === 'journal') {
         if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
         await bootJournalReadOnly(activeEventId);
@@ -3574,8 +3632,16 @@ function renderRrmSnapshots() {
         const color=iconColor(dotClass(r.statuses||[]));
         const markerId='snap_'+r.id;
         residentMarkers[markerId]=L.marker([lat,lng],{icon:makeMarkerIcon(color)}).addTo(map);
-        const extraHtml = buildResidentAnswersHtml(r);
-        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong><div>תשובות הדיווח</div>${extraHtml}</div>`);
+        // Build popup with original question answers from snapshot
+        let extraHtml = r.note ? `<div style='color:#8da8c5;margin-top:4px'>${r.note}</div>` : '';
+        if (r.customAnswers && typeof r.customAnswers === 'object') {
+          const answerLines = Object.entries(r.customAnswers)
+            .filter(([,v]) => v !== '' && v != null)
+            .map(([label, val]) => `<div style='color:#b0d4f7;font-size:12px;margin-top:2px'><span style='color:#8da8c5'>${label}:</span> ${val}</div>`)
+            .join('');
+          if (answerLines) extraHtml += `<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${answerLines}</div>`;
+        }
+        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong><div>${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות</div>${extraHtml}</div>`);
       });
       setTimeout(()=>map?.invalidateSize(),80);
     });
