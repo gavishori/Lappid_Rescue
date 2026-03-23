@@ -69,7 +69,6 @@ function buildConfigPayload() {
     infoButtons: managedInfoButtons,
     houses: managedHouses,
     gpxItems,
-    reportQuestions: Array.isArray(reportQuestions) && reportQuestions.length ? reportQuestions : [...DEFAULT_REPORT_QUESTIONS],
     updatedAt: serverTimestamp()
   };
 }
@@ -107,10 +106,6 @@ function applyConfigData(d = {}) {
 
   if (Array.isArray(d.gpxItems)) gpxItems = d.gpxItems;
   else gpxItems = [];
-
-  if (Array.isArray(d.reportQuestions) && d.reportQuestions.length) reportQuestions = d.reportQuestions;
-  else if (!Array.isArray(reportQuestions) || !reportQuestions.length) reportQuestions = [...DEFAULT_REPORT_QUESTIONS];
-  window._reportQuestionsConfig = Array.isArray(reportQuestions) ? [...reportQuestions] : [...DEFAULT_REPORT_QUESTIONS];
 }
 
 async function loadConfigFromFirestore() {
@@ -270,7 +265,62 @@ function makeMarkerIcon(color) {
   });
 }
 function popupHtml(title, sub='', extra='') {
-  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${title}</strong><div>${sub}</div>${extra?`<div style='color:#8da8c5;margin-top:4px'>${extra}</div>`:''}</div>`;
+  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${title}</strong><div>${sub}</div>${extra?`<div style='margin-top:6px'>${extra}</div>`:''}</div>`;
+}
+
+function escapeHtml(v='') {
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeReportQuestionsOrder(list = []) {
+  const arr = Array.isArray(list) ? list.map(q => ({ ...q })) : [];
+  const byId = new Map(arr.map(q => [q.id, q]));
+  const status = byId.get('builtin_status') || { id: 'builtin_status', label: 'מצב', type: 'status', builtin: true, required: true, hidden: false };
+  const souls  = byId.get('builtin_souls')  || { id: 'builtin_souls', label: 'נפשות בבית', type: 'counter', builtin: true, required: false, hidden: false };
+  const note   = byId.get('builtin_note')   || { id: 'builtin_note', label: 'פרטים נוספים', type: 'text', builtin: true, required: false, hidden: false };
+  const custom = arr.filter(q => !['builtin_status','builtin_souls','builtin_note'].includes(q.id));
+  return [status, ...custom, souls, note].filter(Boolean).map(q => {
+    if (q.id === 'builtin_status') return { ...q, builtin: true, type: 'status', required: q.hidden ? false : (q.required !== false) };
+    if (q.id === 'builtin_souls') return { ...q, builtin: true, type: 'counter', required: false };
+    if (q.id === 'builtin_note') return { ...q, builtin: true, type: 'text', required: false };
+    return q;
+  });
+}
+
+function buildResidentAnswersHtml(report = {}) {
+  const lines = [];
+  const qs = Array.isArray(window._reportQuestionsConfig) && window._reportQuestionsConfig.length
+    ? window._reportQuestionsConfig
+    : (Array.isArray(reportQuestions) && reportQuestions.length ? reportQuestions : DEFAULT_REPORT_QUESTIONS);
+
+  qs.forEach(q => {
+    if (!q || q.hidden) return;
+    if (q.id === 'builtin_status') {
+      const val = statusLabel(report.statuses || []);
+      if (val) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
+      return;
+    }
+    if (q.id === 'builtin_souls') {
+      const val = report.souls;
+      if (val !== '' && val != null) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
+      return;
+    }
+    if (q.id === 'builtin_note') {
+      const val = report.note;
+      if (val) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
+      return;
+    }
+    const val = report.customAnswers?.[q.label];
+    if (val !== '' && val != null) lines.push(`<div style='color:#b0d4f7;font-size:12px;margin-top:3px'><span style='color:#8da8c5'>${escapeHtml(q.label)}:</span> ${escapeHtml(val)}</div>`);
+  });
+
+  if (!lines.length) return '';
+  return `<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${lines.join('')}</div>`;
 }
 
 function defaultMapCenter() {
@@ -637,7 +687,11 @@ async function renderResidentMarkers() {
       } else {
         residentMarkers[r.id].setLatLng([lat,lng]).setIcon(makeMarkerIcon(color));
       }
-      residentMarkers[r.id].bindPopup(popupHtml(`${r.city||''}, ${r.street||''} ${r.house||''}`,`${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,r.note||''));
+      residentMarkers[r.id].bindPopup(popupHtml(
+        `${r.city||''}, ${r.street||''} ${r.house||''}`,
+        'תשובות הדיווח',
+        buildResidentAnswersHtml(r)
+      ));
     }
     const ids=new Set(reps.map(r=>r.id));
     Object.keys(residentMarkers).forEach(id=>{ if(!ids.has(id)&&!id.startsWith('noreport_')){map.removeLayer(residentMarkers[id]);delete residentMarkers[id];} });
@@ -2571,6 +2625,10 @@ function applyReportQuestionsToForm() {
     customContainer.appendChild(section);
   });
 
+  if (noteSection && noteSection.parentElement) {
+    noteSection.parentElement.appendChild(noteSection);
+  }
+
   // Yes/No toggle
   customContainer.querySelectorAll('.cq-yesno').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2982,7 +3040,8 @@ async function loadReportQuestions() {
 }
 
 async function saveReportQuestions() {
-  window._reportQuestionsConfig = reportQuestions;
+  reportQuestions = normalizeReportQuestionsOrder(reportQuestions);
+  window._reportQuestionsConfig = [...reportQuestions];
   if (!db) return;
   await setDoc(getConfigDoc(), { reportQuestions }, { merge: true }).catch(e => console.error('Failed to save report questions:', e));
 }
@@ -3337,7 +3396,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (MODE==='report'||REPORT_KEY) {
       await ensureConfigLoaded();
-      applyReportQuestionsToForm();
       safe('screen-report')?.classList.add('active');
       safe('screen-admin')?.classList.remove('active');
 
@@ -3516,16 +3574,8 @@ function renderRrmSnapshots() {
         const color=iconColor(dotClass(r.statuses||[]));
         const markerId='snap_'+r.id;
         residentMarkers[markerId]=L.marker([lat,lng],{icon:makeMarkerIcon(color)}).addTo(map);
-        // Build popup with original question answers from snapshot
-        let extraHtml = r.note ? `<div style='color:#8da8c5;margin-top:4px'>${r.note}</div>` : '';
-        if (r.customAnswers && typeof r.customAnswers === 'object') {
-          const answerLines = Object.entries(r.customAnswers)
-            .filter(([,v]) => v !== '' && v != null)
-            .map(([label, val]) => `<div style='color:#b0d4f7;font-size:12px;margin-top:2px'><span style='color:#8da8c5'>${label}:</span> ${val}</div>`)
-            .join('');
-          if (answerLines) extraHtml += `<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${answerLines}</div>`;
-        }
-        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong><div>${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות</div>${extraHtml}</div>`);
+        const extraHtml = buildResidentAnswersHtml(r);
+        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong><div>תשובות הדיווח</div>${extraHtml}</div>`);
       });
       setTimeout(()=>map?.invalidateSize(),80);
     });
