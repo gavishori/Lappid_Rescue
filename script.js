@@ -69,6 +69,7 @@ function buildConfigPayload() {
     infoButtons: managedInfoButtons,
     houses: managedHouses,
     gpxItems,
+    reportQuestions: Array.isArray(reportQuestions) && reportQuestions.length ? reportQuestions : [...DEFAULT_REPORT_QUESTIONS],
     updatedAt: serverTimestamp()
   };
 }
@@ -106,6 +107,10 @@ function applyConfigData(d = {}) {
 
   if (Array.isArray(d.gpxItems)) gpxItems = d.gpxItems;
   else gpxItems = [];
+
+  if (Array.isArray(d.reportQuestions) && d.reportQuestions.length) reportQuestions = d.reportQuestions;
+  else if (!Array.isArray(reportQuestions) || !reportQuestions.length) reportQuestions = [...DEFAULT_REPORT_QUESTIONS];
+  window._reportQuestionsConfig = Array.isArray(reportQuestions) ? [...reportQuestions] : [...DEFAULT_REPORT_QUESTIONS];
 }
 
 async function loadConfigFromFirestore() {
@@ -2293,16 +2298,15 @@ function updateTasksButtonStates() {
   const tk=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const repToday=new Set(journalReports.filter(r=>r.date===tk).map(r=>String(r.logType||'').trim()).filter(Boolean));
 
-  const dropdown = safe('filterLogType');
-  const namesFromDropdown = dropdown
-    ? Array.from(dropdown.options)
-        .map(opt => String(opt.value || '').trim())
-        .filter(Boolean)
+  const orderedNames = Array.isArray(eventTypes)
+    ? eventTypes.map(x => String(x || '').trim()).filter(Boolean)
     : [];
 
-  const names = namesFromDropdown.length
-    ? namesFromDropdown
-    : [...new Set(definedLogTypes.map(lt => String(lt?.name || '').trim()).filter(Boolean))];
+  const fallbackOrder=["בטחוני","שריפה","נעדר","שגרה"];
+  const names = orderedNames.length
+    ? orderedNames
+    : [...new Set(definedLogTypes.map(lt => String(lt?.name || '').trim()).filter(Boolean))]
+        .sort((a,b)=>{ const ia=fallbackOrder.indexOf(a),ib=fallbackOrder.indexOf(b); if(ia===-1&&ib===-1) return a.localeCompare(b,'he'); if(ia===-1) return 1; if(ib===-1) return -1; return ia-ib; });
 
   if (!names.length) {
     con.style.display = 'none';
@@ -3333,6 +3337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (MODE==='report'||REPORT_KEY) {
       await ensureConfigLoaded();
+      applyReportQuestionsToForm();
       safe('screen-report')?.classList.add('active');
       safe('screen-admin')?.classList.remove('active');
 

@@ -1088,7 +1088,6 @@ textarea { min-height: 100px; resize: vertical; }
   }
 
   .journal-top-row2 {
-    min-width: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -1157,42 +1156,6 @@ textarea { min-height: 100px; resize: vertical; }
   .journal-tech-row td { font-size: 11px; }
   .journal-report-row td { font-size: 13px; }
   .journal-table th:nth-child(1), .journal-table td:nth-child(1) { width: 100%; }
-
-  /* hard stop against horizontal overflow in mobile journal */
-  .journal-col,
-  .journal-top-bar,
-  .journal-top-row1,
-  .journal-top-row2,
-  .resident-status-bar,
-  .journal-table-wrap,
-  .journal-table,
-  .journal-table tbody,
-  #reportTableBody,
-  .date-group-header,
-  .date-group-content,
-  .date-group-content > td,
-  .jm-cards-wrap,
-  .jm-card {
-    min-width: 0;
-    max-width: 100%;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .journal-table-wrap,
-  .journal-table,
-  #reportTableBody,
-  .date-group-content > td,
-  .jm-cards-wrap {
-    overflow-x: hidden;
-  }
-
-  .journal-table { margin: 0; }
-  .date-group-content > td > * { width: 100%; max-width: 100%; }
-  .jm-card-meta { flex-wrap: wrap; }
-  .jm-card-meta-actions,
-  .journal-meta-actions { margin-right: 0; margin-inline-start: auto; }
-
   /* fix date-group header on mobile — prevent vertical text */
   .date-group-header { display: block; width: 100%; }
   .date-group-header td {
@@ -1284,27 +1247,6 @@ textarea { min-height: 100px; resize: vertical; }
     grid-template-rows: minmax(0,1fr);
   }
   #screen-admin.pane-journal-full .map-col { display: none; }
-
-  /* כשהיומן במסך מלא במובייל, חייבים לבטל את פריסת שני הטורים של הדסקטופ.
-     אחרת נשאר טור ריק של 320px (הטופס הישן), והטבלה נדחסת לעמודה צרה. */
-  #screen-admin.pane-journal-full .journal-col {
-    display: flex !important;
-    flex-direction: column;
-    grid-template-columns: none !important;
-    grid-template-rows: auto 1fr !important;
-    grid-template-areas: none !important;
-    min-width: 0;
-    width: 100%;
-  }
-  #screen-admin.pane-journal-full .journal-top-bar,
-  #screen-admin.pane-journal-full .journal-table-wrap {
-    grid-area: auto !important;
-    width: 100%;
-    min-width: 0;
-  }
-  #screen-admin.pane-journal-full .journal-input-box {
-    display: none !important;
-  }
 }
 
 /* ══ Mobile Admin FAB + Drawer (always defined, shown only on mobile) ══ */
