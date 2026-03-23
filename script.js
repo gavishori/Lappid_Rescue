@@ -1001,7 +1001,20 @@ function setupNavigation() {
 const openModal  = sel => $(sel)?.classList.remove('hidden');
 const closeModal = sel => $(sel)?.classList.add('hidden');
 
+function shouldHideSharedLayersUi() {
+  const allowedSharedLayers = Array.isArray(sharedViewConfig.allowedLayers) ? sharedViewConfig.allowedLayers.filter(Boolean) : [];
+  return isSharedLinkView && allowedSharedLayers.length <= 1;
+}
+
+function syncSharedLayersUiVisibility() {
+  const layersRailBtn = document.querySelector('.rail-btn[data-view="layers"]');
+  const shouldHide = shouldHideSharedLayersUi();
+  if (layersRailBtn) layersRailBtn.style.display = shouldHide ? 'none' : '';
+  if (shouldHide) safe('layersPanel')?.classList.add('hidden');
+}
+
 function openLayersModal() {
+  if (shouldHideSharedLayersUi()) return;
   renderLayersModal();
   safe('layersPanel')?.classList.remove('hidden');
 }
@@ -1549,10 +1562,53 @@ const formatAsDDMMYYYY = (ds) => {
 };
 const isValidTimeFormat = (t) => /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(t);
 
+function parseReportDateValue(value) {
+  if (!value) return null;
+  if (value?.toDate) {
+    const d = value.toDate();
+    return Number.isNaN(d?.getTime?.()) ? null : d;
+  }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value === 'number') {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [y, m, d] = trimmed.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+    const [d, m, y] = trimmed.split('/').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getReportDateObject(report) {
+  return (
+    parseReportDateValue(report?.date) ||
+    parseReportDateValue(report?.timestamp) ||
+    parseReportDateValue(report?.createdAt) ||
+    parseReportDateValue(report?.updatedAt)
+  );
+}
+
+function getReportDateKey(report) {
+  const dt = getReportDateObject(report);
+  return dt ? localDateKey(dt) : String(report?.date || '').trim();
+}
+
 const sortChronologically = arr => [...arr].sort((a,b)=>{
-  const da=new Date(a.date), db=new Date(b.date);
+  const da=getReportDateObject(a) || new Date(0), db=getReportDateObject(b) || new Date(0);
   if(da>db) return -1; if(da<db) return 1;
-  if(a.time>b.time) return -1; if(a.time<b.time) return 1;
+  if((a.time||'')>(b.time||'')) return -1; if((a.time||'')<(b.time||'')) return 1;
   return 0;
 });
 
@@ -1571,17 +1627,16 @@ function localDateKey(d = new Date()) {
 
 function filterToToday(reports) {
   const todayStr = localDateKey(new Date());
-  return reports.filter(r => r?.date === todayStr);
+  return reports.filter(r => getReportDateKey(r) === todayStr);
 }
 
-// פונקציית סינון - מציגה דיווחים מהיום ואתמול בלבד
 function filterToLastTwoDays(reports) {
   const now = new Date();
   const todayStr = localDateKey(now);
   const yest = new Date(now); yest.setDate(now.getDate() - 1);
   const yesterdayStr = localDateKey(yest);
   const validDates = new Set([todayStr, yesterdayStr]);
-  return reports.filter(r => validDates.has(r.date));
+  return reports.filter(r => validDates.has(getReportDateKey(r)));
 }
 
 // last used reporter/logType — persist across submissions
@@ -1617,13 +1672,9 @@ function isMobileViewport() {
   return window.innerWidth <= MOBILE_BREAKPOINT;
 }
 
-function filterToTodayAndYesterday(data) {
-  const now = new Date();
-  const todayStr = localDateKey(now);
-  const yest = new Date(now); yest.setDate(now.getDate() - 1);
-  const yesterdayStr = localDateKey(yest);
-  const allowed = new Set([todayStr, yesterdayStr]);
-  return data.filter(r => allowed.has(r.date));
+function filterSharedJournalEntries(data) {
+  const todayStr = localDateKey(new Date());
+  return data.filter(r => getReportDateKey(r) === todayStr);
 }
 
 function applyMobileReadOnlyMode() {
@@ -1686,9 +1737,9 @@ function renderTable(searchTerm='') {
 
   let data=[...journalReports];
 
-  // סינון ליומיים האחרונים בלבד עבור צופים דרך קישור משותף
+  // בתצוגה משותפת מציגים רק את היומן של היום הנוכחי
   if (isSharedLinkView) {
-    data = filterToTodayAndYesterday(data);
+    data = filterSharedJournalEntries(data);
   }
 
   if(searchTerm) {
@@ -1710,10 +1761,13 @@ function renderTable(searchTerm='') {
   if(emptyRow) emptyRow.classList.add('hidden');
 
   const grouped=new Map();
-  data.forEach(r=>{ if(!grouped.has(r.date)) grouped.set(r.date,[]); grouped.get(r.date).push(r); });
-  const sortedDates=[...grouped.keys()].sort((a,b)=>new Date(b)-new Date(a));
-  const today=new Date();
-  const todayKey=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  data.forEach(r=>{ const dateKey = getReportDateKey(r); if(!grouped.has(dateKey)) grouped.set(dateKey,[]); grouped.get(dateKey).push(r); });
+  const sortedDates=[...grouped.keys()].sort((a,b)=>{
+    const da = parseReportDateValue(a) || new Date(a);
+    const db = parseReportDateValue(b) || new Date(b);
+    return db - da;
+  });
+  const todayKey=localDateKey(new Date());
 
   sortedDates.forEach(dateKey=>{
     const reps=grouped.get(dateKey);
@@ -1750,7 +1804,8 @@ function renderTable(searchTerm='') {
       return safeValue.replace(regex,'<span class="highlight">$&</span>');
     };
     sorted.forEach(report=>{
-      const diff=(new Date()-new Date(report.timestamp))/(1000*60*60);
+      const reportTs = getReportDateObject(report) || parseReportDateValue(report?.timestamp);
+      const diff=((new Date())-(reportTs||new Date()))/(1000*60*60);
       const canEdit=diff<48;
       const metaParts = [];
       if(report.time) metaParts.push(`<strong>${report.time}</strong>`);
@@ -1882,7 +1937,8 @@ async function addJournalReport() {
     if(editingReportId) {
       const existing=journalReports.find(r=>r.id===editingReportId);
       if(!existing){ showCustomAlert('דיווח לא נמצא'); resetForm(); return; }
-      const diff=(new Date()-new Date(existing.timestamp))/(1000*60*60);
+      const existingTs = getReportDateObject(existing) || parseReportDateValue(existing?.timestamp);
+      const diff=((new Date())-(existingTs||new Date()))/(1000*60*60);
       if(diff>=48){ showCustomAlert('לא ניתן לערוך דיווחים בני יותר מ-48 שעות'); resetForm(); return; }
       await setDoc(getReportDoc(editingReportId), {description:desc,date,time,reporter:rep,logType:lt}, {merge:true});
       lastAddedReportId=editingReportId;
@@ -1915,7 +1971,8 @@ async function deleteDayReports(dateKey) {
 }
 function startEditReport(id) {
   const r=journalReports.find(x=>x.id===id); if(!r) return;
-  const diff=(new Date()-new Date(r.timestamp))/(1000*60*60);
+  const reportTs = getReportDateObject(r) || parseReportDateValue(r?.timestamp);
+  const diff=((new Date())-(reportTs||new Date()))/(1000*60*60);
   if(diff>=48){ showCustomAlert('לא ניתן לערוך דיווחים בני יותר מ-48 שעות'); return; }
   editingReportId=id;
   // Desktop: fill main form
@@ -2909,7 +2966,8 @@ async function submitMobileDrawer() {
     if (editingReportId) {
       const existing = journalReports.find(r => r.id === editingReportId);
       if (!existing) { showCustomAlert('דיווח לא נמצא'); closeMobileJournalDrawer(); return; }
-      const diff = (new Date() - new Date(existing.timestamp)) / (1000*60*60);
+      const existingTs = getReportDateObject(existing) || parseReportDateValue(existing?.timestamp);
+      const diff = ((new Date()) - (existingTs || new Date())) / (1000*60*60);
       if (diff >= 48) { showCustomAlert('לא ניתן לערוך דיווחים בני יותר מ-48 שעות'); closeMobileJournalDrawer(); return; }
       await setDoc(getReportDoc(editingReportId), {description:desc,date,time,reporter:rep,logType:lt}, {merge:true});
       lastAddedReportId = editingReportId;
@@ -3251,11 +3309,7 @@ async function bootAdmin(sharedOnly=false) {
       renderGpxMarkers();
     }
 
-    const layersRailBtn = document.querySelector('.rail-btn[data-view="layers"]');
-    if (layersRailBtn && allowedSharedLayers.length <= 1) {
-      layersRailBtn.style.display = 'none';
-      safe('layersPanel')?.classList.add('hidden');
-    }
+    syncSharedLayersUiVisibility();
 
     if (unsubJournalReports) { unsubJournalReports(); unsubJournalReports = null; }
     if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
@@ -3268,6 +3322,7 @@ async function bootAdmin(sharedOnly=false) {
     });
   }
 
+  syncSharedLayersUiVisibility();
   setTimeout(()=>map.invalidateSize(),150);
 }
 
