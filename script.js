@@ -16,15 +16,10 @@ const MODE        = params.get('mode');
 const SHARE_TOKEN = params.get('token');
 const REPORT_KEY  = params.get('rkey');
 
-const sharedViewConfig = {
-  type: 'map',
-  includeMap: true,
-  includeJournal: false,
-  layers: null,
-  journalScope: 'today'
+let sharedViewConfig = {
+  type: null,
+  allowedLayers: null
 };
-let userLocationMarker = null;
-let userLocationWatchId = null;
 
 // ── helpers ─────────────────────────────────────────────
 const $   = (s)  => document.querySelector(s);
@@ -69,7 +64,6 @@ let managedInfoButtons = [...DEFAULT_INFO_BUTTONS];
 let managedHouses = [];
 let gpxItems      = [];
 let rrmSnapshotsCache = [];
-let refreshShareInfoPanel = () => {};
 let editingHouseIndex = null;
 
 function buildConfigPayload() {
@@ -275,30 +269,8 @@ function makeMarkerIcon(color) {
     iconSize:[16,16], iconAnchor:[8,8]
   });
 }
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-function buildReportAnswersHtml(report) {
-  const lines = [];
-  if (report.note) {
-    lines.push(`<div style='color:#8da8c5;margin-top:4px'>${escapeHtml(report.note)}</div>`);
-  }
-  if (report.customAnswers && typeof report.customAnswers === 'object') {
-    const qa = Object.entries(report.customAnswers)
-      .filter(([, value]) => value !== '' && value != null)
-      .map(([label, value]) => `<div style='color:#b0d4f7;font-size:12px;margin-top:2px'><span style='color:#8da8c5'>${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`)
-      .join('');
-    if (qa) lines.push(`<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${qa}</div>`);
-  }
-  return lines.join('');
-}
 function popupHtml(title, sub='', extra='') {
-  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${escapeHtml(title)}</strong><div>${escapeHtml(sub)}</div>${extra || ''}</div>`;
+  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${title}</strong><div>${sub}</div>${extra?`<div style='color:#8da8c5;margin-top:4px'>${extra}</div>`:''}</div>`;
 }
 
 function defaultMapCenter() {
@@ -340,30 +312,12 @@ function fitMapToLayerBounds(layerName) {
   if (pts.length === 1) { map.setView(pts[0], Math.max(map.getZoom(), 17)); return; }
   map.fitBounds(pts, {padding:[36,36], maxZoom:18});
 }
-function ensureUserLocationTracking() {
-  if (!map || !navigator.geolocation || userLocationWatchId !== null) return;
-  userLocationWatchId = navigator.geolocation.watchPosition(pos => {
-    const latlng = [pos.coords.latitude, pos.coords.longitude];
-    if (!userLocationMarker) {
-      userLocationMarker = L.circleMarker(latlng, {
-        radius: 9,
-        color: '#ffffff',
-        weight: 3,
-        fillColor: '#32d16d',
-        fillOpacity: 1
-      }).addTo(map).bindPopup('המיקום הנוכחי שלי');
-    } else {
-      userLocationMarker.setLatLng(latlng);
-    }
-  }, () => {}, { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 });
-}
 function initMap() {
-  if (map) { ensureUserLocationTracking(); return; }
+  if (map) return;
   map = L.map('map',{zoomControl:true}).setView(defaultMapCenter(),15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors', maxZoom:19
   }).addTo(map);
-  ensureUserLocationTracking();
   if (managedHouses.length) setTimeout(fitMapToHouseBounds, 0);
 }
 
@@ -403,10 +357,7 @@ async function verifyShareToken(token) {
   return {
     eventId: d.eventId || null,
     type: d.type || 'map',
-    includeMap: d.includeMap !== false,
-    includeJournal: d.includeJournal === true || d.type === 'both' || d.type === 'journal',
-    layers: Array.isArray(d.layers) ? d.layers : null,
-    journalScope: d.journalScope || 'today'
+    allowedLayers: Array.isArray(d.allowedLayers) ? d.allowedLayers.filter(Boolean) : null
   };
 }
 async function createTimedShare(untilDate) {
@@ -415,17 +366,15 @@ async function createTimedShare(untilDate) {
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
-async function createUnifiedShare(untilDate, includeMap, includeJournal, layers = []) {
+async function createUnifiedShare(untilDate, includeMap, includeJournal) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
   const type = (includeMap && includeJournal) ? 'both' : includeJournal ? 'journal' : 'map';
+  const allowedLayers = includeMap ? Array.from(activeLayers).filter(Boolean) : [];
   await setDoc(getShareDoc(token), {
     eventId: activeEventId,
     type,
-    includeMap,
-    includeJournal,
-    layers: includeMap ? layers : [],
-    journalScope: includeJournal ? 'today' : null,
+    allowedLayers,
     expiresAt: Timestamp.fromDate(untilDate),
     createdAt: serverTimestamp()
   });
@@ -694,13 +643,7 @@ async function renderResidentMarkers() {
       } else {
         residentMarkers[r.id].setLatLng([lat,lng]).setIcon(makeMarkerIcon(color));
       }
-      residentMarkers[r.id].bindPopup(
-        popupHtml(
-          `${r.city||''}, ${r.street||''} ${r.house||''}`,
-          `${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,
-          buildReportAnswersHtml(r)
-        )
-      );
+      residentMarkers[r.id].bindPopup(popupHtml(`${r.city||''}, ${r.street||''} ${r.house||''}`,`${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,r.note||''));
     }
     const ids=new Set(reps.map(r=>r.id));
     Object.keys(residentMarkers).forEach(id=>{ if(!ids.has(id)&&!id.startsWith('noreport_')){map.removeLayer(residentMarkers[id]);delete residentMarkers[id];} });
@@ -744,7 +687,6 @@ function renderInfoView() {
   $$('#infoButtonsView .info-link-btn').forEach(btn=>btn.addEventListener('click',()=>{
     const u=btn.dataset.url; if(!u||u==='#') return; window.open(u,'_blank','noopener');
   }));
-  refreshShareInfoPanel();
 }
 
 function renderLayersModal() {
@@ -1537,38 +1479,13 @@ function setupShareUi() {
     btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
   };
 
-  const renderShareLayersOptions = () => {
-    const wrap = safe('shareLayersOptions');
-    if (!wrap) return;
-    const shareableLayers = managedLayers.filter(Boolean);
-    wrap.innerHTML = shareableLayers.map(name => `
-      <label class="share-layer-item">
-        <input type="checkbox" data-share-layer="${name}" checked />
-        <span>${name}</span>
-      </label>`).join('');
-  };
-
-  const toggleShareOptions = () => {
-    const mapChecked = safe('shareIncludeMap')?.checked !== false;
-    const journalChecked = safe('shareIncludeJournal')?.checked === true;
-    const layersBox = safe('shareLayersChooser');
-    const journalHint = safe('shareJournalTodayHint');
-    if (layersBox) layersBox.style.display = mapChecked ? '' : 'none';
-    if (journalHint) journalHint.style.display = journalChecked ? '' : 'none';
-  };
-
-  refreshShareInfoPanel = () => {
-    renderShareLayersOptions();
-    toggleShareOptions();
-    setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
-  };
-  refreshShareInfoPanel();
-
-  safe('openLinksManagerBtn')?.addEventListener('click', refreshShareInfoPanel);
+  // Resident report URL
+  const refreshReportUrl = () => setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
+  refreshReportUrl();
+  safe('openLinksManagerBtn')?.addEventListener('click', refreshReportUrl);
   safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
-  safe('shareIncludeMap')?.addEventListener('change', toggleShareOptions);
-  safe('shareIncludeJournal')?.addEventListener('change', toggleShareOptions);
 
+  // Unified share (map + journal checkboxes)
   const now = new Date(); now.setHours(now.getHours() + 3);
   if (safe('shareDateInput')) safe('shareDateInput').value = now.toISOString().slice(0,10);
   if (safe('shareTimeInput')) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -1581,15 +1498,11 @@ function setupShareUi() {
     if (!includeMap && !includeJournal) {
       safe('createShareBtn').textContent = 'בחר לפחות אחד'; setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1500); return;
     }
-    const layers = includeMap
-      ? $$('#shareLayersOptions input[data-share-layer]:checked').map(cb => cb.dataset.shareLayer)
-      : [];
-    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal, layers);
+    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal);
     setUrlDisplay('generatedShareUrlDisplay', 'generatedShareUrl', url);
   });
   safe('copyShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedShareUrl', 'copyShareBtn'));
 }
-
 async function subscribeVillageReports() {
   if (unsubReports) unsubReports();
   if (!activeEventId) return;
@@ -1651,14 +1564,22 @@ const setDefaultDateTime = () => {
   if(safe('newTime')) safe('newTime').value=`${h}:${mi}`;
 };
 
+function localDateKey(d = new Date()) {
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function filterToToday(reports) {
+  const todayStr = localDateKey(new Date());
+  return reports.filter(r => r?.date === todayStr);
+}
+
 // פונקציית סינון - מציגה דיווחים מהיום ואתמול בלבד
 function filterToLastTwoDays(reports) {
   const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const todayStr = localDate(now);
+  const todayStr = localDateKey(now);
   const yest = new Date(now); yest.setDate(now.getDate() - 1);
-  const yesterdayStr = localDate(yest);
+  const yesterdayStr = localDateKey(yest);
   const validDates = new Set([todayStr, yesterdayStr]);
   return reports.filter(r => validDates.has(r.date));
 }
@@ -1696,11 +1617,13 @@ function isMobileViewport() {
   return window.innerWidth <= MOBILE_BREAKPOINT;
 }
 
-function filterToToday(data) {
+function filterToTodayAndYesterday(data) {
   const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-  return data.filter(r => r.date === todayStr);
+  const todayStr = localDateKey(now);
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const yesterdayStr = localDateKey(yest);
+  const allowed = new Set([todayStr, yesterdayStr]);
+  return data.filter(r => allowed.has(r.date));
 }
 
 function applyMobileReadOnlyMode() {
@@ -1763,8 +1686,9 @@ function renderTable(searchTerm='') {
 
   let data=[...journalReports];
 
+  // סינון ליומיים האחרונים בלבד עבור צופים דרך קישור משותף
   if (isSharedLinkView) {
-    data = sharedViewConfig.journalScope === 'today' ? filterToToday(data) : filterToLastTwoDays(data);
+    data = filterToTodayAndYesterday(data);
   }
 
   if(searchTerm) {
@@ -3251,7 +3175,7 @@ async function bootJournalReadOnly(eventId) {
   const q = query(getReportsCol(), where('eventId', '==', eventId));
   onSnapshot(q, snap => {
     let entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
-    entries = sharedViewConfig.journalScope === 'today' ? filterToToday(entries) : filterToLastTwoDays(entries);
+    entries = filterToToday(entries);
     renderJournalReadOnly(entries);
   });
 }
@@ -3260,7 +3184,7 @@ function renderJournalReadOnly(entries) {
   const tbody = safe('journalReadOnlyBody');
   if (!tbody) return;
   if (!entries.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#8aabcc">אין רשומות ביומן ליומיים האחרונים</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#8aabcc">אין רשומות ביומן להיום</td></tr>';
     return;
   }
   tbody.innerHTML = entries.map(e => `
@@ -3279,12 +3203,6 @@ async function bootAdmin(sharedOnly=false) {
   if (sharedOnly) {
     isSharedLinkView = true;
   } else {
-    isSharedLinkView = false;
-    sharedViewConfig.type = 'both';
-    sharedViewConfig.includeMap = true;
-    sharedViewConfig.includeJournal = true;
-    sharedViewConfig.layers = null;
-    sharedViewConfig.journalScope = 'today';
     setJournalLockedState(!hasJournalAccess(auth?.currentUser));
   }
 
@@ -3315,20 +3233,7 @@ async function bootAdmin(sharedOnly=false) {
   if (fab) fab.style.display = (!sharedOnly && hasJournalAccess(auth?.currentUser)) ? '' : 'none';
 
   if(sharedOnly) {
-    const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='';
-    const mgmtRailBtn = document.querySelector('.rail-btn[data-view="management"]'); if (mgmtRailBtn) mgmtRailBtn.style.display = 'none';
-    const reportsRailBtn = document.querySelector('.rail-btn[data-view="reports"]'); if (reportsRailBtn) reportsRailBtn.style.display = sharedViewConfig.includeMap || sharedViewConfig.includeJournal ? '' : 'none';
-    const infoRailBtn = document.querySelector('.rail-btn[data-view="info"]'); if (infoRailBtn) infoRailBtn.style.display = '';
-    const mapCol = document.querySelector('.map-col');
-    const journalCol = document.querySelector('.journal-col');
-    if (mapCol) mapCol.style.display = sharedViewConfig.includeMap ? '' : 'none';
-    if (journalCol) journalCol.style.display = sharedViewConfig.includeJournal ? '' : 'none';
-    if (sharedViewConfig.layers) {
-      activeLayers = new Set(sharedViewConfig.layers.filter(Boolean));
-      renderLayersModal();
-      renderResidentMarkers();
-      renderGpxMarkers();
-    }
+    const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
     const topBar = document.querySelector('.journal-top-bar'); if(topBar) topBar.style.display='none';
     const logoutDesktop = safe('logoutBtn'); if(logoutDesktop) logoutDesktop.style.display='none';
@@ -3339,21 +3244,30 @@ async function bootAdmin(sharedOnly=false) {
     const inputBox = document.querySelector('.journal-input-box'); if (inputBox) inputBox.style.display='none';
     if (fab) fab.style.display = 'none';
 
-    if (!unsubJournalReports) {
-      if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-      unsubJournalReports = onSnapshot(reportsColRef, snap => {
-        journalReports = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
-        renderTable();
-      });
+    const allowedSharedLayers = Array.isArray(sharedViewConfig.allowedLayers) ? sharedViewConfig.allowedLayers.filter(Boolean) : [];
+    if (allowedSharedLayers.length) {
+      activeLayers = new Set(allowedSharedLayers);
+      renderResidentMarkers();
+      renderGpxMarkers();
     }
+
+    const layersRailBtn = document.querySelector('.rail-btn[data-view="layers"]');
+    if (layersRailBtn && allowedSharedLayers.length <= 1) {
+      layersRailBtn.style.display = 'none';
+      safe('layersPanel')?.classList.add('hidden');
+    }
+
+    if (unsubJournalReports) { unsubJournalReports(); unsubJournalReports = null; }
+    if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+    const sharedReportsQuery = activeEventId
+      ? query(getReportsCol(), where('eventId', '==', activeEventId))
+      : getReportsCol();
+    unsubJournalReports = onSnapshot(sharedReportsQuery, snap => {
+      journalReports = filterToToday(sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+      renderTable();
+    });
   }
 
-  if (!sharedOnly) {
-    const mgmtRailBtn = document.querySelector('.rail-btn[data-view="management"]'); if (mgmtRailBtn) mgmtRailBtn.style.display = '';
-    const reportsRailBtn = document.querySelector('.rail-btn[data-view="reports"]'); if (reportsRailBtn) reportsRailBtn.style.display = '';
-    const mapCol = document.querySelector('.map-col'); if (mapCol) mapCol.style.display = '';
-    const journalCol = document.querySelector('.journal-col'); if (journalCol) journalCol.style.display = '';
-  }
   setTimeout(()=>map.invalidateSize(),150);
 }
 
@@ -3438,11 +3352,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const shareInfo = await verifyShareToken(SHARE_TOKEN);
       if (!shareInfo?.eventId) { document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>'; return; }
       activeEventId = shareInfo.eventId;
-      sharedViewConfig.type = shareInfo.type || 'map';
-      sharedViewConfig.includeMap = shareInfo.includeMap !== false;
-      sharedViewConfig.includeJournal = shareInfo.includeJournal === true || shareInfo.type === 'both' || shareInfo.type === 'journal';
-      sharedViewConfig.layers = Array.isArray(shareInfo.layers) ? shareInfo.layers : null;
-      sharedViewConfig.journalScope = shareInfo.journalScope || 'today';
+      sharedViewConfig = {
+        type: shareInfo.type || 'map',
+        allowedLayers: Array.isArray(shareInfo.allowedLayers) ? shareInfo.allowedLayers.filter(Boolean) : null
+      };
       if (shareInfo.type === 'journal') {
         if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
         await bootJournalReadOnly(activeEventId);
