@@ -21,42 +21,6 @@ let sharedViewConfig = {
   allowedLayers: null
 };
 
-const LAYER_COLOR_PALETTE = [
-  '#9e7cff', '#ff7f57', '#3ccf91', '#61b7ff', '#ff5d66', '#f4c246',
-  '#00c2ff', '#b47cff', '#00d084', '#ff9f1c', '#2dd4bf', '#fb7185'
-];
-
-function isReadOnlySharedView() {
-  return Boolean(isSharedLinkView || SHARE_TOKEN);
-}
-
-function layerColorForName(name) {
-  const normalized = String(name || '').trim();
-  const explicit = {
-    'danger': '#ff5d66',
-    'warn': '#f4c246',
-    'ok': '#49c96b',
-    'מצלמות': '#61b7ff',
-    'הידרנטים': '#ff7f57',
-    'מספרי בתים': '#f4c246',
-    'דיווחי תושבים': '#49c96b'
-  };
-  if (explicit[normalized]) return explicit[normalized];
-  let hash = 0;
-  for (let i = 0; i < normalized.length; i++) {
-    hash = ((hash << 5) - hash + normalized.charCodeAt(i)) | 0;
-  }
-  return LAYER_COLOR_PALETTE[Math.abs(hash) % LAYER_COLOR_PALETTE.length];
-}
-
-function filterReportsForSharedEvent(reports, eventId) {
-  if (!eventId) return reports;
-  return reports.filter(r => {
-    const rid = String(r?.eventId || '').trim();
-    return rid === String(eventId).trim() || !rid;
-  });
-}
-
 // ── helpers ─────────────────────────────────────────────
 const $   = (s)  => document.querySelector(s);
 const $$  = (s)  => Array.from(document.querySelectorAll(s));
@@ -89,8 +53,6 @@ let sortDirection   = 'desc';
 let map             = null;
 let residentMarkers = {};
 let layerMarkers    = {};
-let viewerLocationMarker = null;
-let viewerLocationPulse = null;
 let reportCache     = [];   // village reports (Firestore events/reports)
 let unsubReports    = null;
 let unsubEvent      = null; // להאזנה לנתוני האירוע (כמו שעת הערכת מצב)
@@ -292,9 +254,102 @@ function statusLabel(statuses=[]) {
   if (!labels.length) labels.push('תקין');
   return labels.join(' + ');
 }
-function iconColor(kind) {
-  return layerColorForName(kind);
+const LAYER_COLOR_PALETTE = [
+  '#61b7ff', '#ff7f57', '#9e7cff', '#27c7a7', '#ff6fae', '#f4c246',
+  '#00bcd4', '#ff9f1c', '#6dd400', '#c77dff', '#3a86ff', '#ef476f'
+];
+const FIXED_LAYER_COLORS = {
+  'דיווחי תושבים': '#49c96b',
+  'נקודות דיווח': '#9e7cff',
+  'מצלמות': '#61b7ff',
+  'הידרנטים': '#ff7f57',
+  'מספרי בתים': '#475569'
+};
+
+function hashString(str='') {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i);
+  return Math.abs(h);
 }
+
+function getLayerColor(layerName='') {
+  const clean = String(layerName || '').trim();
+  if (FIXED_LAYER_COLORS[clean]) return FIXED_LAYER_COLORS[clean];
+  return LAYER_COLOR_PALETTE[hashString(clean) % LAYER_COLOR_PALETTE.length];
+}
+
+function getLayerSwatchKind(layerName='') {
+  return String(layerName || '').trim() === 'מספרי בתים' ? 'house' : '';
+}
+
+function iconColor(kind) {
+  if (kind==='danger')     return '#ff5d66';
+  if (kind==='warn')       return '#f4c246';
+  if (kind==='ok')         return '#49c96b';
+  return getLayerColor(kind);
+}
+
+function escapeHtml(value='') {
+  return String(value)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function getVisibleSharedLayers() {
+  const allowed = Array.isArray(sharedViewConfig.allowedLayers) ? sharedViewConfig.allowedLayers.filter(Boolean) : [];
+  if (isSharedLinkView && allowed.length) return allowed;
+  return Array.from(activeLayers).filter(Boolean);
+}
+
+function buildLegendEntries() {
+  const entries = [];
+  const visibleLayers = getVisibleSharedLayers();
+
+  if (visibleLayers.includes('דיווחי תושבים')) {
+    entries.push({ label: 'דיווחי תושבים — תקין', color: '#49c96b' });
+    entries.push({ label: 'דיווחי תושבים — נזק לרכוש', color: '#f4c246' });
+    entries.push({ label: 'דיווחי תושבים — פגיעה בנפש', color: '#ff5d66' });
+    if (safe('filterNoReport')?.checked) {
+      entries.push({ label: 'לא דיווחו', color: '#94a3b8' });
+    }
+  }
+
+  visibleLayers
+    .filter(layer => layer !== 'דיווחי תושבים')
+    .forEach(layer => entries.push({
+      label: layer,
+      color: getLayerColor(layer),
+      kind: getLayerSwatchKind(layer)
+    }));
+
+  return entries;
+}
+
+function renderMapLegend() {
+  const wrap = safe('mapLegend');
+  if (!wrap) return;
+  const entries = buildLegendEntries();
+  if (!entries.length) {
+    wrap.classList.add('hidden');
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.classList.remove('hidden');
+  wrap.innerHTML = `
+    <div class="map-legend-title">מקרא</div>
+    <div class="map-legend-items">
+      ${entries.map(item => `
+        <div class="map-legend-item ${item.kind || ''}">
+          <span class="map-legend-swatch" style="background:${item.color}"></span>
+          <span>${escapeHtml(item.label)}</span>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
 function makeMarkerIcon(color) {
   return L.divIcon({
     className:'',
@@ -351,41 +406,10 @@ function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors', maxZoom:19
   }).addTo(map);
+  renderMapLegend();
+  setTimeout(() => map?.invalidateSize(), 60);
+  requestAnimationFrame(() => setTimeout(() => map?.invalidateSize(), 180));
   if (managedHouses.length) setTimeout(fitMapToHouseBounds, 0);
-  setTimeout(() => {
-    refreshViewerLocationMarker();
-    map.invalidateSize();
-  }, 60);
-}
-
-function refreshViewerLocationMarker() {
-  if (!map || !navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    const latlng = [pos.coords.latitude, pos.coords.longitude];
-    const dotIcon = L.divIcon({
-      className: 'viewer-location-icon',
-      html: `<div class="viewer-location-dot"></div>`,
-      iconSize: [18, 18],
-      iconAnchor: [9, 9]
-    });
-    if (!viewerLocationMarker) {
-      viewerLocationMarker = L.marker(latlng, { icon: dotIcon, interactive: false, keyboard: false }).addTo(map);
-    } else {
-      viewerLocationMarker.setLatLng(latlng).setIcon(dotIcon);
-    }
-    if (!viewerLocationPulse) {
-      viewerLocationPulse = L.circleMarker(latlng, {
-        radius: 14,
-        color: '#2ad46b',
-        fillColor: '#2ad46b',
-        fillOpacity: 0.18,
-        weight: 2,
-        interactive: false
-      }).addTo(map);
-    } else {
-      viewerLocationPulse.setLatLng(latlng);
-    }
-  }, () => {}, { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 });
 }
 
 async function geocodeAddress(city, street, house) {
@@ -420,10 +444,13 @@ async function verifyShareToken(token) {
   const snap = await getDoc(getShareDoc(token));
   if (!snap.exists()) return null;
   const d = snap.data();
-  if (d.expiresAt?.toDate && d.expiresAt.toDate()<new Date()) return null;
+  if (d.expiresAt?.toDate && d.expiresAt.toDate() < new Date()) return null;
+  const type = d.type || 'map';
   return {
     eventId: d.eventId || null,
-    type: d.type || 'map',
+    type,
+    includeMap: type === 'map' || type === 'both',
+    includeJournal: type === 'journal' || type === 'both',
     allowedLayers: Array.isArray(d.allowedLayers) ? d.allowedLayers.filter(Boolean) : null
   };
 }
@@ -433,17 +460,17 @@ async function createTimedShare(untilDate) {
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
-async function createUnifiedShare(untilDate, includeMap, includeJournal, selectedLayers = null) {
+async function createUnifiedShare(untilDate, includeMap, includeJournal, selectedLayers = []) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
   const type = (includeMap && includeJournal) ? 'both' : includeJournal ? 'journal' : 'map';
-  const allowedLayers = includeMap
-    ? (Array.isArray(selectedLayers) && selectedLayers.length ? selectedLayers.filter(Boolean) : Array.from(activeLayers).filter(Boolean))
+  const normalizedLayers = includeMap
+    ? Array.from(new Set((selectedLayers || []).filter(Boolean)))
     : [];
   await setDoc(getShareDoc(token), {
     eventId: activeEventId,
     type,
-    allowedLayers,
+    allowedLayers: normalizedLayers,
     expiresAt: Timestamp.fromDate(untilDate),
     createdAt: serverTimestamp()
   });
@@ -503,20 +530,19 @@ function makeHouseNumberIcon(label) {
 let editingLayerPoint = null; // {itemId, ptIndex, marker}
 
 function makeLayerPointPopupHtml(pt, itemType, itemId, ptIndex) {
-  const actionsHtml = isReadOnlySharedView() ? '' : `<div style="display:flex;gap:6px">
-      <button onclick="startEditLayerPoint('${itemId}',${ptIndex})" style="background:#2893ff;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">עריכה</button>
-      <button onclick="deleteLayerPoint('${itemId}',${ptIndex})" style="background:#d45b6e;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">מחיקה</button>
-    </div>`;
+  const readonly = isSharedLinkView;
   return `<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px">
     <strong>${pt.name||itemType}</strong>
     <div style="color:#666;font-size:12px;margin:4px 0">${itemType}</div>
-    <div style="color:#8da8c5;font-size:11px;margin-bottom:8px">${Number(pt.lat).toFixed(6)}, ${Number(pt.lng).toFixed(6)}</div>
-    ${actionsHtml}
+    <div style="color:#8da8c5;font-size:11px;margin-bottom:${readonly ? '0' : '8px'}">${Number(pt.lat).toFixed(6)}, ${Number(pt.lng).toFixed(6)}</div>
+    ${readonly ? '' : `<div style="display:flex;gap:6px">
+      <button onclick="startEditLayerPoint('${itemId}',${ptIndex})" style="background:#2893ff;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">עריכה</button>
+      <button onclick="deleteLayerPoint('${itemId}',${ptIndex})" style="background:#d45b6e;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">מחיקה</button>
+    </div>`}
   </div>`;
 }
 
 window.startEditLayerPoint = function(itemId, ptIndex) {
-  if (isReadOnlySharedView()) return;
   // Close any previous edit
   if (editingLayerPoint) cancelEditLayerPoint();
   const item = gpxItems.find(x => x.id === itemId);
@@ -564,7 +590,6 @@ window.cancelEditLayerPoint = function() {
 };
 
 window.deleteLayerPoint = function(itemId, ptIndex) {
-  if (isReadOnlySharedView()) return;
   const item = gpxItems.find(x => x.id === itemId);
   if (!item) return;
   item.points.splice(ptIndex, 1);
@@ -582,15 +607,14 @@ function renderGpxMarkers() {
       .map((h, idx) => {
         const m = L.marker([Number(h.lat), Number(h.lng)], {icon: makeHouseNumberIcon(h.house || '')})
           .addTo(map);
-        const houseActionsHtml = isReadOnlySharedView() ? '' : `<div style="display:flex;gap:6px">
-            <button onclick="editHouseFromMap(${idx})" style="background:#2893ff;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">עריכה</button>
-            <button onclick="deleteHouseFromMap(${idx})" style="background:#d45b6e;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">מחיקה</button>
-          </div>`;
         const popupContent = `<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px">
           <strong>${(h.street||'')+' '+(h.house||'')}</strong>
           <div style="color:#666;font-size:12px;margin:4px 0">מספר בית</div>
-          <div style="color:#8da8c5;font-size:11px;margin-bottom:8px">${Number(h.lat).toFixed(6)}, ${Number(h.lng).toFixed(6)}</div>
-          ${houseActionsHtml}
+          <div style="color:#8da8c5;font-size:11px;margin-bottom:${isSharedLinkView ? '0' : '8px'}">${Number(h.lat).toFixed(6)}, ${Number(h.lng).toFixed(6)}</div>
+          ${isSharedLinkView ? '' : `<div style="display:flex;gap:6px">
+            <button onclick="editHouseFromMap(${idx})" style="background:#2893ff;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">עריכה</button>
+            <button onclick="deleteHouseFromMap(${idx})" style="background:#d45b6e;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">מחיקה</button>
+          </div>`}
         </div>`;
         m.bindPopup(popupContent);
         return m;
@@ -600,12 +624,13 @@ function renderGpxMarkers() {
   for (const item of gpxItems) {
     if (!activeLayers.has(item.type)) continue;
     layerMarkers[item.id]=(item.points||[]).map((pt,pi)=>{
-      const m = L.marker([pt.lat,pt.lng],{icon:makeMarkerIcon(iconColor(item.type))})
+      const m = L.marker([pt.lat,pt.lng],{icon:makeMarkerIcon(getLayerColor(item.type))})
         .addTo(map)
         .bindPopup(makeLayerPointPopupHtml(pt, item.type, item.id, pi));
       return m;
     });
   }
+  renderMapLegend();
 }
 
 let editingHouseMarker = null; // {idx, marker, originalLatLng}
@@ -622,7 +647,6 @@ function makeHouseEditPopupHtml(idx) {
 }
 
 window.editHouseFromMap = function(idx) {
-  if (isReadOnlySharedView()) return;
   if (editingHouseMarker) cancelHouseMarkerEdit();
   const h = managedHouses[idx];
   if (!h) return;
@@ -649,7 +673,6 @@ window.editHouseFromMap = function(idx) {
 };
 
 window.saveHouseMarkerEdit = function(idx) {
-  if (isReadOnlySharedView()) return;
   if (!editingHouseMarker) return;
   const {marker} = editingHouseMarker;
   const latlng = marker.getLatLng();
@@ -667,7 +690,6 @@ window.cancelHouseMarkerEdit = function() {
 };
 
 window.deleteHouseFromMap = function(idx) {
-  if (isReadOnlySharedView()) return;
   managedHouses = managedHouses.filter((_,i) => i !== idx);
   if (editingHouseIndex === idx) resetHouseForm();
   else if (editingHouseIndex !== null && idx < editingHouseIndex) editingHouseIndex -= 1;
@@ -755,6 +777,7 @@ async function renderResidentMarkers() {
     }
   }
   renderGpxMarkers();
+  renderMapLegend();
 }
 
 function renderInfoView() {
@@ -1574,34 +1597,18 @@ function setupShareUi() {
   safe('openLinksManagerBtn')?.addEventListener('click', refreshReportUrl);
   safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
 
-  const renderShareLayerOptions = () => {
-    const host = safe('shareLayersOptions');
-    if (!host) return;
-    const available = managedLayers.filter(Boolean);
-    if (!available.length) {
-      host.innerHTML = '<div class="share-layers-empty">אין שכבות לבחירה</div>';
-      return;
-    }
-    host.innerHTML = available.map(name => `
-      <label class="share-layer-chip">
-        <input type="checkbox" value="${name}" checked />
-        <span class="share-layer-dot" style="background:${iconColor(name)}"></span>
-        <span>${name}</span>
-      </label>
-    `).join('');
-  };
-
   // Unified share (map + journal checkboxes)
   const now = new Date(); now.setHours(now.getHours() + 3);
   if (safe('shareDateInput')) safe('shareDateInput').value = now.toISOString().slice(0,10);
   if (safe('shareTimeInput')) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
   renderShareLayerOptions();
-  safe('openLinksManagerBtn')?.addEventListener('click', renderShareLayerOptions);
-  safe('shareIncludeMap')?.addEventListener('change', () => {
-    const wrap = safe('shareLayersWrap');
-    if (wrap) wrap.classList.toggle('hidden', !(safe('shareIncludeMap')?.checked));
+  safe('shareIncludeMap')?.addEventListener('change', syncShareControls);
+  safe('shareIncludeJournal')?.addEventListener('change', syncShareControls);
+  safe('openLinksManagerBtn')?.addEventListener('click', () => {
+    refreshReportUrl();
+    syncShareControls();
   });
-  safe('shareIncludeMap')?.dispatchEvent(new Event('change'));
 
   safe('createShareBtn')?.addEventListener('click', async () => {
     const date = safe('shareDateInput').value; const time = safe('shareTimeInput').value || '23:59';
@@ -1611,13 +1618,13 @@ function setupShareUi() {
     if (!includeMap && !includeJournal) {
       safe('createShareBtn').textContent = 'בחר לפחות אחד'; setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1500); return;
     }
-    const selectedSharedLayers = includeMap
-      ? Array.from(document.querySelectorAll('#shareLayersOptions input[type="checkbox"]:checked')).map(el => el.value).filter(Boolean)
-      : [];
-    if (includeMap && !selectedSharedLayers.length) {
-      safe('createShareBtn').textContent = 'בחר שכבה'; setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1500); return;
+    const selectedLayers = includeMap ? getSelectedShareLayers() : [];
+    if (includeMap && !selectedLayers.length) {
+      safe('createShareBtn').textContent = 'בחר שכבה אחת לפחות';
+      setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1500);
+      return;
     }
-    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal, selectedSharedLayers);
+    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal, selectedLayers);
     setUrlDisplay('generatedShareUrlDisplay', 'generatedShareUrl', url);
   });
   safe('copyShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedShareUrl', 'copyShareBtn'));
@@ -1917,7 +1924,7 @@ function renderTable(searchTerm='') {
       if(report.time) metaParts.push(`<strong>${report.time}</strong>`);
       if(report.reporter) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.reporter,searchTerm)}</span>`);
       if(report.logType) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.logType,searchTerm)}</span>`);
-      const actionsHtml = canEdit
+      const actionsHtml = (!isSharedLinkView && canEdit)
         ? `<span class="journal-meta-actions"><button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button></span>`
         : '';
       if(isMobile) {
@@ -2050,7 +2057,7 @@ async function addJournalReport() {
       lastAddedReportId=editingReportId;
       collapsedGroups.delete(date);
     } else {
-      const payload={description:desc,date,time,reporter:rep,logType:lt,creatorId:currentUserId,eventId:activeEventId||null,timestamp:new Date().toISOString()};
+      const payload={description:desc,date,time,reporter:rep,logType:lt,creatorId:currentUserId,timestamp:new Date().toISOString()};
       const ref=await addDoc(reportsColRef,payload);
       lastAddedReportId=ref.id;
       collapsedGroups.delete(date);
@@ -2458,7 +2465,7 @@ async function handleTaskCheck(taskId, logType, taskText, checked) {
   const prefix=`task-${logType}-${taskId}`;
   const todayRep=journalReports.find(r=>r.isTaskReport&&r.taskReportId===prefix&&r.date===date);
   if(checked&&!todayRep) {
-    try { await addDoc(reportsColRef,{description:`משימת "${taskText}" עבור "${logType}" הושלמה`,date,time,reporter:safe('filterReporter')?.value||'מערכת',logType,creatorId:currentUserId,eventId:activeEventId||null,timestamp:new Date().toISOString(),isTaskReport:true,taskReportId:prefix}); } catch(e){ console.error(e); }
+    try { await addDoc(reportsColRef,{description:`משימת "${taskText}" עבור "${logType}" הושלמה`,date,time,reporter:safe('filterReporter')?.value||'מערכת',logType,creatorId:currentUserId,timestamp:new Date().toISOString(),isTaskReport:true,taskReportId:prefix}); } catch(e){ console.error(e); }
   } else if(!checked&&todayRep) {
     try { await deleteDoc(getReportDoc(todayRep.id)); } catch(e){ console.error(e); }
   }
@@ -2589,7 +2596,7 @@ function importFromExcel(file) {
       let dateStr=rd.date;
       if(typeof dateStr==='number'){ const ep=new Date('1899-12-30T00:00:00Z'); dateStr=new Date(ep.getTime()+dateStr*86400000).toISOString().split('T')[0]; }
       else { const p=new Date(dateStr); if(isNaN(p)) { showCustomAlert('תאריך לא תקין'); valid=false; break; } dateStr=p.toISOString().split('T')[0]; }
-      toAdd.push({description:String(rd.description),date:dateStr,time:String(rd.time),reporter:String(rd.reporter),logType:String(rd.logType),creatorId:currentUserId,eventId:activeEventId||null,timestamp:new Date().toISOString()});
+      toAdd.push({description:String(rd.description),date:dateStr,time:String(rd.time),reporter:String(rd.reporter),logType:String(rd.logType),creatorId:currentUserId,timestamp:new Date().toISOString()});
     }
     if(!valid) return;
     if(!toAdd.length){ showCustomAlert('לא נמצאו שורות תקינות'); return; }
@@ -3080,7 +3087,7 @@ async function submitMobileDrawer() {
       collapsedGroups.delete(date);
       editingReportId = null;
     } else {
-      const payload = {description:desc, date, time, reporter:rep, logType:lt, creatorId:currentUserId, eventId:activeEventId||null, timestamp:new Date().toISOString()};
+      const payload = {description:desc, date, time, reporter:rep, logType:lt, creatorId:currentUserId, timestamp:new Date().toISOString()};
       const ref = await addDoc(reportsColRef, payload);
       lastAddedReportId = ref.id;
       collapsedGroups.delete(date);
@@ -3336,9 +3343,9 @@ async function bootJournalReadOnly(eventId) {
   const jscreen = safe('screen-journal-readonly');
   if (jscreen) jscreen.classList.add('active');
   if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-  onSnapshot(getReportsCol(), snap => {
+  const q = query(getReportsCol(), where('eventId', '==', eventId));
+  onSnapshot(q, snap => {
     let entries = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
-    entries = filterReportsForSharedEvent(entries, eventId);
     entries = filterToToday(entries);
     renderJournalReadOnly(entries);
   });
@@ -3362,16 +3369,22 @@ function renderJournalReadOnly(entries) {
 
 async function bootAdmin(sharedOnly=false) {
   const adminScreen = safe('screen-admin');
-  const isMapOnlyShared = sharedOnly && sharedViewConfig.type === 'map';
+  const sharedType = sharedOnly ? (sharedViewConfig.type || 'map') : null;
+  const isMapOnlyShared = sharedType === 'map';
+  const isJournalOnlyShared = sharedType === 'journal';
+  const isBothShared = sharedType === 'both';
 
   safe('screen-report')?.classList.remove('active');
   adminScreen?.classList.add('active');
   adminScreen?.classList.toggle('shared-map-only', isMapOnlyShared);
+  adminScreen?.classList.toggle('shared-journal-only', isJournalOnlyShared);
   document.body.classList.toggle('shared-map-only', isMapOnlyShared);
+  document.body.classList.toggle('shared-journal-only', isJournalOnlyShared);
 
   if (sharedOnly) {
     isSharedLinkView = true;
   } else {
+    isSharedLinkView = false;
     setJournalLockedState(!hasJournalAccess(auth?.currentUser));
   }
 
@@ -3397,7 +3410,9 @@ async function bootAdmin(sharedOnly=false) {
   // assessmentTime remains "טרם נקבע" (assessmentTimeIsManual=false) until + is pressed
   setInterval(updateCurrentTime, 1000);
   setInterval(updateAssessmentDisplay, 1000);
-  await getOrCreateActiveEvent();
+  if (!sharedOnly) {
+    await getOrCreateActiveEvent();
+  }
   await subscribeVillageReports();
   await subscribeActiveEvent();
 
@@ -3407,7 +3422,6 @@ async function bootAdmin(sharedOnly=false) {
 
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
-    adminScreen?.classList.add('readonly-shared-view');
     const lb=safe('lockEventBtn'); if(lb) lb.style.display='none';
     const topBar = document.querySelector('.journal-top-bar'); if(topBar) topBar.style.display='none';
     const logoutDesktop = safe('logoutBtn'); if(logoutDesktop) logoutDesktop.style.display='none';
@@ -3418,13 +3432,14 @@ async function bootAdmin(sharedOnly=false) {
     const inputBox = document.querySelector('.journal-input-box'); if (inputBox) inputBox.style.display='none';
     if (fab) fab.style.display = 'none';
 
-    if (isMapOnlyShared) {
-      activePaneMode = 'map';
-      adminScreen?.classList.add('pane-map-full');
-      adminScreen?.classList.remove('pane-journal-full');
-      document.body.classList.remove('journal-full-active');
-      const journalCol = document.querySelector('.journal-col');
-      if (journalCol) journalCol.style.display = 'none';
+    activePaneMode = isMapOnlyShared ? 'map' : isJournalOnlyShared ? 'journal' : null;
+    adminScreen?.classList.toggle('pane-map-full', isMapOnlyShared);
+    adminScreen?.classList.toggle('pane-journal-full', isJournalOnlyShared);
+    document.body.classList.toggle('journal-full-active', isJournalOnlyShared && isMobileViewport());
+
+    const journalCol = document.querySelector('.journal-col');
+    if (journalCol) {
+      journalCol.style.display = isMapOnlyShared ? 'none' : '';
     }
 
     const allowedSharedLayers = Array.isArray(sharedViewConfig.allowedLayers) ? sharedViewConfig.allowedLayers.filter(Boolean) : [];
@@ -3435,13 +3450,16 @@ async function bootAdmin(sharedOnly=false) {
     }
 
     syncSharedLayersUiVisibility();
+    renderMapLegend();
 
     if (!isMapOnlyShared) {
       if (unsubJournalReports) { unsubJournalReports(); unsubJournalReports = null; }
       if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-      unsubJournalReports = onSnapshot(getReportsCol(), snap => {
-        const rawReports = sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()})));
-        journalReports = filterToToday(filterReportsForSharedEvent(rawReports, activeEventId));
+      const sharedReportsQuery = activeEventId
+        ? query(getReportsCol(), where('eventId', '==', activeEventId))
+        : getReportsCol();
+      unsubJournalReports = onSnapshot(sharedReportsQuery, snap => {
+        journalReports = filterToToday(sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()}))));
         renderTable();
       });
     }
@@ -3449,8 +3467,6 @@ async function bootAdmin(sharedOnly=false) {
 
   syncSharedLayersUiVisibility();
   setTimeout(()=>map.invalidateSize(),150);
-  setTimeout(()=>map.invalidateSize(),450);
-  setTimeout(()=>map.invalidateSize(),900);
 }
 
 // ════════════════════════════════════════════════════════

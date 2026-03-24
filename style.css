@@ -338,6 +338,93 @@ textarea { min-height: 100px; resize: vertical; }
 .mfd-dot.noReport{ background: #94a3b8; }
 .mfd-divider { height: 1px; background: rgba(255,255,255,.1); margin: 2px 0; }
 
+.map-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 58px;
+  z-index: 520;
+  min-width: 154px;
+  max-width: min(72vw, 240px);
+  background: rgba(8,24,48,.93);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 14px;
+  padding: 9px 10px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 22px rgba(0,0,0,.28);
+  color: var(--text);
+}
+.map-legend.hidden { display: none; }
+.map-legend-title {
+  font-size: 12px;
+  font-weight: 900;
+  margin-bottom: 6px;
+}
+.map-legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.map-legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.08);
+  flex: 0 0 12px;
+}
+.map-legend-item.house .map-legend-swatch {
+  border-radius: 6px;
+  width: 16px;
+  height: 12px;
+}
+.share-layers-picker {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.share-layers-picker.hidden { display: none; }
+.share-layers-title {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.share-layers-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 8px;
+}
+.share-layer-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6,20,40,.35);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.share-layer-option input {
+  margin: 0;
+}
+.share-layer-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+.share-layers-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #b7c9dd;
+}
+
 /* ── JOURNAL COLUMN ── */
 .journal-col {
   display: flex; flex-direction: column; min-height: 0; gap: 8px;
@@ -630,7 +717,7 @@ textarea { min-height: 100px; resize: vertical; }
 .share-card-icon { font-size: 20px; line-height: 1; margin-top: 2px; flex-shrink: 0; }
 .share-card-title { font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 2px; }
 .share-card-sub { font-size: 11px; color: var(--muted); line-height: 1.3; }
-.share-checkboxes { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.share-checkboxes { display: flex; gap: 10px; margin-bottom: 12px; }
 .share-checkbox-item { display: flex; align-items: center; gap: 7px; background: rgba(4,25,45,.6); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px 14px; cursor: pointer; transition: border-color .15s, background .15s; font-size: 14px; color: #d0e8ff; font-weight: 600; flex: 1; justify-content: center; }
 .share-checkbox-item:has(input:checked) { border-color: var(--blue); background: rgba(40,147,255,.12); }
 .share-checkbox-item input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
@@ -1057,15 +1144,27 @@ textarea { min-height: 100px; resize: vertical; }
   /* ── פיצול מפה/יומן במובייל ── */
   .map-journal-split {
     grid-template-columns: 1fr;
-    grid-template-rows: 34dvh minmax(0, 1fr);
+    grid-template-rows: minmax(260px, 42dvh) minmax(0, 1fr);
     gap: 8px;
     min-height: calc(100dvh - 132px);
     max-height: calc(100dvh - 132px);
   }
 
   .map-col { min-height: 0; }
-  .map-wrap { height: 100%; }
-  #map { min-height: 180px; height: 100%; }
+  .map-wrap {
+    height: 100%;
+    min-height: 260px;
+  }
+  #map {
+    min-height: 260px;
+    height: 100%;
+  }
+  .map-legend {
+    left: 8px;
+    right: auto;
+    bottom: 52px;
+    max-width: min(80vw, 230px);
+  }
 
   /* ── Journal column: תמיד flex, הטבלה גדלה למלא ── */
   .journal-col {
@@ -1175,6 +1274,7 @@ textarea { min-height: 100px; resize: vertical; }
   .journal-meta-item { font-size: 11px; }
 
   .pane-toggle-btn { display: inline-flex; }
+  .share-layers-options { grid-template-columns: 1fr; }
 
   /* ── readonly mode (shared link) ── */
   .mobile-readonly-mode .journal-col {
@@ -1251,19 +1351,54 @@ textarea { min-height: 100px; resize: vertical; }
 
 
 body.shared-map-only .mobile-admin-fab,
-body.shared-map-only .mobile-journal-drawer {
+body.shared-map-only .mobile-journal-drawer,
+body.shared-journal-only .mobile-admin-fab,
+body.shared-journal-only .mobile-journal-drawer {
   display: none !important;
 }
 
 #screen-admin.shared-map-only .map-journal-split {
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) !important;
+  min-height: calc(100dvh - 132px);
+  max-height: calc(100dvh - 132px);
+}
+
+#screen-admin.shared-map-only .map-col,
+#screen-admin.shared-map-only .map-wrap,
+#screen-admin.shared-map-only #map {
+  min-height: 100%;
+  height: 100%;
 }
 
 #screen-admin.shared-map-only .journal-col {
   display: none !important;
 }
-#screen-admin.shared-map-only .map-col {
-  min-width: 0;
+
+#screen-admin.shared-journal-only .map-col {
+  display: none !important;
+}
+
+#screen-admin.shared-journal-only .map-journal-split {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+
+#screen-admin.shared-journal-only .journal-col {
+  display: flex !important;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  #screen-admin.shared-map-only .main-stage,
+  #screen-admin.shared-journal-only .main-stage {
+    padding: 8px;
+  }
+  #screen-admin.shared-map-only .map-journal-split,
+  #screen-admin.shared-journal-only .map-journal-split {
+    min-height: calc(100dvh - 132px);
+    max-height: calc(100dvh - 132px);
+  }
 }
 
 /* ══ Mobile Admin FAB + Drawer (always defined, shown only on mobile) ══ */
@@ -1641,82 +1776,4 @@ body.shared-map-only .mobile-journal-drawer {
   background: #0d2237;
   border-radius: 10px;
   margin: 0;
-}
-
-
-.share-layers-wrap {
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border: 1px solid rgba(255,255,255,.10);
-  border-radius: 12px;
-  background: rgba(4,25,45,.35);
-}
-.share-layers-title {
-  font-size: 12px;
-  font-weight: 800;
-  color: #cfe5ff;
-  margin-bottom: 8px;
-}
-.share-layers-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.share-layer-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.10);
-  cursor: pointer;
-  font-size: 12px;
-  color: #eef5ff;
-}
-.share-layer-chip input {
-  accent-color: #2893ff;
-}
-.share-layer-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex: 0 0 10px;
-}
-.share-layers-empty {
-  color: #8aabcc;
-  font-size: 12px;
-}
-
-.viewer-location-icon {
-  background: transparent;
-  border: none;
-}
-.viewer-location-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #2ad46b;
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 0 4px rgba(42, 212, 107, 0.22);
-}
-
-#screen-admin.readonly-shared-view .leaflet-popup-content button,
-#screen-admin.mobile-readonly-mode .leaflet-popup-content button {
-  display: none !important;
-}
-
-@media (max-width: 900px) {
-  #screen-admin.shared-map-only .map-journal-split,
-  #screen-admin.pane-map-full .map-journal-split {
-    grid-template-rows: minmax(0, 1fr) !important;
-    min-height: calc(100dvh - 132px);
-    max-height: calc(100dvh - 132px);
-  }
-  #screen-admin.shared-map-only .map-col,
-  #screen-admin.shared-map-only .map-wrap,
-  #screen-admin.shared-map-only #map {
-    min-height: 0 !important;
-    height: 100% !important;
-  }
 }
