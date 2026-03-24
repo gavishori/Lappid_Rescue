@@ -3255,8 +3255,13 @@ function renderJournalReadOnly(entries) {
 }
 
 async function bootAdmin(sharedOnly=false) {
+  const adminScreen = safe('screen-admin');
+  const isMapOnlyShared = sharedOnly && sharedViewConfig.type === 'map';
+
   safe('screen-report')?.classList.remove('active');
-  safe('screen-admin')?.classList.add('active');
+  adminScreen?.classList.add('active');
+  adminScreen?.classList.toggle('shared-map-only', isMapOnlyShared);
+  document.body.classList.toggle('shared-map-only', isMapOnlyShared);
 
   if (sharedOnly) {
     isSharedLinkView = true;
@@ -3272,13 +3277,17 @@ async function bootAdmin(sharedOnly=false) {
   setupManagement();
   renderInfoView();
   applyMobileReadOnlyMode();
-  setupJournalManagerTabs();
-  setupJournalManagerListeners();
-  setupJournalInlineListeners();
-  setupMobileAdminDrawer();
+
+  if (!isMapOnlyShared) {
+    setupJournalManagerTabs();
+    setupJournalManagerListeners();
+    setupJournalInlineListeners();
+    setupMobileAdminDrawer();
+    setDefaultDateTime();
+    resetForm();
+  }
+
   setupReportQuestionsManager();
-  setDefaultDateTime();
-  resetForm();
   // assessmentTime remains "טרם נקבע" (assessmentTimeIsManual=false) until + is pressed
   setInterval(updateCurrentTime, 1000);
   setInterval(updateAssessmentDisplay, 1000);
@@ -3302,6 +3311,15 @@ async function bootAdmin(sharedOnly=false) {
     const inputBox = document.querySelector('.journal-input-box'); if (inputBox) inputBox.style.display='none';
     if (fab) fab.style.display = 'none';
 
+    if (isMapOnlyShared) {
+      activePaneMode = 'map';
+      adminScreen?.classList.add('pane-map-full');
+      adminScreen?.classList.remove('pane-journal-full');
+      document.body.classList.remove('journal-full-active');
+      const journalCol = document.querySelector('.journal-col');
+      if (journalCol) journalCol.style.display = 'none';
+    }
+
     const allowedSharedLayers = Array.isArray(sharedViewConfig.allowedLayers) ? sharedViewConfig.allowedLayers.filter(Boolean) : [];
     if (allowedSharedLayers.length) {
       activeLayers = new Set(allowedSharedLayers);
@@ -3311,15 +3329,17 @@ async function bootAdmin(sharedOnly=false) {
 
     syncSharedLayersUiVisibility();
 
-    if (unsubJournalReports) { unsubJournalReports(); unsubJournalReports = null; }
-    if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
-    const sharedReportsQuery = activeEventId
-      ? query(getReportsCol(), where('eventId', '==', activeEventId))
-      : getReportsCol();
-    unsubJournalReports = onSnapshot(sharedReportsQuery, snap => {
-      journalReports = filterToToday(sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-      renderTable();
-    });
+    if (!isMapOnlyShared) {
+      if (unsubJournalReports) { unsubJournalReports(); unsubJournalReports = null; }
+      if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
+      const sharedReportsQuery = activeEventId
+        ? query(getReportsCol(), where('eventId', '==', activeEventId))
+        : getReportsCol();
+      unsubJournalReports = onSnapshot(sharedReportsQuery, snap => {
+        journalReports = filterToToday(sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+        renderTable();
+      });
+    }
   }
 
   syncSharedLayersUiVisibility();

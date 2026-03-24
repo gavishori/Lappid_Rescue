@@ -1249,6 +1249,20 @@ textarea { min-height: 100px; resize: vertical; }
   #screen-admin.pane-journal-full .map-col { display: none; }
 }
 
+
+body.shared-map-only .mobile-admin-fab,
+body.shared-map-only .mobile-journal-drawer {
+  display: none !important;
+}
+
+#screen-admin.shared-map-only .map-journal-split {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#screen-admin.shared-map-only .journal-col {
+  display: none !important;
+}
+
 /* ══ Mobile Admin FAB + Drawer (always defined, shown only on mobile) ══ */
 .mobile-admin-fab {
   display: none; /* shown in media query */
