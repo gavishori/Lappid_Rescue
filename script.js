@@ -51,6 +51,9 @@ let locationType    = 'address';
 let gpsCoords       = null;
 let sortDirection   = 'desc';
 let map             = null;
+let currentLocationMarker = null;
+let currentLocationAccuracyCircle = null;
+let currentLocationWatchId = null;
 let residentMarkers = {};
 let layerMarkers    = {};
 let reportCache     = [];   // village reports (Firestore events/reports)
@@ -318,7 +321,64 @@ function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors', maxZoom:19
   }).addTo(map);
+  ensureCurrentLocationMarker();
   if (managedHouses.length) setTimeout(fitMapToHouseBounds, 0);
+}
+
+function updateCurrentLocationMarker(lat, lng, accuracy = 0) {
+  if (!map || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  const latlng = [lat, lng];
+  if (!currentLocationMarker) {
+    currentLocationMarker = L.circleMarker(latlng, {
+      radius: 7,
+      color: '#ffffff',
+      weight: 2,
+      fillColor: '#45bf64',
+      fillOpacity: 1,
+      interactive: false
+    }).addTo(map);
+  } else {
+    currentLocationMarker.setLatLng(latlng);
+  }
+
+  const safeAccuracy = Number.isFinite(accuracy) ? Math.max(accuracy, 0) : 0;
+  if (safeAccuracy > 0) {
+    if (!currentLocationAccuracyCircle) {
+      currentLocationAccuracyCircle = L.circle(latlng, {
+        radius: safeAccuracy,
+        color: '#45bf64',
+        weight: 1,
+        opacity: 0.45,
+        fillColor: '#45bf64',
+        fillOpacity: 0.12,
+        interactive: false
+      }).addTo(map);
+    } else {
+      currentLocationAccuracyCircle.setLatLng(latlng);
+      currentLocationAccuracyCircle.setRadius(safeAccuracy);
+    }
+  } else if (currentLocationAccuracyCircle) {
+    map.removeLayer(currentLocationAccuracyCircle);
+    currentLocationAccuracyCircle = null;
+  }
+}
+
+function ensureCurrentLocationMarker() {
+  if (!map || !navigator.geolocation) return;
+  if (currentLocationWatchId !== null) return;
+
+  const onSuccess = pos => {
+    updateCurrentLocationMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+  };
+  const onError = () => {};
+  const opts = { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 };
+
+  navigator.geolocation.getCurrentPosition(onSuccess, onError, opts);
+  try {
+    currentLocationWatchId = navigator.geolocation.watchPosition(onSuccess, onError, opts);
+  } catch {
+    currentLocationWatchId = null;
+  }
 }
 
 async function geocodeAddress(city, street, house) {
@@ -1680,10 +1740,11 @@ function filterSharedJournalEntries(data) {
 function applyMobileReadOnlyMode() {
   const admin = safe('screen-admin');
   if (!admin) return;
+  const isMapOnlyShared = isSharedLinkView && sharedViewConfig.type === 'map';
   // readonly mode only for shared/public views — not for logged-in admin
   const isAdmin = hasJournalAccess(auth?.currentUser) && !isSharedLinkView;
   if (isMobileViewport()) {
-    if (isAdmin) {
+    if (isAdmin || isMapOnlyShared) {
       admin.classList.remove('mobile-readonly-mode');
     } else {
       admin.classList.add('mobile-readonly-mode');
@@ -3313,6 +3374,7 @@ async function bootAdmin(sharedOnly=false) {
 
     if (isMapOnlyShared) {
       activePaneMode = 'map';
+      adminScreen?.classList.remove('mobile-readonly-mode');
       adminScreen?.classList.add('pane-map-full');
       adminScreen?.classList.remove('pane-journal-full');
       document.body.classList.remove('journal-full-active');
@@ -3343,7 +3405,10 @@ async function bootAdmin(sharedOnly=false) {
   }
 
   syncSharedLayersUiVisibility();
-  setTimeout(()=>map.invalidateSize(),150);
+  setTimeout(() => {
+    map.invalidateSize();
+    if (isMapOnlyShared && map) map.setView(map.getCenter(), map.getZoom(), { animate: false });
+  }, 180);
 }
 
 // ════════════════════════════════════════════════════════

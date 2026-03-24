@@ -1247,6 +1247,18 @@ textarea { min-height: 100px; resize: vertical; }
     grid-template-rows: minmax(0,1fr);
   }
   #screen-admin.pane-journal-full .map-col { display: none; }
+
+  #screen-admin.shared-map-only .map-journal-split,
+  body.shared-map-only #screen-admin .map-journal-split {
+    grid-template-rows: minmax(0,1fr) !important;
+    min-height: calc(100dvh - 132px);
+    max-height: calc(100dvh - 132px);
+  }
+
+  #screen-admin.shared-map-only .main-stage,
+  body.shared-map-only #screen-admin .main-stage {
+    padding-bottom: 8px;
+  }
 }
 
 
@@ -1259,8 +1271,30 @@ body.shared-map-only .mobile-journal-drawer {
   grid-template-columns: minmax(0, 1fr);
 }
 
-#screen-admin.shared-map-only .journal-col {
+#screen-admin.shared-map-only .journal-col,
+body.shared-map-only #screen-admin .journal-col {
   display: none !important;
+}
+
+#screen-admin.shared-map-only .map-col,
+body.shared-map-only #screen-admin .map-col {
+  min-height: 0;
+}
+
+#screen-admin.shared-map-only .map-wrap,
+body.shared-map-only #screen-admin .map-wrap,
+#screen-admin.shared-map-only #map,
+body.shared-map-only #screen-admin #map {
+  height: 100% !important;
+  min-height: 0;
+}
+
+
+@media (min-width: 901px) {
+  .mobile-admin-fab,
+  .mobile-journal-drawer {
+    display: none !important;
+  }
 }
 
 /* ══ Mobile Admin FAB + Drawer (always defined, shown only on mobile) ══ */
