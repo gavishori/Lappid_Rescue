@@ -635,6 +635,66 @@ textarea { min-height: 100px; resize: vertical; }
 .share-checkbox-item:has(input:checked) { border-color: var(--blue); background: rgba(40,147,255,.12); }
 .share-checkbox-item input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
 .share-checkbox-icon { font-size: 16px; }
+
+.share-layers-section {
+  margin-bottom: 12px;
+  background: rgba(4,25,45,.45);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.share-layers-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.share-layers-sub {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+.share-layers-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.share-layer-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  cursor: pointer;
+  font-size: 12px;
+  color: #d0e8ff;
+}
+.share-layer-item:has(input:checked) {
+  border-color: var(--blue);
+  background: rgba(40,147,255,.12);
+}
+.share-layer-checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--blue);
+}
+.share-layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.18);
+  flex: 0 0 auto;
+}
+.share-layer-label {
+  white-space: nowrap;
+}
+
 .share-datetime-row { display: flex; gap: 8px; margin-bottom: 10px; }
 .share-dt-field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .share-dt-label { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
@@ -877,7 +937,8 @@ textarea { min-height: 100px; resize: vertical; }
 
 @media (min-width: 901px) {
   .desktop-ham { display: none !important; }
-  .mobile-header-top, .mobile-menu-overlay, .mobile-ham { display: none !important; }
+  .mobile-header-top, .mobile-menu-overlay, .mobile-ham, .mobile-admin-fab, .mobile-journal-drawer { display: none !important; }
+  .mobile-journal-drawer { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
   .side-rail { position: static; transform: none; opacity: 1; pointer-events: auto; }
 }
 
@@ -1197,10 +1258,6 @@ textarea { min-height: 100px; resize: vertical; }
   .mobile-readonly-mode .journal-table td:nth-child(1) { width: 100%; }
   .mobile-readonly-mode .task-btns-row { font-size: 13px; color: var(--jmuted); }
 
-  /* ── FAB כפתור + צף — רק ביומן מלא ── */
-  .mobile-admin-fab { display: none !important; }
-  body.journal-full-active .mobile-admin-fab { display: flex !important; }
-
   /* ── Side rail ── */
   .side-rail {
     position: fixed;
@@ -1248,135 +1305,36 @@ textarea { min-height: 100px; resize: vertical; }
   }
   #screen-admin.pane-journal-full .map-col { display: none; }
 
-  #screen-admin.shared-map-only .map-journal-split,
-  body.shared-map-only #screen-admin .map-journal-split {
+  #screen-admin.shared-map-only .map-journal-split {
     grid-template-rows: minmax(0,1fr) !important;
     min-height: calc(100dvh - 132px);
     max-height: calc(100dvh - 132px);
   }
-
-  #screen-admin.shared-map-only .main-stage,
-  body.shared-map-only #screen-admin .main-stage {
-    padding-bottom: 8px;
-  }
+  #screen-admin.shared-map-only .journal-col { display: none !important; }
+  #screen-admin.shared-map-only .map-col { display: flex !important; }
 }
 
 
-body.shared-map-only .mobile-admin-fab,
-body.shared-map-only .mobile-journal-drawer {
-  display: none !important;
-}
+
 
 #screen-admin.shared-map-only .map-journal-split {
   grid-template-columns: minmax(0, 1fr);
 }
 
-#screen-admin.shared-map-only .journal-col,
-body.shared-map-only #screen-admin .journal-col {
+#screen-admin.shared-map-only .journal-col {
   display: none !important;
 }
-
+#screen-admin.shared-map-only .map-journal-split {
+  grid-template-rows: minmax(0, 1fr) !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
 #screen-admin.shared-map-only .map-col,
-body.shared-map-only #screen-admin .map-col {
-  min-height: 0;
-}
-
 #screen-admin.shared-map-only .map-wrap,
-body.shared-map-only #screen-admin .map-wrap,
-#screen-admin.shared-map-only #map,
-body.shared-map-only #screen-admin #map {
+#screen-admin.shared-map-only #map {
   height: 100% !important;
-  min-height: 0;
 }
 
-
-@media (min-width: 901px) {
-  .mobile-admin-fab,
-  .mobile-journal-drawer {
-    display: none !important;
-  }
-}
-
-/* ══ Mobile Admin FAB + Drawer (always defined, shown only on mobile) ══ */
-.mobile-admin-fab {
-  display: none; /* shown in media query */
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #257fe8, #3c9cff);
-  border: none;
-  color: #fff;
-  font-size: 26px;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 24px rgba(40,147,255,.55);
-  cursor: pointer;
-  z-index: 800;
-  transition: transform .18s, box-shadow .18s;
-}
-.mobile-admin-fab:active { transform: scale(.92); }
-.mobile-admin-fab.is-editing {
-  background: linear-gradient(135deg, #8C7A6B, #a0927f);
-  box-shadow: 0 6px 24px rgba(140,122,107,.5);
-}
-
-/* Popup modal overlay */
-.mobile-journal-drawer {
-  position: fixed;
-  inset: 0;
-  z-index: 820;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  /* visibility/opacity instead of display:none so animation works */
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity .2s ease, visibility 0s linear .2s;
-}
-.mobile-journal-drawer.hidden {
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-.mobile-journal-drawer:not(.hidden) {
-  visibility: visible;
-  opacity: 1;
-  transition: opacity .2s ease, visibility 0s linear 0s;
-  pointer-events: auto;
-}
-
-.mjd-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,.6);
-  backdrop-filter: blur(2px);
-}
-
-.mjd-sheet {
-  position: relative;
-  z-index: 1;
-  background: #f5f2ee;
-  border-radius: 20px;
-  padding: 0;
-  box-shadow: 0 16px 60px rgba(0,0,0,.45);
-  transform: scale(.93) translateY(16px);
-  opacity: 0;
-  transition: transform .26s cubic-bezier(.34,1.4,.64,1), opacity .22s ease;
-  direction: rtl;
-  font-family: 'Assistant', sans-serif;
-  width: 100%;
-  max-width: 460px;
-  max-height: 88dvh;
-  overflow-y: auto;
-}
-.mobile-journal-drawer:not(.hidden) .mjd-sheet {
-  transform: scale(1) translateY(0);
-  opacity: 1;
-}
 
 .mjd-handle { display: none; }
 
@@ -1672,4 +1630,34 @@ body.shared-map-only #screen-admin #map {
   background: #0d2237;
   border-radius: 10px;
   margin: 0;
+}
+
+
+/* hard disable removed floating mobile journal UI */
+.mobile-admin-fab,
+.mobile-journal-drawer { display: none !important; }
+
+@media (min-width: 901px) {
+  .mobile-admin-fab,
+  .mobile-journal-drawer,
+  .mjd-backdrop,
+  .mjd-sheet { display: none !important; }
+}
+
+@media (max-width: 900px) {
+  #screen-admin.shared-map-only .map-journal-split {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    height: 100% !important;
+  }
+
+  #screen-admin.shared-map-only .map-col,
+  #screen-admin.shared-map-only .map-wrap,
+  #screen-admin.shared-map-only #map {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
 }

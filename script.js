@@ -17,8 +17,8 @@ const SHARE_TOKEN = params.get('token');
 const REPORT_KEY  = params.get('rkey');
 
 let sharedViewConfig = {
-  type: null,
-  allowedLayers: null
+  type: params.get('view') || null,
+  allowedLayers: params.get('layers') ? params.get('layers').split(',').map(s => decodeURIComponent(s)).filter(Boolean) : null
 };
 
 // ── helpers ─────────────────────────────────────────────
@@ -51,9 +51,6 @@ let locationType    = 'address';
 let gpsCoords       = null;
 let sortDirection   = 'desc';
 let map             = null;
-let currentLocationMarker = null;
-let currentLocationAccuracyCircle = null;
-let currentLocationWatchId = null;
 let residentMarkers = {};
 let layerMarkers    = {};
 let reportCache     = [];   // village reports (Firestore events/reports)
@@ -261,9 +258,7 @@ function iconColor(kind) {
   if (kind==='danger')     return '#ff5d66';
   if (kind==='warn')       return '#f4c246';
   if (kind==='ok')         return '#49c96b';
-  if (kind==='מצלמות')    return '#61b7ff';
-  if (kind==='הידרנטים') return '#ff7f57';
-  return '#9e7cff';
+  return getLayerColor(kind);
 }
 function makeMarkerIcon(color) {
   return L.divIcon({
@@ -321,64 +316,7 @@ function initMap() {
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors', maxZoom:19
   }).addTo(map);
-  ensureCurrentLocationMarker();
   if (managedHouses.length) setTimeout(fitMapToHouseBounds, 0);
-}
-
-function updateCurrentLocationMarker(lat, lng, accuracy = 0) {
-  if (!map || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
-  const latlng = [lat, lng];
-  if (!currentLocationMarker) {
-    currentLocationMarker = L.circleMarker(latlng, {
-      radius: 7,
-      color: '#ffffff',
-      weight: 2,
-      fillColor: '#45bf64',
-      fillOpacity: 1,
-      interactive: false
-    }).addTo(map);
-  } else {
-    currentLocationMarker.setLatLng(latlng);
-  }
-
-  const safeAccuracy = Number.isFinite(accuracy) ? Math.max(accuracy, 0) : 0;
-  if (safeAccuracy > 0) {
-    if (!currentLocationAccuracyCircle) {
-      currentLocationAccuracyCircle = L.circle(latlng, {
-        radius: safeAccuracy,
-        color: '#45bf64',
-        weight: 1,
-        opacity: 0.45,
-        fillColor: '#45bf64',
-        fillOpacity: 0.12,
-        interactive: false
-      }).addTo(map);
-    } else {
-      currentLocationAccuracyCircle.setLatLng(latlng);
-      currentLocationAccuracyCircle.setRadius(safeAccuracy);
-    }
-  } else if (currentLocationAccuracyCircle) {
-    map.removeLayer(currentLocationAccuracyCircle);
-    currentLocationAccuracyCircle = null;
-  }
-}
-
-function ensureCurrentLocationMarker() {
-  if (!map || !navigator.geolocation) return;
-  if (currentLocationWatchId !== null) return;
-
-  const onSuccess = pos => {
-    updateCurrentLocationMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
-  };
-  const onError = () => {};
-  const opts = { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 };
-
-  navigator.geolocation.getCurrentPosition(onSuccess, onError, opts);
-  try {
-    currentLocationWatchId = navigator.geolocation.watchPosition(onSuccess, onError, opts);
-  } catch {
-    currentLocationWatchId = null;
-  }
 }
 
 async function geocodeAddress(city, street, house) {
@@ -426,11 +364,13 @@ async function createTimedShare(untilDate) {
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
-async function createUnifiedShare(untilDate, includeMap, includeJournal) {
+async function createUnifiedShare(untilDate, includeMap, includeJournal, selectedLayers = null) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
   const type = (includeMap && includeJournal) ? 'both' : includeJournal ? 'journal' : 'map';
-  const allowedLayers = includeMap ? Array.from(activeLayers).filter(Boolean) : [];
+  const allowedLayers = includeMap
+    ? Array.from(new Set((selectedLayers || Array.from(activeLayers)).filter(Boolean)))
+    : [];
   await setDoc(getShareDoc(token), {
     eventId: activeEventId,
     type,
@@ -438,7 +378,9 @@ async function createUnifiedShare(untilDate, includeMap, includeJournal) {
     expiresAt: Timestamp.fromDate(untilDate),
     createdAt: serverTimestamp()
   });
-  return `${location.origin}${location.pathname}?token=${token}`;
+  const qs = new URLSearchParams({ token, view: type });
+  if (allowedLayers.length) qs.set('layers', allowedLayers.map(v => encodeURIComponent(v)).join(','));
+  return `${location.origin}${location.pathname}?${qs.toString()}`;
 }
 function getResidentReportUrl() {
   return `${location.origin}${location.pathname}?mode=report`;
@@ -1061,6 +1003,50 @@ function setupNavigation() {
 const openModal  = sel => $(sel)?.classList.remove('hidden');
 const closeModal = sel => $(sel)?.classList.add('hidden');
 
+
+function getLayerPalette() {
+  return ['#61b7ff','#ff7f57','#9e7cff','#45bf64','#f4c246','#ff5d66','#00bcd4','#ff9800','#8bc34a','#e91e63','#795548','#3f51b5'];
+}
+
+function getLayerColor(layerName = '') {
+  if (layerName === 'דיווחי תושבים') return '#9e7cff';
+  if (layerName === 'מספרי בתים') return '#2893ff';
+  if (layerName === 'מצלמות') return '#61b7ff';
+  if (layerName === 'הידרנטים') return '#ff7f57';
+  const palette = getLayerPalette();
+  const str = String(layerName || '');
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash + str.charCodeAt(i)) >>> 0;
+  return palette[hash % palette.length];
+}
+
+function renderShareLayerOptions() {
+  const wrap = safe('shareLayersList');
+  const section = safe('shareLayersSection');
+  const includeMap = safe('shareIncludeMap')?.checked !== false;
+  if (!wrap || !section) return;
+
+  const layerNames = Array.from(new Set(Array.from(activeLayers).filter(Boolean)));
+  section.classList.toggle('hidden', !includeMap || !layerNames.length);
+  if (!includeMap || !layerNames.length) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = layerNames.map((name, idx) => {
+    const safeId = `shareLayer_${idx}`;
+    return `<label class="share-layer-item">
+      <input type="checkbox" class="share-layer-checkbox" id="${safeId}" data-layer-name="${name.replace(/"/g, '&quot;')}" checked />
+      <span class="share-layer-dot" style="background:${getLayerColor(name)}"></span>
+      <span class="share-layer-label">${name}</span>
+    </label>`;
+  }).join('');
+}
+
+function getSelectedShareLayers() {
+  return $$('.share-layer-checkbox:checked').map(cb => cb.dataset.layerName).filter(Boolean);
+}
+
 function shouldHideSharedLayersUi() {
   const allowedSharedLayers = Array.isArray(sharedViewConfig.allowedLayers) ? sharedViewConfig.allowedLayers.filter(Boolean) : [];
   return isSharedLinkView && allowedSharedLayers.length <= 1;
@@ -1555,13 +1541,15 @@ function setupShareUi() {
   // Resident report URL
   const refreshReportUrl = () => setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
   refreshReportUrl();
-  safe('openLinksManagerBtn')?.addEventListener('click', refreshReportUrl);
+  safe('openLinksManagerBtn')?.addEventListener('click', () => { refreshReportUrl(); renderShareLayerOptions(); });
   safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
 
   // Unified share (map + journal checkboxes)
   const now = new Date(); now.setHours(now.getHours() + 3);
   if (safe('shareDateInput')) safe('shareDateInput').value = now.toISOString().slice(0,10);
   if (safe('shareTimeInput')) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  safe('shareIncludeMap')?.addEventListener('change', renderShareLayerOptions);
+  renderShareLayerOptions();
 
   safe('createShareBtn')?.addEventListener('click', async () => {
     const date = safe('shareDateInput').value; const time = safe('shareTimeInput').value || '23:59';
@@ -1571,7 +1559,11 @@ function setupShareUi() {
     if (!includeMap && !includeJournal) {
       safe('createShareBtn').textContent = 'בחר לפחות אחד'; setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1500); return;
     }
-    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal);
+    const selectedLayers = includeMap ? getSelectedShareLayers() : [];
+    if (includeMap && !selectedLayers.length) {
+      safe('createShareBtn').textContent = 'בחר לפחות שכבה אחת'; setTimeout(() => safe('createShareBtn').textContent = '✨ צור קישור', 1600); return;
+    }
+    const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal, selectedLayers);
     setUrlDisplay('generatedShareUrlDisplay', 'generatedShareUrl', url);
   });
   safe('copyShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedShareUrl', 'copyShareBtn'));
@@ -1740,11 +1732,10 @@ function filterSharedJournalEntries(data) {
 function applyMobileReadOnlyMode() {
   const admin = safe('screen-admin');
   if (!admin) return;
-  const isMapOnlyShared = isSharedLinkView && sharedViewConfig.type === 'map';
   // readonly mode only for shared/public views — not for logged-in admin
   const isAdmin = hasJournalAccess(auth?.currentUser) && !isSharedLinkView;
   if (isMobileViewport()) {
-    if (isAdmin || isMapOnlyShared) {
+    if (isAdmin) {
       admin.classList.remove('mobile-readonly-mode');
     } else {
       admin.classList.add('mobile-readonly-mode');
@@ -2581,7 +2572,7 @@ const handleAuthState = async (user) => {
 
     // show FAB for admin on mobile
     const fab = safe('mobileAdminFab');
-    if(fab && !isSharedLinkView) fab.style.display = '';
+    if(fab && !isSharedLinkView) fab.style.display = 'none';
 
     if(!unsubJournalReports) {
       unsubJournalReports=onSnapshot(reportsColRef,snap=>{
@@ -2930,55 +2921,9 @@ function setupJournalInlineListeners() {
 // ════════════════════════════════════════════════════════
 //  MOBILE ADMIN JOURNAL DRAWER (כפתור + צף)
 // ════════════════════════════════════════════════════════
-function openMobileJournalDrawer() {
-  const drawer = safe('mobileJournalDrawer'); if (!drawer) return;
-  drawer.classList.remove('hidden');
-  // sync dropdowns from main dropdowns
-  syncMobileDrawerDropdowns();
-  // sync title & button state
-  const fab = safe('mobileAdminFab');
-  if (editingReportId) {
-    if (safe('mjdTitle')) safe('mjdTitle').textContent = 'עריכת דיווח';
-    if (safe('mjdSubmitBtn')) safe('mjdSubmitBtn').textContent = 'עדכן';
-    if (safe('mjdCancelBtn')) safe('mjdCancelBtn').classList.remove('hidden');
-    if (fab) fab.classList.add('is-editing');
-    // fill drawer fields from editing state
-    const r = journalReports.find(x => x.id === editingReportId);
-    if (r) {
-      if (safe('mjdText'))     safe('mjdText').value = r.description || '';
-      if (safe('mjdReporter')) safe('mjdReporter').value = r.reporter || '';
-      if (safe('mjdLogType'))  safe('mjdLogType').value = r.logType || '';
-      if (safe('mjdDate'))     safe('mjdDate').value = r.date || '';
-      if (safe('mjdTime'))     safe('mjdTime').value = r.time || '';
-    }
-  } else {
-    if (safe('mjdTitle')) safe('mjdTitle').textContent = 'הזנת דיווח ליומן';
-    if (safe('mjdSubmitBtn')) safe('mjdSubmitBtn').textContent = 'הזן דיווח';
-    if (safe('mjdCancelBtn')) safe('mjdCancelBtn').classList.add('hidden');
-    if (fab) fab.classList.remove('is-editing');
-    // set default date/time
-    const now = new Date();
-    const d = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const t = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    if (safe('mjdDate')) safe('mjdDate').value = d;
-    if (safe('mjdTime')) safe('mjdTime').value = t;
-    if (safe('mjdText')) safe('mjdText').value = '';
-    if (safe('mjdError')) safe('mjdError').textContent = '';
-    // restore last used reporter/logType
-    setTimeout(() => {
-      if (safe('mjdReporter') && lastReporter) safe('mjdReporter').value = lastReporter;
-      if (safe('mjdLogType')  && lastLogType)  safe('mjdLogType').value  = lastLogType;
-    }, 0);
-  }
-  setTimeout(() => safe('mjdText')?.focus(), 120);
-}
+function openMobileJournalDrawer() { return; }
 
-function closeMobileJournalDrawer() {
-  const drawer = safe('mobileJournalDrawer');
-  if (drawer) drawer.classList.add('hidden');
-  const fab = safe('mobileAdminFab');
-  if (fab) fab.classList.remove('is-editing');
-}
+function closeMobileJournalDrawer() { return; }
 
 function syncMobileDrawerDropdowns() {
   // Sync reporter options
@@ -3048,34 +2993,7 @@ async function submitMobileDrawer() {
   }
 }
 
-function setupMobileAdminDrawer() {
-  // FAB button — open drawer
-  safe('mobileAdminFab')?.addEventListener('click', () => openMobileJournalDrawer());
-
-  // Close drawer
-  safe('mjdCloseBtn')?.addEventListener('click', () => {
-    closeMobileJournalDrawer();
-    if (editingReportId) { editingReportId = null; }
-  });
-  safe('mjdBackdrop')?.addEventListener('click', () => {
-    closeMobileJournalDrawer();
-    if (editingReportId) { editingReportId = null; }
-  });
-
-  // Cancel edit
-  safe('mjdCancelBtn')?.addEventListener('click', () => {
-    editingReportId = null;
-    closeMobileJournalDrawer();
-  });
-
-  // Submit
-  safe('mjdSubmitBtn')?.addEventListener('click', submitMobileDrawer);
-
-  // DateTime toggle
-  safe('mjdShowDateTime')?.addEventListener('change', e => {
-    safe('mjdDateTimeRow')?.classList.toggle('hidden', !e.target.checked);
-  });
-}
+function setupMobileAdminDrawer() { return; }
 
 // ════════════════════════════════════════════════════════
 //  REPORT QUESTIONS MANAGER
@@ -3343,8 +3261,7 @@ async function bootAdmin(sharedOnly=false) {
     setupJournalManagerTabs();
     setupJournalManagerListeners();
     setupJournalInlineListeners();
-    setupMobileAdminDrawer();
-    setDefaultDateTime();
+      setDefaultDateTime();
     resetForm();
   }
 
@@ -3358,7 +3275,7 @@ async function bootAdmin(sharedOnly=false) {
 
   // הצג/הסתר FAB בהתאם לסטטוס התחברות
   const fab = safe('mobileAdminFab');
-  if (fab) fab.style.display = (!sharedOnly && hasJournalAccess(auth?.currentUser)) ? '' : 'none';
+  if (fab) fab.style.display = 'none';
 
   if(sharedOnly) {
     const rail=safe('screen-admin')?.querySelector('.side-rail'); if(rail) rail.style.display='none';
@@ -3374,7 +3291,6 @@ async function bootAdmin(sharedOnly=false) {
 
     if (isMapOnlyShared) {
       activePaneMode = 'map';
-      adminScreen?.classList.remove('mobile-readonly-mode');
       adminScreen?.classList.add('pane-map-full');
       adminScreen?.classList.remove('pane-journal-full');
       document.body.classList.remove('journal-full-active');
@@ -3405,10 +3321,7 @@ async function bootAdmin(sharedOnly=false) {
   }
 
   syncSharedLayersUiVisibility();
-  setTimeout(() => {
-    map.invalidateSize();
-    if (isMapOnlyShared && map) map.setView(map.getCenter(), map.getZoom(), { animate: false });
-  }, 180);
+  setTimeout(()=>map.invalidateSize(),150);
 }
 
 // ════════════════════════════════════════════════════════
@@ -3492,9 +3405,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       const shareInfo = await verifyShareToken(SHARE_TOKEN);
       if (!shareInfo?.eventId) { document.body.innerHTML='<div style="padding:40px;text-align:center;color:#eef5ff;direction:rtl;font-family:Heebo,sans-serif;font-size:20px">הקישור לא תקף או פג תוקפו.</div>'; return; }
       activeEventId = shareInfo.eventId;
+      const urlViewType = params.get('view');
+      const urlLayers = params.get('layers')
+        ? params.get('layers').split(',').map(v => decodeURIComponent(v)).filter(Boolean)
+        : null;
       sharedViewConfig = {
-        type: shareInfo.type || 'map',
-        allowedLayers: Array.isArray(shareInfo.allowedLayers) ? shareInfo.allowedLayers.filter(Boolean) : null
+        type: urlViewType || shareInfo.type || 'map',
+        allowedLayers: Array.isArray(urlLayers) && urlLayers.length
+          ? urlLayers
+          : (Array.isArray(shareInfo.allowedLayers) ? shareInfo.allowedLayers.filter(Boolean) : null)
       };
       if (shareInfo.type === 'journal') {
         if (!reportsColRef) reportsColRef = collection(db, `${publicDataRoot}/reports`);
