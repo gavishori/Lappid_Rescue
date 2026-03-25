@@ -26,6 +26,13 @@ const $   = (s)  => document.querySelector(s);
 const $$  = (s)  => Array.from(document.querySelectorAll(s));
 const safe = (id) => document.getElementById(id);
 const MOBILE_BREAKPOINT = 900;
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+const SHARE_LAYER_COLOR_PALETTE = ['#57c76f', '#9e7cff', '#61b7ff', '#ff7f57', '#f4c246', '#20b3c9', '#ff5d66', '#ff9ad5'];
 
 const storage = {
   _mem: new Map(),
@@ -41,24 +48,6 @@ const DEFAULT_INFO_BUTTONS = [
   { title: 'מפת יישוב', url: '#' }
 ];
 
-const LAYER_COLOR_PALETTE = {
-  'דיווחי תושבים': '#5cc36d',
-  'נקודות דיווח': '#9a7cff',
-  'מצלמות': '#75bfff',
-  'הידרנטים': '#ff8a5c',
-  'מספרי בתים': '#f4c246',
-  'מקלטים': '#33a7c9'
-};
-
-function getLayerColor(layerName) {
-  if (LAYER_COLOR_PALETTE[layerName]) return LAYER_COLOR_PALETTE[layerName];
-  let hash = 0;
-  const s = String(layerName || '');
-  for (let i = 0; i < s.length; i++) hash = ((hash << 5) - hash) + s.charCodeAt(i);
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 70% 58%)`;
-}
-
 // ════════════════════════════════════════════════════════
 //  ① VILLAGE APP STATE
 // ════════════════════════════════════════════════════════
@@ -69,6 +58,9 @@ let locationType    = 'address';
 let gpsCoords       = null;
 let sortDirection   = 'desc';
 let map             = null;
+let currentLocationMarker = null;
+let currentLocationAccuracyCircle = null;
+let legendControl = null;
 let residentMarkers = {};
 let layerMarkers    = {};
 let reportCache     = [];   // village reports (Firestore events/reports)
@@ -99,6 +91,8 @@ function buildConfigPayload() {
 function persistAll() {
   managedLayers = Array.from(new Set([...managedLayers, 'מספרי בתים']));
   activeLayers = new Set(Array.from(activeLayers).filter(Boolean));
+  renderShareLayersOptions();
+  updateMapLegend();
   syncConfigToFirestore();
 }
 
@@ -280,6 +274,74 @@ function iconColor(kind) {
   if (kind==='הידרנטים') return '#ff7f57';
   return '#9e7cff';
 }
+
+function getLayerColor(layerName = '') {
+  if (layerName === 'דיווחי תושבים') return '#57c76f';
+  if (layerName === 'נקודות דיווח') return '#9e7cff';
+  if (layerName === 'מצלמות') return '#61b7ff';
+  if (layerName === 'הידרנטים') return '#ff7f57';
+  if (layerName === 'מספרי בתים') return '#f4c246';
+  const layers = Array.from(new Set(managedLayers.filter(Boolean)));
+  const idx = Math.max(0, layers.indexOf(layerName));
+  return SHARE_LAYER_COLOR_PALETTE[idx % SHARE_LAYER_COLOR_PALETTE.length];
+}
+function getShareableLayers() {
+  return Array.from(new Set(managedLayers.filter(Boolean)));
+}
+function getSelectedShareLayers() {
+  const selected = $$('#shareLayersOptions input[data-share-layer]:checked').map(cb => cb.dataset.shareLayer).filter(Boolean);
+  return selected.length ? selected : Array.from(activeLayers).filter(Boolean);
+}
+function renderShareLayersOptions() {
+  const wrap = safe('shareLayersOptions');
+  if (!wrap) return;
+  const visibleLayers = getShareableLayers();
+  const selected = new Set(Array.from(activeLayers).filter(Boolean));
+  wrap.innerHTML = visibleLayers.map(name => `
+    <label class="share-layer-pill" title="${escapeHtml(name)}">
+      <span class="share-layer-dot" style="background:${getLayerColor(name)}"></span>
+      <span class="share-layer-name">${escapeHtml(name)}</span>
+      <input type="checkbox" data-share-layer="${escapeHtml(name)}" ${selected.has(name) ? 'checked' : ''} />
+    </label>
+  `).join('');
+}
+function updateMapLegend() {
+  if (!map || !legendControl) return;
+  const visibleLayers = Array.from(activeLayers).filter(Boolean);
+  const host = legendControl.getContainer();
+  if (!host) return;
+  if (!visibleLayers.length) {
+    host.innerHTML = '<div class="map-legend-title">מקרא</div><div class="map-legend-empty">אין שכבות פעילות</div>';
+    return;
+  }
+  host.innerHTML = `<div class="map-legend-title">מקרא</div>${visibleLayers.map(name => `<div class="map-legend-row"><span class="map-legend-dot" style="background:${getLayerColor(name)}"></span><span>${escapeHtml(name)}</span></div>`).join('')}`;
+}
+function ensureMapLegend() {
+  if (!map || legendControl) return;
+  legendControl = L.control({ position: 'bottomleft' });
+  legendControl.onAdd = function() {
+    const div = L.DomUtil.create('div', 'map-legend');
+    div.innerHTML = '';
+    return div;
+  };
+  legendControl.addTo(map);
+  updateMapLegend();
+}
+function syncCurrentLocationOnMap() {
+  if (!map || !navigator.geolocation || isSharedLinkView) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const latlng = [pos.coords.latitude, pos.coords.longitude];
+    if (!currentLocationMarker) {
+      const icon = L.divIcon({ className: 'current-location-icon', html: '<div class="current-location-dot"></div>', iconSize: [20,20], iconAnchor: [10,10] });
+      currentLocationMarker = L.marker(latlng, { icon, interactive: false, keyboard: false, zIndexOffset: 900 }).addTo(map);
+      currentLocationAccuracyCircle = L.circle(latlng, { radius: pos.coords.accuracy || 30, color: '#4ecb71', weight: 1, fillColor: '#4ecb71', fillOpacity: .15, interactive: false }).addTo(map);
+    } else {
+      currentLocationMarker.setLatLng(latlng);
+      currentLocationAccuracyCircle?.setLatLng(latlng);
+      if (pos.coords.accuracy) currentLocationAccuracyCircle?.setRadius(pos.coords.accuracy);
+    }
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 60000, timeout: 8000 });
+}
 function makeMarkerIcon(color) {
   return L.divIcon({
     className:'',
@@ -331,12 +393,21 @@ function fitMapToLayerBounds(layerName) {
   map.fitBounds(pts, {padding:[36,36], maxZoom:18});
 }
 function initMap() {
-  if (map) return;
+  if (map) {
+    setTimeout(() => map.invalidateSize(), 100);
+    updateMapLegend();
+    syncCurrentLocationOnMap();
+    return;
+  }
   map = L.map('map',{zoomControl:true}).setView(defaultMapCenter(),15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'&copy; OpenStreetMap contributors', maxZoom:19
   }).addTo(map);
+  ensureMapLegend();
+  updateMapLegend();
+  syncCurrentLocationOnMap();
   if (managedHouses.length) setTimeout(fitMapToHouseBounds, 0);
+  setTimeout(() => map.invalidateSize(), 120);
 }
 
 async function geocodeAddress(city, street, house) {
@@ -384,11 +455,11 @@ async function createTimedShare(untilDate) {
   await setDoc(getShareDoc(token), {eventId:activeEventId, expiresAt:Timestamp.fromDate(untilDate), createdAt:serverTimestamp()});
   return `${location.origin}${location.pathname}?token=${token}`;
 }
-async function createUnifiedShare(untilDate, includeMap, includeJournal, selectedLayers = null) {
+async function createUnifiedShare(untilDate, includeMap, includeJournal, chosenLayers = []) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const token = crypto.randomUUID();
   const type = (includeMap && includeJournal) ? 'both' : includeJournal ? 'journal' : 'map';
-  const allowedLayers = includeMap ? (Array.isArray(selectedLayers) && selectedLayers.length ? selectedLayers.filter(Boolean) : Array.from(activeLayers).filter(Boolean)) : [];
+  const allowedLayers = includeMap ? (Array.isArray(chosenLayers) && chosenLayers.length ? chosenLayers.filter(Boolean) : Array.from(activeLayers).filter(Boolean)) : [];
   await setDoc(getShareDoc(token), {
     eventId: activeEventId,
     type,
@@ -697,11 +768,12 @@ async function renderResidentMarkers() {
     }
   }
   renderGpxMarkers();
+  updateMapLegend();
 }
 
 function renderInfoView() {
   const wrap=safe('infoButtonsView'); if(!wrap) return;
-  wrap.innerHTML=managedInfoButtons.map(item=>`<button class="manage-card info-link-btn" data-url="${item.url}"><strong>${item.title}</strong><span>${item.url}</span></button>`).join('');
+  wrap.innerHTML=managedInfoButtons.map(item=>`<button class="manage-card info-link-btn" data-url="${escapeHtml(item.url)}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.url)}</span></button>`).join('');
   $$('#infoButtonsView .info-link-btn').forEach(btn=>btn.addEventListener('click',()=>{
     const u=btn.dataset.url; if(!u||u==='#') return; window.open(u,'_blank','noopener');
   }));
@@ -716,6 +788,7 @@ function renderLayersModal() {
     persistAll();
     renderResidentMarkers();
     renderGpxMarkers();
+    updateMapLegend();
     setTimeout(() => map?.invalidateSize(), 80);
     if(cb.checked) fitMapToLayerBounds(l);
   });
@@ -973,6 +1046,8 @@ function renderEventTypes() {
 }
 
 function setupNavigation() {
+  if (setupNavigation._bound) return;
+  setupNavigation._bound = true;
   // ניהול ניווט הטאבים הקיים
   $$('.rail-btn').forEach(btn=>btn.addEventListener('click',()=>{
     const view=btn.dataset.view;
@@ -1463,6 +1538,8 @@ function setupManagement() {
   renderManagedLayers(); renderGpxList(); populateGpxLayerSelect(); renderHouses(); renderInfoAdmin(); renderEventTypes(); syncStreetOptions(); resetHouseForm(); renderLayersModal();
 }
 function setupControls() {
+  if (setupControls._bound) return;
+  setupControls._bound = true;
   safe('toggleSortBtn')?.addEventListener('click',()=>{ sortDirection=sortDirection==='desc'?'asc':'desc'; renderResidentMarkers(); });
   safe('searchReports')?.addEventListener('input',()=>renderResidentMarkers());
 
@@ -1497,6 +1574,8 @@ function updateFilterBtnLabel() {
   btn.textContent = allOn ? 'סינון ▾' : (active.length ? active.join(', ') + ' ▾' : 'ללא ▾');
 }
 function setupShareUi() {
+  if (setupShareUi._bound) { renderShareLayersOptions(); return; }
+  setupShareUi._bound = true;
   const setUrlDisplay = (displayId, hiddenId, url) => {
     const d = safe(displayId); const h = safe(hiddenId);
     if (d) d.textContent = url || '';
@@ -1510,39 +1589,18 @@ function setupShareUi() {
     const t = btn.textContent;
     btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
   };
-  const getShareableLayers = () => Array.from(new Set((managedLayers || []).filter(Boolean)));
-  const renderShareLayersOptions = () => {
-    const host = safe('shareLayersOptions');
-    const section = safe('shareLayersSection');
-    if (!host || !section) return;
-    const includeMap = safe('shareIncludeMap')?.checked !== false;
-    section.classList.toggle('hidden', !includeMap);
-    host.innerHTML = '';
-    const layers = getShareableLayers();
-    layers.forEach(layerName => {
-      const row = document.createElement('label');
-      row.className = 'share-layer-item';
-      row.innerHTML = `
-        <input type="checkbox" class="share-layer-check" value="${escapeHtml(layerName)}" ${activeLayers.has(layerName) ? 'checked' : ''} />
-        <span class="share-layer-dot" style="background:${getLayerColor(layerName)}"></span>
-        <span class="share-layer-label">${escapeHtml(layerName)}</span>`;
-      host.appendChild(row);
-    });
-  };
-  const getSelectedShareLayers = () => $$('.share-layer-check:checked').map(el => el.value).filter(Boolean);
 
-  const refreshReportUrl = () => setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
-  refreshReportUrl();
-  safe('openLinksManagerBtn')?.addEventListener('click', () => { refreshReportUrl(); renderShareLayersOptions(); });
+  const refreshShareUi = () => {
+    setUrlDisplay('residentReportUrlDisplay', 'residentReportUrl', getResidentReportUrl());
+    renderShareLayersOptions();
+  };
+  refreshShareUi();
+  safe('openLinksManagerBtn')?.addEventListener('click', refreshShareUi);
   safe('copyResidentLinkBtn')?.addEventListener('click', () => copyWithFeedback('residentReportUrl', 'copyResidentLinkBtn'));
 
   const now = new Date(); now.setHours(now.getHours() + 3);
-  if (safe('shareDateInput')) safe('shareDateInput').value = now.toISOString().slice(0,10);
-  if (safe('shareTimeInput')) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-
-  safe('shareIncludeMap')?.addEventListener('change', renderShareLayersOptions);
-  safe('shareIncludeJournal')?.addEventListener('change', renderShareLayersOptions);
-  renderShareLayersOptions();
+  if (safe('shareDateInput') && !safe('shareDateInput').value) safe('shareDateInput').value = now.toISOString().slice(0,10);
+  if (safe('shareTimeInput') && !safe('shareTimeInput').value) safe('shareTimeInput').value = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
   safe('createShareBtn')?.addEventListener('click', async () => {
     const date = safe('shareDateInput')?.value;
@@ -1553,25 +1611,19 @@ function setupShareUi() {
     if (!includeMap && !includeJournal) {
       const btn = safe('createShareBtn');
       if (btn) {
+        const txt = btn.textContent;
         btn.textContent = 'בחר לפחות אחד';
-        setTimeout(() => btn.textContent = '✨ צור קישור', 1500);
+        setTimeout(() => btn.textContent = txt, 1500);
       }
       return;
     }
     const selectedLayers = includeMap ? getSelectedShareLayers() : [];
-    if (includeMap && !selectedLayers.length) {
-      const btn = safe('createShareBtn');
-      if (btn) {
-        btn.textContent = 'בחר שכבה אחת לפחות';
-        setTimeout(() => btn.textContent = '✨ צור קישור', 1500);
-      }
-      return;
-    }
     const url = await createUnifiedShare(new Date(`${date}T${time}:00`), includeMap, includeJournal, selectedLayers);
     setUrlDisplay('generatedShareUrlDisplay', 'generatedShareUrl', url);
   });
   safe('copyShareBtn')?.addEventListener('click', () => copyWithFeedback('generatedShareUrl', 'copyShareBtn'));
 }
+
 async function subscribeVillageReports() {
   if (unsubReports) unsubReports();
   if (!activeEventId) return;
@@ -1784,7 +1836,7 @@ function updatePaneToggleButtons() {
 
 // ── render journal table ──────────────────────────────
 function renderTable(searchTerm='') {
-  const isMobile = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
+  const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
   const tableBody=safe('reportTableBody'); if(!tableBody) return;
   tableBody.innerHTML='';
   const emptyRow=safe('empty-state');
@@ -2822,6 +2874,8 @@ function setupJournalManagerListeners() {
 //  JOURNAL INLINE LISTENERS (in the view-reports panel)
 // ════════════════════════════════════════════════════════
 function setupJournalInlineListeners() {
+  if (setupJournalInlineListeners._bound) return;
+  setupJournalInlineListeners._bound = true;
   safe('mainActionBtn')?.addEventListener('click',addJournalReport);
   safe('cancelEditBtn')?.addEventListener('click',fullResetForm);
   
@@ -3044,6 +3098,8 @@ async function submitMobileDrawer() {
 }
 
 function setupMobileAdminDrawer() {
+  if (setupMobileAdminDrawer._bound) return;
+  setupMobileAdminDrawer._bound = true;
   // FAB button — open drawer
   safe('mobileAdminFab')?.addEventListener('click', () => openMobileJournalDrawer());
 
@@ -3332,6 +3388,7 @@ async function bootAdmin(sharedOnly=false) {
   setupShareUi();
   setupManagement();
   renderInfoView();
+  renderShareLayersOptions();
   applyMobileReadOnlyMode();
 
   if (!isMapOnlyShared) {
@@ -3381,6 +3438,7 @@ async function bootAdmin(sharedOnly=false) {
       activeLayers = new Set(allowedSharedLayers);
       renderResidentMarkers();
       renderGpxMarkers();
+      updateMapLegend();
     }
 
     syncSharedLayersUiVisibility();
@@ -3399,6 +3457,8 @@ async function bootAdmin(sharedOnly=false) {
   }
 
   syncSharedLayersUiVisibility();
+  updateMapLegend();
+  syncCurrentLocationOnMap();
   setTimeout(()=>map.invalidateSize(),150);
 }
 

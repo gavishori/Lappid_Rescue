@@ -338,11 +338,11 @@
                     <div class="share-card-sub">קישור ישיר לטופס הדיווח של התושב</div>
                 </div>
             </div>
-            <div class="share-inline-row share-inline-row-resident">
-                <div class="share-url-display-wrap share-url-display-wrap-inline">
+            <div class="share-inline-row resident-inline-row">
+                <div class="share-url-display-wrap share-inline-url">
                     <div id="residentReportUrlDisplay" class="share-url-truncated"></div>
                 </div>
-                <button id="copyResidentLinkBtn" class="share-copy-btn-btn" type="button">📋 העתק</button>
+                <button id="copyResidentLinkBtn" class="share-copy-btn-btn share-inline-btn" type="button">📋 העתק</button>
             </div>
             <span id="residentReportUrl" style="display:none"></span>
         </div>
@@ -367,23 +367,22 @@
                     <span>יומן חפ"ק</span>
                 </label>
             </div>
-            <div id="shareLayersSection" class="share-layers-section">
+            <div class="share-layers-block">
                 <div class="share-layers-title">שכבות לשיתוף במפה</div>
-                <div class="share-layers-sub">בקישור יוצגו רק השכבות שתסמן כאן.</div>
-                <div id="shareLayersOptions" class="share-layers-grid"></div>
+                <div id="shareLayersOptions" class="share-layers-options"></div>
             </div>
-            <div class="share-inline-row share-inline-row-generated">
-                <div class="share-dt-field share-dt-field-date">
+            <div class="share-inline-row">
+                <div class="share-dt-field">
                     <label class="share-dt-label">תאריך תפוגה</label>
                     <input id="shareDateInput" type="date" class="share-input" />
                 </div>
-                <div class="share-dt-field share-dt-field-time">
+                <div class="share-dt-field">
                     <label class="share-dt-label">שעת תפוגה</label>
                     <input id="shareTimeInput" type="time" class="share-input" />
                 </div>
-                <button id="createShareBtn" class="share-primary-btn share-primary-btn-inline" type="button">✨ צור קישור</button>
-                <button id="copyShareBtn" class="share-copy-btn-btn" type="button">📋 העתק</button>
-                <div class="share-url-display-wrap share-url-display-wrap-inline share-url-display-wrap-grow">
+                <button id="createShareBtn" class="share-primary-btn share-inline-btn" type="button">✨ צור קישור</button>
+                <button id="copyShareBtn" class="share-copy-btn-btn share-inline-btn" type="button">📋 העתק</button>
+                <div class="share-url-display-wrap share-inline-url">
                     <div id="generatedShareUrlDisplay" class="share-url-truncated">עדיין לא נוצר קישור</div>
                 </div>
             </div>
