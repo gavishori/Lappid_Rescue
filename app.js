@@ -59,6 +59,14 @@ function isMobileViewport(){
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || window.innerWidth <= 820;
 }
 
+function syncViewportModeClasses(){
+  try{
+    const isMobile = isMobileViewport();
+    document.body.classList.toggle('mobile-ui', !!isMobile);
+    document.body.classList.toggle('desktop-ui', !isMobile);
+  }catch(_){ }
+}
+
 function ensureBudgetSummaryDialog(){
   let dlg = document.getElementById('budgetSummaryDialog');
   if(dlg) return dlg;
@@ -463,6 +471,9 @@ function wireHeaderControls(){
 }
 document.addEventListener('DOMContentLoaded', wireHeaderControls);
 document.addEventListener('DOMContentLoaded', wireReliableMobileActions);
+document.addEventListener('DOMContentLoaded', syncViewportModeClasses);
+window.addEventListener('resize', syncViewportModeClasses);
+window.addEventListener('pageshow', syncViewportModeClasses);
 
 function finalMobileThemeSync(){
   if(!isCompactMobileHeader()) return;
@@ -2683,11 +2694,8 @@ function maybeShowTripTodayPrompt(trip, opts){
     const end   = trip.end;
     if(!_isTodayWithinTripDates(start, end)) return;
 
-    if(source === 'home'){
-      const key = `tripTodayPrompt_${trip.id}_${_todayKey()}_home`;
-      if (sessionStorage.getItem(key) === '1') return;
-      sessionStorage.setItem(key, '1');
-    }
+    const homeKey = (source === 'home') ? `tripTodayPrompt_${trip.id}_${_todayKey()}_home` : '';
+    if(homeKey && sessionStorage.getItem(homeKey) === '1') return;
 
     const dlg = document.getElementById('tripTodayModal');
     if(!dlg || typeof dlg.showModal !== 'function') return;
@@ -2702,9 +2710,10 @@ function maybeShowTripTodayPrompt(trip, opts){
     // If another modal is open, don't steal focus
     try{
       const anyOpen = document.querySelector('dialog[open]');
-      if(anyOpen) return;
+      if(anyOpen && anyOpen !== dlg) return;
     }catch(_){ }
     dlg.showModal();
+    if(homeKey) sessionStorage.setItem(homeKey, '1');
   }catch(_){ }
 }
 
