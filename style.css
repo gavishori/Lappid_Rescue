@@ -6562,30 +6562,3 @@ button, .btn, .menu-btn, select, input, textarea {
     transition:none !important;
   }
 }
-
-/* === April 2 journal overview spacing fix === */
-@media (min-width: 721px){
-  /* In overview journal rows the markup still renders an empty time cell.
-     The desktop hotfix below converts rows back to table cells, so that empty
-     time cell becomes a visible spacer and pushes the title too far away.
-     Collapse it completely and pull the title toward the date column. */
-  #view-overview .expenses-table tr.exp-item[data-kind="journal"] td.header.time{
-    display:none !important;
-    width:0 !important;
-    min-width:0 !important;
-    max-width:0 !important;
-    padding:0 !important;
-    border:0 !important;
-  }
-
-  #view-overview .expenses-table tr.exp-item[data-kind="journal"] td.header.date{
-    min-width:118px !important;
-    width:118px !important;
-    padding-inline:12px 10px !important;
-  }
-
-  #view-overview .expenses-table tr.exp-item[data-kind="journal"] td.header.location{
-    text-align:right !important;
-    padding-inline:10px 14px !important;
-  }
-}

@@ -31,3 +31,8 @@ Professional refactor build:
 - Removed mobile-auth.js from runtime loading
 - Fixed firebase deleteField export
 - Added AUDIT_REPORT.txt
+
+
+Additional fix in this build:
+- Unified overview journal row markup to the same 6-cell structure as expense rows (removed colspan-based layout drift).
+- Added a final desktop CSS patch so journal rows align visually with expense rows in Overview.

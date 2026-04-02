@@ -2879,10 +2879,13 @@ function appendJournalRowToTimeline(body, j){
   const tr1 = document.createElement('tr');
   tr1.className = 'exp-item';
   tr1.dataset.kind = 'journal';
+  tr1.dataset.layout = 'timeline-unified';
   tr1.innerHTML = `
     <td class="cell header date">${bidiWrap(d.format('DD/MM/YYYY'))}</td>
     <td class="cell header time"></td>
-    <td class="cell header location" colspan="3">${esc(displayTitle)}</td>
+    <td class="cell header title">${esc(displayTitle)}</td>
+    <td class="cell header category"></td>
+    <td class="cell header amount"></td>
     <td class="cell header menu-cell"><button class="menu-btn">...</button></td>
   `;
   const tr2 = document.createElement('tr');
