@@ -19,6 +19,7 @@ import {
   limit,
   startAfter,
   serverTimestamp,
+  deleteField,
   deleteDoc,
   doc,
   getDoc,
@@ -71,6 +72,7 @@ export const FB = {
   collection, addDoc, getDocs,
   onSnapshot, query, where, orderBy, limit, startAfter,
   serverTimestamp,
+  deleteField,
   deleteDoc
 };
 

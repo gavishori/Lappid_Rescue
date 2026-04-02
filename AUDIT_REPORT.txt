@@ -1,0 +1,49 @@
+FLYMILY professional cleanup build
+================================
+
+What changed
+------------
+1. Split the JavaScript entry point into smaller files without changing the runtime contract:
+   - app.js               -> thin bootstrap only
+   - app.core.js          -> legacy app logic kept intact
+   - mobile-auth-fallback.js -> isolated mobile auth fallback logic
+
+   Why:
+   The previous entry file mixed core app behavior with a late mobile-auth fallback block.
+   Isolating that block reduces accidental regressions and makes future refactors safer.
+
+2. Fixed Firebase compatibility gap:
+   - Added deleteField to firebase.js exports and FB namespace.
+
+   Why:
+   app logic calls FB.deleteField() when deleting journal / GPX-related fields.
+   Without exporting deleteField, those code paths can fail at runtime.
+
+3. Removed redundant runtime patch loading:
+   - index.html no longer loads mobile-auth.js.
+
+   Why:
+   mobile-auth.js only injects extra logout buttons into dialogs.
+   The dialogs already include those controls in the HTML, so the script is legacy DOM patching.
+   Keeping it loaded adds noise and future maintenance risk.
+
+4. Moved the mobile expense modal fix into its own stylesheet:
+   - Added mobile-expense-fix.css
+
+   Why:
+   The old style.css contains many overlapping mobile overrides.
+   A dedicated last-loaded override file is easier to audit and much harder to accidentally override.
+
+5. Removed dead helper functions from the legacy bundle when unreferenced:
+   - legacyWireAuthPrimaryButton
+   - syncThemeToggleButtonLegacy
+
+   Why:
+   Both functions had no remaining references in the bundle.
+   Dead code makes audits slower and increases the chance of reviving stale behavior by mistake.
+
+Important notes
+---------------
+- This is a conservative refactor, not a full rewrite.
+- Main functionality still stays in the legacy core file on purpose.
+- The structure is now ready for further phased extraction of expenses, journal, trips, and UI modules.
