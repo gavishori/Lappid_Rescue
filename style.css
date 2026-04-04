@@ -6999,17 +6999,16 @@ button, .btn, .menu-btn, select, input, textarea {
 
 @media (max-width: 640px){
   #mobileOverviewActionRail{
-    grid-template-columns:repeat(4, 44px) !important;
+    grid-template-columns:repeat(5, 40px) minmax(72px, 1fr) !important;
     grid-template-areas:
-      "menu sort toggle expense"
-      "journal search search search" !important;
+      "menu expense journal sort toggle search" !important;
   }
 
   #mobileOverviewMenuBtn{ grid-area:menu; }
-  #mobileOverviewSortBtn{ grid-area:sort; }
-  #mobileOverviewToggleBtn{ grid-area:toggle; }
   #mobileOverviewExpenseBtn{ grid-area:expense; }
   #mobileOverviewJournalBtn{ grid-area:journal; }
+  #mobileOverviewSortBtn{ grid-area:sort; }
+  #mobileOverviewToggleBtn{ grid-area:toggle; }
   #mobileOverviewActionRail .mobile-overview-search,
   #mobileOverviewActionRail #searchAll{ grid-area:search; }
 }
@@ -7056,8 +7055,9 @@ button, .btn, .menu-btn, select, input, textarea {
   #mobileOverviewActionRail,
   .mobile-overview-action-rail{
     display:grid !important;
-    grid-template-columns:44px 44px 44px 44px 44px minmax(0,1fr) !important;
-    gap:8px !important;
+    grid-template-columns:repeat(5, 40px) minmax(72px, 1fr) !important;
+    grid-template-areas:"menu expense journal sort toggle search" !important;
+    gap:6px !important;
     align-items:center !important;
     margin:0 0 12px !important;
     padding:0 !important;
@@ -7069,21 +7069,26 @@ button, .btn, .menu-btn, select, input, textarea {
     display:inline-flex !important;
     align-items:center !important;
     justify-content:center !important;
-    width:44px !important;
-    min-width:44px !important;
-    height:44px !important;
+    width:40px !important;
+    min-width:40px !important;
+    height:40px !important;
     padding:0 !important;
-    border-radius:14px !important;
-    font-size:18px !important;
+    min-height:40px !important;
+    border-radius:12px !important;
+    font-size:17px !important;
   }
 
   #mobileOverviewActionRail .mobile-overview-search,
   #mobileOverviewActionRail #searchAll{
+    grid-area:search !important;
     display:block !important;
     width:100% !important;
     min-width:0 !important;
-    height:44px !important;
+    max-width:none !important;
+    height:40px !important;
+    min-height:40px !important;
     margin:0 !important;
+    border-radius:12px !important;
   }
 
   #view-overview > #mobileOverviewMenuBtn{

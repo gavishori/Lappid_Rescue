@@ -86,19 +86,6 @@
       <main class="content" id="main">
         <nav class="tabs" id="tabs" style="display:none">
           
-          <!-- Overview tab as dropdown: All / Expenses / Journal -->
-          <div class="tab-select-wrap active" data-tab="overview" aria-label="בחירת תצוגה">
-            <select id="overviewTabSelect" class="tab-select" dir="rtl" aria-label="בחירת תצוגה">
-              <option value="meta">נתוני נסיעה</option>
-              <option value="mix" selected>הצג יומן + הוצאות</option>
-              <option value="journal">הצג יומן</option>
-              <option value="expenses">הצג הוצאות</option>
-              <option value="map">מפה</option>
-              <option value="share">ייבוא / ייצוא / שיתוף</option>
-              <option value="breakdown">פילוח</option>
-            </select>
-          </div>
-          
           <button data-tab="meta">נתוני נסיעה</button>
           
           <button data-tab="map">מפה</button>
@@ -586,7 +573,7 @@ id="expenseModal" class="modal">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <script type="module" src="./firebase.js"></script>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./script.js"></script>
   <script src="./mobile-auth.js" defer></script>
 
 <dialog id="confirmDeleteModal" class="modal">

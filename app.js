@@ -74,22 +74,38 @@ function normalizeMobileOverviewHeader(){
     const select = document.getElementById('overviewTabSelect');
     const wrap = select?.closest('.tab-select-wrap');
     const overviewHidden = !document.getElementById('view-overview') || document.getElementById('view-overview').hidden;
+    const store = window.__overviewTabWrapStore || (window.__overviewTabWrapStore = {});
 
     if(!isMobileViewport()){
       if(tabs) tabs.classList.remove('mobile-tabs-compact');
-      if(wrap){
-        wrap.hidden = false;
-        wrap.removeAttribute('aria-hidden');
-        wrap.style.display = '';
+      if(!wrap && store.parent && store.node){
+        try{
+          if(store.nextSibling && store.nextSibling.parentNode === store.parent){
+            store.parent.insertBefore(store.node, store.nextSibling);
+          }else{
+            store.parent.appendChild(store.node);
+          }
+        }catch(_){ }
+      }
+      const restoredWrap = document.getElementById('overviewTabSelect')?.closest('.tab-select-wrap');
+      if(restoredWrap){
+        restoredWrap.hidden = false;
+        restoredWrap.removeAttribute('aria-hidden');
+        restoredWrap.style.display = '';
       }
       if(headerBar) headerBar.hidden = overviewHidden;
       return;
     }
 
     if(wrap){
-      wrap.hidden = true;
-      wrap.setAttribute('aria-hidden', 'true');
-      wrap.style.display = 'none';
+      store.parent = wrap.parentNode;
+      store.nextSibling = wrap.nextSibling;
+      store.node = wrap;
+      try{ wrap.remove(); }catch(_){
+        wrap.hidden = false;
+        wrap.setAttribute('aria-hidden', 'true');
+        wrap.style.display = 'none';
+      }
     }
     if(tabs) tabs.classList.add('mobile-tabs-compact');
     if(headerBar) headerBar.hidden = true;
@@ -693,11 +709,82 @@ function syncJournalSelectionUi(){
     document.getElementById(id)?.click();
   }
 
+  function applyOverviewSelection(value){
+    const v = (value || '').trim();
+    if(!v) return;
+
+    try{
+      const currentTab = document.querySelector('#tabs [data-tab].active')?.dataset?.tab;
+      if(currentTab === 'meta' && state?.isDirty && typeof showUnsavedChangesAlert === 'function'){
+        showUnsavedChangesAlert(v);
+        return;
+      }
+    }catch(_){}
+
+    if (v === 'journal' || v === 'expenses' || v === 'mix') {
+      try {
+        const overviewEl = document.querySelector('#tabs [data-tab="overview"]');
+        if (overviewEl) { setActiveTab(overviewEl); showView('overview'); }
+      } catch (_) {}
+
+      const modeSel = document.getElementById('overviewMode');
+      if (modeSel) {
+        modeSel.value = (v === 'mix') ? 'all' : v;
+        modeSel.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        try {
+          const nextMode = (v === 'mix') ? 'all' : v;
+          state.overviewMode = nextMode;
+          localStorage.setItem('overviewMode', nextMode);
+          if (state.current) renderAllTimeline(state.current, state.allSort);
+        } catch (_) {}
+      }
+      return;
+    }
+
+    if (v === 'breakdown') {
+      setTimeout(() => {
+        if (typeof window.__openBreakdownDialog === 'function') {
+          window.__openBreakdownDialog();
+          return;
+        }
+        try {
+          const dlg = document.getElementById('breakdownDialog');
+          if (dlg) {
+            if (typeof renderCategoryBreakdownNode === 'function')
+              renderCategoryBreakdownNode('categoryBreakdownDialog');
+            if (!dlg.open) {
+              if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+            }
+          }
+        } catch (_) {}
+      }, 0);
+      return;
+    }
+
+    if (v === 'meta' || v === 'map' || v === 'share') {
+      try {
+        const overviewWrap = document.querySelector('#tabs [data-tab="overview"]');
+        if (overviewWrap) setActiveTab(overviewWrap);
+      } catch (_e) {}
+
+      showView(v);
+      if (v === 'map') setTimeout(initBigMap, 50);
+      return;
+    }
+
+    const tabEl = document.querySelector(`#tabs [data-tab="${v}"]`);
+    if (tabEl) tabEl.click();
+  }
+
   function setOverviewSelectValue(value){
     const select = document.getElementById('overviewTabSelect');
-    if(!select) return;
-    select.value = value;
-    select.dispatchEvent(new Event('change', { bubbles:true }));
+    if(select){
+      select.value = value;
+      select.dispatchEvent(new Event('change', { bubbles:true }));
+      return;
+    }
+    applyOverviewSelection(value);
   }
 
   function getMobileVisibleSection(){
@@ -1861,85 +1948,7 @@ document.querySelectorAll('#tabs [data-tab]').forEach(el => el.addEventListener(
   if(!sel || sel.dataset.bound) return;
   sel.dataset.bound = '1';
 
-  sel.addEventListener('change', ()=>{
-    const v = sel.value;
-    if(!v) return;
-
-    // If leaving meta while there are unsaved changes, use existing modal flow
-    try{
-      const currentTab = document.querySelector('#tabs [data-tab].active')?.dataset?.tab;
-      if(currentTab === 'meta' && state?.isDirty && typeof showUnsavedChangesAlert === 'function'){
-        showUnsavedChangesAlert(v);
-        return;
-      }
-    }catch(_){}
-
-    // Actions inside the "הצג" dropdown:
-    // journal/expenses change the internal filter of the Overview timeline.
-    // mix resets the filter to show both (journal + expenses) together, sorted by time.
-    if (v === 'journal' || v === 'expenses' || v === 'mix') {
-      // Keep the Overview view active and change its internal filter
-      try {
-        const overviewEl = document.querySelector('#tabs [data-tab="overview"]');
-        if (overviewEl) { setActiveTab(overviewEl); showView('overview'); }
-      } catch (_) {}
-
-      const modeSel = document.getElementById('overviewMode');
-      if (modeSel) {
-        modeSel.value = (v === 'mix') ? 'all' : v;
-        modeSel.dispatchEvent(new Event('change', { bubbles: true }));
-      } else {
-        try {
-          const nextMode = (v === 'mix') ? 'all' : v;
-          state.overviewMode = nextMode;
-          localStorage.setItem('overviewMode', nextMode);
-          if (state.current) renderAllTimeline(state.current, state.allSort);
-        } catch (_) {}
-      }
-      return;
-    }
-
-    if (v === 'breakdown') {
-      try { sel.value = 'breakdown'; } catch (_) {}
-      // setTimeout(0) lets the select's click event finish propagating before the dialog
-      // opens — otherwise the document click-outside listener closes it immediately.
-      setTimeout(() => {
-        if (typeof window.__openBreakdownDialog === 'function') {
-          window.__openBreakdownDialog();
-          return;
-        }
-        try {
-          const dlg = document.getElementById('breakdownDialog');
-          if (dlg) {
-            if (typeof renderCategoryBreakdownNode === 'function')
-              renderCategoryBreakdownNode('categoryBreakdownDialog');
-            if (!dlg.open) {
-              if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-            }
-          }
-        } catch (_) {}
-      }, 0);
-      return;
-    }
-
-    // Primary tabs that should open a dedicated view.
-    // Keep the dropdown itself as the active tab control and only switch the content view.
-    if (v === 'meta' || v === 'map' || v === 'share') {
-      try {
-        const overviewWrap = document.querySelector('#tabs [data-tab="overview"]');
-        if (overviewWrap) setActiveTab(overviewWrap);
-        sel.value = v;
-      } catch (_e) {}
-
-      showView(v);
-      if (v === 'map') setTimeout(initBigMap, 50);
-      return;
-    }
-
-    // Navigate to main tabs when option value matches a tab
-    const tabEl = document.querySelector(`#tabs [data-tab="${v}"]`);
-    if (tabEl) tabEl.click();
-  });
+  sel.addEventListener('change', ()=> applyOverviewSelection(sel.value));
 })();
 // (old Auth UI block removed – using unified handler below)
 
