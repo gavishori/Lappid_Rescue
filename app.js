@@ -69,19 +69,30 @@ function syncViewportModeClasses(){
 
 function normalizeMobileOverviewHeader(){
   try{
-    if(!isMobileViewport()) return;
+    const tabs = document.getElementById('tabs');
+    const headerBar = document.getElementById('overviewHeaderBar');
     const select = document.getElementById('overviewTabSelect');
     const wrap = select?.closest('.tab-select-wrap');
-    if(wrap) wrap.remove();
-    const tabs = document.getElementById('tabs');
-    if(tabs){
-      tabs.style.padding = '0';
-      tabs.style.margin = '0';
-      tabs.style.border = '0';
-      tabs.style.minHeight = '0';
-      tabs.style.background = 'transparent';
-      tabs.style.boxShadow = 'none';
+    const overviewHidden = !document.getElementById('view-overview') || document.getElementById('view-overview').hidden;
+
+    if(!isMobileViewport()){
+      if(tabs) tabs.classList.remove('mobile-tabs-compact');
+      if(wrap){
+        wrap.hidden = false;
+        wrap.removeAttribute('aria-hidden');
+        wrap.style.display = '';
+      }
+      if(headerBar) headerBar.hidden = overviewHidden;
+      return;
     }
+
+    if(wrap){
+      wrap.hidden = true;
+      wrap.setAttribute('aria-hidden', 'true');
+      wrap.style.display = 'none';
+    }
+    if(tabs) tabs.classList.add('mobile-tabs-compact');
+    if(headerBar) headerBar.hidden = true;
   }catch(err){
     console.error('normalizeMobileOverviewHeader failed', err);
   }
@@ -784,7 +795,7 @@ function syncJournalSelectionUi(){
       searchInput.hidden = false;
       searchInput.placeholder = 'חיפוש';
       searchInput.classList.add('mobile-overview-search');
-      rail.appendChild(searchInput);
+      if(searchInput.parentElement !== rail) rail.appendChild(searchInput);
     }
     host.prepend(rail);
     rail.querySelector('#mobileOverviewSortBtn')?.addEventListener('click', ()=> triggerButton('btnAllSort'));
@@ -1235,7 +1246,7 @@ function switchToTab(tab){
     if(tab==='map') setTimeout(initBigMap,50);
     try{
       const hb = document.getElementById('overviewHeaderBar');
-      if(hb) hb.hidden = (tab !== 'overview');
+      if(hb) hb.hidden = isMobileViewport() ? true : (tab !== 'overview');
     }catch(e){}
 /* patched switchToTab */
 try{
@@ -2353,7 +2364,7 @@ function showView(view){
     // but we do not want it visible in other tabs.
     try {
       const hb = document.getElementById('overviewHeaderBar');
-      if (hb) hb.hidden = (view !== 'overview');
+      if (hb) hb.hidden = isMobileViewport() ? true : (view !== 'overview');
     } catch(_e){}
   } catch(e){ /*log removed*/ }
 }
@@ -8748,3 +8759,12 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ __initGpxManager(); }ca
     wire();
   }
 })();
+
+
+/* === responsive repair override === */
+document.addEventListener('DOMContentLoaded', ()=>{
+  try{ normalizeMobileOverviewHeader(); }catch(_){}
+});
+window.addEventListener('resize', ()=>{
+  try{ normalizeMobileOverviewHeader(); }catch(_){}
+});
