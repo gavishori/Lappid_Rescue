@@ -6835,6 +6835,7 @@ button, .btn, .menu-btn, select, input, textarea {
 
   .tab-select-wrap,
   .tabs .tab-select-wrap,
+  #tabs > .tab-select-wrap,
   #view-overview .tab-select-wrap{
     display:none !important;
     min-width:0 !important;
@@ -6843,6 +6844,30 @@ button, .btn, .menu-btn, select, input, textarea {
     height:0 !important;
     margin:0 !important;
     padding:0 !important;
+    border:0 !important;
+    overflow:hidden !important;
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    position:absolute !important;
+  }
+
+  .tab-select-wrap::after,
+  .tabs .tab-select-wrap::after,
+  #tabs > .tab-select-wrap::after,
+  #view-overview .tab-select-wrap::after{
+    content:none !important;
+    display:none !important;
+  }
+
+  #overviewTabSelect,
+  .tab-select-wrap .tab-select{
+    display:none !important;
+    width:0 !important;
+    height:0 !important;
+    min-height:0 !important;
+    padding:0 !important;
+    border:0 !important;
   }
 
   #mobileOverviewActionRail,
