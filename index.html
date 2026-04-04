@@ -120,6 +120,8 @@
             </select>
             <input id="searchAll" class="input search-input" type="search" placeholder="חיפוש בכל ההצג הכל" dir="rtl" autocomplete="off">
             <div class="overview-quick">
+              <button id="btnOverviewDeleteSelectedJournal" class="btn danger" type="button" hidden>מחק נבחרים</button>
+              <button id="btnOverviewCancelSelectionJournal" class="btn" type="button" hidden>בטל בחירה</button>
               <button id="btnQuickAddExpense" class="btn danger" type="button">+ הוצאה</button>
               <button id="btnQuickAddJournal" class="btn success" type="button">+ יומן</button>
 </div>
@@ -200,6 +202,8 @@
           <div class="list-actions">
             <button id="btnAddJournal" class="btn primary">הוסף רישום</button>
             <button id="btnSortJournal" class="btn">מיין</button>
+            <button id="btnDeleteSelectedJournal" class="btn danger">מחק נבחרים</button>
+            <button id="btnCancelSelectionJournal" class="btn" style="display:none">בטל בחירה</button>
             <button id="btnToggleJournalDetails" class="btn">צמצם הכל</button>
           </div>
           <div class="card expenses-table-container" style="padding:0">
