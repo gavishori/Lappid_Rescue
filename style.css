@@ -7095,3 +7095,56 @@ button, .btn, .menu-btn, select, input, textarea {
     display:none !important;
   }
 }
+
+
+/* ===== FIX: Compact mobile overview layout ===== */
+@media (max-width: 820px) {
+
+  /* Collapse #tabs entirely in trip mode — mobile navigates via ≡ section menus.
+     The bar was the source of the blank "▼" gap above the action rail. */
+  body.trip-mode #tabs,
+  .container.trip-mode #tabs {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    border: none !important;
+  }
+
+  /* Belt-and-suspenders: nuke any surviving tab-select-wrap so the
+     dropdown arrow box can never reappear. */
+  .tab-select-wrap,
+  .tabs .tab-select-wrap,
+  #tabs > .tab-select-wrap,
+  #view-overview .tab-select-wrap {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  /* Remove the top gap on the overview section — the rail provides its own margin. */
+  #view-overview {
+    padding-top: 0 !important;
+  }
+
+  /* Tight top breathing room; bottom margin keeps it off the list cards. */
+  #mobileOverviewActionRail,
+  .mobile-overview-action-rail {
+    margin-top: 8px !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* If the standalone ≡ button ever lands directly on view-overview
+     (race condition before the rail is built), keep it hidden — it
+     will reappear correctly once the rail picks it up. */
+  #view-overview > #mobileOverviewMenuBtn {
+    display: none !important;
+  }
+}
