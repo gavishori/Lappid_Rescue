@@ -6327,6 +6327,22 @@ button, .btn, .menu-btn, select, input, textarea {
     max-height:min(56dvh, 420px) !important;
   }
 
+  .trip-list-empty{
+    display:grid !important;
+    gap:8px !important;
+    width:100% !important;
+    padding:20px !important;
+    border:1px dashed var(--border) !important;
+    border-radius:18px !important;
+    background:color-mix(in oklab, var(--card) 92%, transparent) !important;
+    color:var(--text) !important;
+    text-align:center !important;
+  }
+
+  .trip-list-empty span{
+    color:var(--muted) !important;
+  }
+
   .mobile-section-menu-body{
     display:grid !important;
     gap:10px !important;

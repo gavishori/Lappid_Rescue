@@ -384,6 +384,15 @@ function applyAuthShellState(user){
     try{ window.__authPrimarySwap(isLoggedIn, user?.email || ''); }catch(_){ }
   }
 
+  try{
+    const tripSearch = document.getElementById('searchTrips');
+    const currentEmail = String(user?.email || '').trim().toLowerCase();
+    const currentValue = String(tripSearch?.value || '').trim().toLowerCase();
+    if(tripSearch && currentEmail && currentValue === currentEmail){
+      tripSearch.value = '';
+    }
+  }catch(_){}
+
   if(isLoggedIn){
     if(loginScreen) loginScreen.style.display = 'none';
     if(appContainer) appContainer.style.display = 'grid';
@@ -2303,8 +2312,15 @@ async function renderTripList(){
   const perfNow = ()=> (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
   const renderStart = perfNow();
   const list = $('#tripList');
+  if(!list) return;
   syncHomeMapMode();
-  const search = $('#searchTrips').value?.trim();
+  const searchInput = $('#searchTrips');
+  const rawSearch = searchInput?.value?.trim() || '';
+  const userEmail = String(state.user?.email || '').trim().toLowerCase();
+  const search = rawSearch.toLowerCase() === userEmail ? '' : rawSearch;
+  if(searchInput && rawSearch && !search){
+    searchInput.value = '';
+  }
   let items = [...state.trips];
   let s = null;
   if(search){
@@ -2316,6 +2332,27 @@ async function renderTripList(){
   state._tripListRenderToken = (state._tripListRenderToken || 0) + 1;
   const renderToken = state._tripListRenderToken;
   list.className = state.viewMode === 'map' ? 'map-view' : (state.viewMode==='grid' ? 'grid' : 'list');
+  if(state.viewMode !== 'map' && items.length === 0){
+    const msg = search
+      ? 'לא נמצאו נסיעות שמתאימות לחיפוש.'
+      : 'התחברת בהצלחה. עדיין אין נסיעות בחשבון הזה.';
+    list.innerHTML = `
+      <div class="trip-list-empty" role="status" aria-live="polite">
+        <strong>${msg}</strong>
+        <span>אפשר ללחוץ על "נסיעה חדשה +" כדי ליצור נסיעה ראשונה.</span>
+      </div>`;
+    ['btnViewGrid','btnViewList','btnViewMap'].forEach(id => document.getElementById(id)?.classList.remove('active'));
+    document.getElementById(`btnView${state.viewMode==='grid' ? 'Grid' : state.viewMode==='list' ? 'List' : 'Map'}`)?.classList.add('active');
+    try{
+      window.__lastRenderTripListPerf = {
+        items: items.length,
+        mode: state.viewMode,
+        ms: Math.round(perfNow() - renderStart)
+      };
+      console.info('[perf] renderTripList', window.__lastRenderTripListPerf);
+    }catch(_){}
+    return;
+  }
   if(state.viewMode === 'map'){
     await renderTripMapView(items, renderToken);
   } else {
@@ -2412,7 +2449,9 @@ async function openTrip(id){
   enterTripMode();
   $$('#tabs [data-tab]').forEach(b=>b.classList.remove('active'));
   const first = $('#tabs [data-tab="overview"]');
-  first.classList.add('active');
+  if(first){
+    first.classList.add('active');
+  }
   showView('overview');
   state.overviewMode = 'all';
   try { localStorage.setItem('overviewMode', 'all'); } catch (_) {}
