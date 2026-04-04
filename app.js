@@ -1301,6 +1301,34 @@ function focusItemInTab(type, id){
   }, 150);
 }
 
+function focusItemOnMap(type, id){
+  switchToTab('map');
+  setTimeout(()=>{
+    try{ initBigMap(); }catch(_){}
+    const map = state?.maps?.big;
+    if(!map || !id) return;
+    let targetLayer = null;
+    map.eachLayer(layer=>{
+      if(targetLayer) return;
+      if(layer && layer.__itemType === type && String(layer.__itemId) === String(id)){
+        targetLayer = layer;
+      }
+    });
+    if(!targetLayer) return;
+    try{
+      if(typeof targetLayer.getBounds === 'function'){
+        const bounds = targetLayer.getBounds();
+        if(bounds?.isValid?.()) map.fitBounds(bounds.pad(0.2));
+      }else if(typeof targetLayer.getLatLng === 'function'){
+        map.flyTo(targetLayer.getLatLng(), Math.max(map.getZoom?.() || 12, 15), { duration: 0.45 });
+      }
+      if(typeof targetLayer.openPopup === 'function'){
+        setTimeout(()=>{ try{ targetLayer.openPopup(); }catch(_){} }, 180);
+      }
+    }catch(_){}
+  }, 180);
+}
+
 function attachMapPopup(marker, type, id, dataObj){
   try{
     const isExp = (type==='expense');
@@ -2964,13 +2992,18 @@ function renderJournal(t, order){
     tr1.dataset.kind = 'journal'; // מחזיר את הצבע הירוק
     const checkedAttr = selectionOn && state.journalSelectedIds.has(j.id) ? 'checked' : '';
     const selectCell = selectionOn ? `<td class="cell select-cell"><input type="checkbox" class="jr-select" data-id="${esc(j.id)}" ${checkedAttr}></td>` : "";
+    const hasMapPoint = Number.isFinite(+j.lat) && Number.isFinite(+j.lng);
+    const mapActionCell = hasMapPoint
+      ? `<td class="cell header menu-cell"><button class="btn small journal-map-btn" type="button" data-map-item="journal" data-id="${esc(j.id)}">מפה</button></td>`
+      : "";
     
     const displayTitle = deriveJournalTitle(j);
     tr1.innerHTML = `
       ${selectCell}
       <td class="cell header date">${bidiWrap(dateStr)}</td>
       <td class="cell header time"></td>
-      <td class="cell header location" colspan="4">${esc(displayTitle)}</td>
+      <td class="cell header location" colspan="${hasMapPoint ? 3 : 4}">${esc(displayTitle)}</td>
+      ${mapActionCell}
       <td class="cell header menu-cell"><button class="menu-btn">...</button></td>
     `;
     const tr2 = document.createElement('tr');
@@ -2982,6 +3015,10 @@ function renderJournal(t, order){
         _rowActionJournal = j; 
         document.getElementById('rowMenuModal').showModal(); 
     };
+    tr1.querySelector('.journal-map-btn')?.addEventListener('click', (ev)=>{
+      ev.preventDefault();
+      focusItemOnMap('journal', j.id);
+    });
   });
   syncJournalSelectionUi();
 }
@@ -3021,6 +3058,7 @@ function appendJournalRowToTimeline(body, j){
     : linkifyToIcons(j.html || j.text || '');
   const selectionOn = getOverviewMode() === 'journal' && !!state.journalSelectionMode;
   const checkedAttr = selectionOn && state.journalSelectedIds && state.journalSelectedIds.has(j.id) ? 'checked' : '';
+  const hasMapPoint = Number.isFinite(+j.lat) && Number.isFinite(+j.lng);
   const tr1 = document.createElement('tr');
   tr1.className = 'exp-item';
   tr1.dataset.kind = 'journal';
@@ -3028,7 +3066,8 @@ function appendJournalRowToTimeline(body, j){
     ${selectionOn ? `<td class="cell select-cell"><input type="checkbox" class="jr-select" data-id="${esc(j.id)}" ${checkedAttr}></td>` : ''}
     <td class="cell header date">${bidiWrap(d.format('DD/MM/YYYY'))}</td>
     <td class="cell header time"></td>
-    <td class="cell header location" colspan="3">${esc(displayTitle)}</td>
+    <td class="cell header location" colspan="${hasMapPoint ? 2 : 3}">${esc(displayTitle)}</td>
+    ${hasMapPoint ? `<td class="cell header menu-cell"><button class="btn small journal-map-btn" type="button" data-map-item="journal" data-id="${esc(j.id)}">מפה</button></td>` : ''}
     <td class="cell header menu-cell"><button class="menu-btn">...</button></td>
   `;
   const tr2 = document.createElement('tr');
@@ -3039,6 +3078,10 @@ function appendJournalRowToTimeline(body, j){
     _rowActionJournal = j; 
     document.getElementById('rowMenuModal').showModal(); 
   };
+  tr1.querySelector('.journal-map-btn')?.addEventListener('click', (ev)=>{
+    ev.preventDefault();
+    focusItemOnMap('journal', j.id);
+  });
 }
 function getOverviewMode(){
   const allowed = new Set(['all', 'expenses', 'journal']);
@@ -6642,7 +6685,10 @@ window.initBigMap = function(){
     Object.entries(t.expenses||{}).forEach(([id,e])=>{
       if(typeof e.lat==='number' && typeof e.lng==='number'){
         pts.push([e.lat,e.lng]);
-        L.circleMarker([e.lat,e.lng], { radius:5 }).addTo(expensesLG);
+        const marker = L.circleMarker([e.lat,e.lng], { radius:5 });
+        marker.__itemType = 'expense';
+        marker.__itemId = id;
+        marker.addTo(expensesLG);
       }
     });
     Object.entries(t.journal||{}).forEach(([id,j])=>{
@@ -6656,6 +6702,8 @@ window.initBigMap = function(){
             fillOpacity:0.95,
             weight:2
           });
+          marker.__itemType = 'journal';
+          marker.__itemId = id;
           attachMapPopup(marker, 'journal', id, j);
           marker.addTo(gpxPointsLG);
         }else{
@@ -6666,6 +6714,8 @@ window.initBigMap = function(){
             fillOpacity:0.95,
             weight:2
           });
+          marker.__itemType = 'journal';
+          marker.__itemId = id;
           attachMapPopup(marker, 'journal', id, j);
           marker.addTo(journalLG);
         }
@@ -8174,6 +8224,8 @@ function __refreshGpxFromCurrent(){
         fillOpacity: 0.95,
         weight: 2
       });
+      marker.__itemType = 'journal';
+      marker.__itemId = id;
       attachMapPopup(marker, 'journal', id, j);
       marker.addTo(layer);
       layer.addTo(map);
@@ -8212,7 +8264,9 @@ function __refreshGpxFromCurrent(){
     }
     if(latlngs.length < 2) continue;
 
-    L.polyline(latlngs, {weight:4}).addTo(layer);
+    const polyline = L.polyline(latlngs, { color:'#7c3aed', weight:4, opacity:0.95 }).addTo(layer);
+    polyline.__itemType = 'journal';
+    polyline.__itemId = id;
     layer.addTo(map);
 
     let bounds = null;
