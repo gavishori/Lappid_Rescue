@@ -71,47 +71,51 @@ function normalizeMobileOverviewHeader(){
   try{
     const tabs = document.getElementById('tabs');
     const headerBar = document.getElementById('overviewHeaderBar');
-    const select = document.getElementById('overviewTabSelect');
-    const wrap = select?.closest('.tab-select-wrap');
     const overviewHidden = !document.getElementById('view-overview') || document.getElementById('view-overview').hidden;
-    const store = window.__overviewTabWrapStore || (window.__overviewTabWrapStore = {});
 
     if(!isMobileViewport()){
       if(tabs) tabs.classList.remove('mobile-tabs-compact');
-      if(!wrap && store.parent && store.node){
-        try{
-          if(store.nextSibling && store.nextSibling.parentNode === store.parent){
-            store.parent.insertBefore(store.node, store.nextSibling);
-          }else{
-            store.parent.appendChild(store.node);
-          }
-        }catch(_){ }
-      }
-      const restoredWrap = document.getElementById('overviewTabSelect')?.closest('.tab-select-wrap');
-      if(restoredWrap){
-        restoredWrap.hidden = false;
-        restoredWrap.removeAttribute('aria-hidden');
-        restoredWrap.style.display = '';
-      }
       if(headerBar) headerBar.hidden = overviewHidden;
       return;
     }
 
-    if(wrap){
-      store.parent = wrap.parentNode;
-      store.nextSibling = wrap.nextSibling;
-      store.node = wrap;
-      try{ wrap.remove(); }catch(_){
-        wrap.hidden = false;
-        wrap.setAttribute('aria-hidden', 'true');
-        wrap.style.display = 'none';
-      }
-    }
     if(tabs) tabs.classList.add('mobile-tabs-compact');
     if(headerBar) headerBar.hidden = true;
   }catch(err){
     console.error('normalizeMobileOverviewHeader failed', err);
   }
+}
+
+function purgeOverviewNavSelect(){
+  try{
+    const wrap = document.querySelector('.tab-select-wrap[data-tab="overview"]')
+      || document.getElementById('overviewTabSelect')?.closest('.tab-select-wrap');
+    const select = document.getElementById('overviewTabSelect');
+    if(wrap){
+      try{ wrap.remove(); }catch(_){
+        wrap.style.display = 'none';
+        wrap.setAttribute('aria-hidden', 'true');
+      }
+    }
+    if(select && !wrap){
+      try{ select.remove(); }catch(_){
+        select.style.display = 'none';
+        select.setAttribute('aria-hidden', 'true');
+      }
+    }
+  }catch(_){}
+}
+
+function ensureOverviewNavSelectRemoved(){
+  try{
+    purgeOverviewNavSelect();
+    if(window.__overviewNavSelectObserverBound) return;
+    const root = document.body || document.documentElement;
+    if(!root || typeof MutationObserver === 'undefined') return;
+    const obs = new MutationObserver(()=> purgeOverviewNavSelect());
+    obs.observe(root, { childList:true, subtree:true });
+    window.__overviewNavSelectObserverBound = '1';
+  }catch(_){}
 }
 
 function ensureBudgetSummaryDialog(){
@@ -787,12 +791,6 @@ function syncJournalSelectionUi(){
   }
 
   function setOverviewSelectValue(value){
-    const select = document.getElementById('overviewTabSelect');
-    if(select){
-      select.value = value;
-      select.dispatchEvent(new Event('change', { bubbles:true }));
-      return;
-    }
     applyOverviewSelection(value);
   }
 
@@ -1950,15 +1948,7 @@ document.querySelectorAll('#tabs [data-tab]').forEach(el => el.addEventListener(
   if(nextTab==='overview') { setTimeout(()=> { try{ initBigMap(); }catch(_){} initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }, 80);}
 }));
 
-// Overview tab dropdown (All / Expenses / Journal)
-(function bindOverviewTabSelect(){
-  // Header dropdown ("הצג") that navigates to main tabs
-  const sel = document.getElementById('overviewTabSelect');
-  if(!sel || sel.dataset.bound) return;
-  sel.dataset.bound = '1';
-
-  sel.addEventListener('change', ()=> applyOverviewSelection(sel.value));
-})();
+ensureOverviewNavSelectRemoved();
 // (old Auth UI block removed – using unified handler below)
 
 // Handle share link mode (read-only)
@@ -3185,13 +3175,6 @@ function renderAllTimeline(t, order){
 }
 
 function syncOverviewTabLabel(){
-  const select = document.getElementById('overviewTabSelect');
-  if (!select) return;
-  const mode = getOverviewMode();
-  const nextValue = mode === 'all' ? 'mix' : mode;
-  if ([...select.options].some(o => o.value === nextValue)) {
-    select.value = nextValue;
-  }
   syncOverviewJournalBulkUi();
 }
 
@@ -7242,8 +7225,6 @@ function renderCategoryBreakdownNode(targetId){
       document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && dlg.open) closeBreakdown(); });
       document.addEventListener('click', (e)=>{
         if(!dlg.open) return;
-        // Ignore clicks from the nav dropdown — they triggered the open and must not close it
-        if(e.target && e.target.closest && e.target.closest('#overviewTabSelect')) return;
         const r = dlg.getBoundingClientRect();
         const inside = e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom;
         if(!inside) closeBreakdown();
