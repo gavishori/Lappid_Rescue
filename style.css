@@ -7164,3 +7164,326 @@ button, .btn, .menu-btn, select, input, textarea {
     display: none !important;
   }
 }
+
+/* ===== Mobile Shell V2 ===== */
+@media (max-width: 820px) {
+  body.mobile-ui.mobile-shell-v2 {
+    --mobile-panel-bg: linear-gradient(180deg, rgba(255,255,255,.96) 0%, rgba(244,250,255,.92) 100%);
+    --mobile-panel-border: rgba(34, 94, 168, .12);
+    --mobile-shadow: 0 18px 42px rgba(20, 58, 123, .14);
+    --mobile-accent-soft: linear-gradient(135deg, #0f9b6f 0%, #13c35a 100%);
+    --mobile-secondary-soft: linear-gradient(135deg, #ffffff 0%, #eef6ff 100%);
+  }
+
+  body.mobile-ui.mobile-shell-v2 header {
+    padding: 12px 16px 18px !important;
+    background: linear-gradient(135deg, #0e72f1 0%, #1a87ff 58%, #0c66dd 100%) !important;
+    box-shadow: 0 12px 30px rgba(7, 77, 166, .26) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 header .brand {
+    gap: 6px !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 header .brand img {
+    max-height: 34px !important;
+    width: auto !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #btnAllTrips,
+  body.mobile-ui.mobile-shell-v2 #btnLogin,
+  body.mobile-ui.mobile-shell-v2 #btnTheme {
+    min-height: 46px !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(255,255,255,.34) !important;
+    background: rgba(255,255,255,.15) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  body.mobile-ui.mobile-shell-v2 #btnLogin.is-authenticated,
+  body.mobile-ui.mobile-shell-v2 #btnTheme {
+    width: 46px !important;
+    min-width: 46px !important;
+    padding: 0 !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 .container.home-mode {
+    display: block !important;
+    padding: 16px !important;
+    background:
+      radial-gradient(circle at top right, rgba(24, 125, 255, .10), transparent 36%),
+      linear-gradient(180deg, #eef5ff 0%, #f7fcff 45%, #fbfdff 100%) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 .container.home-mode .sidebar {
+    display: grid !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #homeTripsHeader {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 12px !important;
+    align-items: center !important;
+    padding: 18px !important;
+    border-radius: 28px !important;
+    background: var(--mobile-panel-bg) !important;
+    border: 1px solid var(--mobile-panel-border) !important;
+    box-shadow: var(--mobile-shadow) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #homeTripsHeader .spacer {
+    display: none !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #homeTripsHeader h2 {
+    margin: 0 !important;
+    font-size: 1.42rem !important;
+    line-height: 1.1 !important;
+    color: #14233d !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #btnNewTrip {
+    min-width: auto !important;
+    padding: 0 18px !important;
+    height: 48px !important;
+    border-radius: 16px !important;
+    border: none !important;
+    background: var(--mobile-accent-soft) !important;
+    color: #fff !important;
+    font-weight: 800 !important;
+    box-shadow: 0 16px 30px rgba(16, 181, 95, .28) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripSearchActions,
+  body.mobile-ui.mobile-shell-v2 #tripViewActions {
+    display: grid !important;
+    gap: 10px !important;
+    padding: 14px !important;
+    border-radius: 24px !important;
+    background: var(--mobile-panel-bg) !important;
+    border: 1px solid var(--mobile-panel-border) !important;
+    box-shadow: var(--mobile-shadow) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripSearchActions {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripSearchActions .input {
+    height: 48px !important;
+    min-height: 48px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(27, 70, 140, .12) !important;
+    background: #fff !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.6) !important;
+    padding-inline: 16px !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #btnSortTrips {
+    min-width: 92px !important;
+    height: 48px !important;
+    border-radius: 16px !important;
+    background: var(--mobile-secondary-soft) !important;
+    border: 1px solid rgba(27, 70, 140, .12) !important;
+    color: #20334f !important;
+    font-weight: 700 !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripViewActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripViewActions .btn {
+    height: 46px !important;
+    border-radius: 16px !important;
+    background: #fff !important;
+    border: 1px solid rgba(27, 70, 140, .12) !important;
+    color: #243650 !important;
+    font-weight: 700 !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripViewActions .btn.active {
+    background: linear-gradient(135deg, #0f7bff 0%, #2d96ff 100%) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+    box-shadow: 0 12px 24px rgba(19, 126, 255, .24) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripList,
+  body.mobile-ui.mobile-shell-v2 #tripList.grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-card,
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-row {
+    grid-template-columns: 56px minmax(0, 1fr) !important;
+    grid-template-areas:
+      "menu title"
+      "menu dates"
+      "menu meta" !important;
+    gap: 8px 14px !important;
+    align-items: center !important;
+    padding: 16px !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(62, 165, 89, .18) !important;
+    background: linear-gradient(180deg, #f6fff2 0%, #ecffea 100%) !important;
+    box-shadow: 0 18px 34px rgba(29, 110, 66, .10) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-row .menu-btn,
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-card .menu-btn {
+    width: 56px !important;
+    min-width: 56px !important;
+    height: 56px !important;
+    border-radius: 18px !important;
+    border: 1px solid rgba(27, 70, 140, .10) !important;
+    background: rgba(255,255,255,.88) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-card strong,
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-row strong {
+    font-size: 1.34rem !important;
+    color: #132038 !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-card .muted,
+  body.mobile-ui.mobile-shell-v2 #tripList .trip-row .muted {
+    color: #4d6485 !important;
+    font-size: .98rem !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tripList .types-pill {
+    justify-self: start !important;
+    padding: 8px 12px !important;
+    border-radius: 999px !important;
+    background: rgba(13, 104, 221, .08) !important;
+    color: #1555a7 !important;
+    border: 1px solid rgba(13, 104, 221, .14) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 .container.trip-mode #tabs,
+  body.mobile-ui.mobile-shell-v2 body.trip-mode #tabs {
+    display: none !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #view-overview {
+    display: grid !important;
+    gap: 14px !important;
+    padding: 16px !important;
+    background:
+      radial-gradient(circle at top right, rgba(24, 125, 255, .10), transparent 28%),
+      linear-gradient(180deg, #eef5ff 0%, #f7fcff 45%, #fbfdff 100%) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail,
+  body.mobile-ui.mobile-shell-v2 .mobile-overview-action-rail {
+    display: grid !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    border-radius: 24px !important;
+    background: var(--mobile-panel-bg) !important;
+    border: 1px solid var(--mobile-panel-border) !important;
+    box-shadow: var(--mobile-shadow) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 .mobile-overview-action-rail__search {
+    display: block !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 .mobile-overview-action-rail__buttons {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail .mobile-overview-search,
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail #searchAll {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 50px !important;
+    min-height: 50px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(27, 70, 140, .12) !important;
+    background: #fff !important;
+    padding-inline: 16px !important;
+    margin: 0 !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail .mobile-overview-chip,
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail .mobile-section-menu-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 0 10px !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(27, 70, 140, .12) !important;
+    background: var(--mobile-secondary-soft) !important;
+    color: #213550 !important;
+    font-size: .92rem !important;
+    font-weight: 800 !important;
+    justify-content: center !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail .mobile-overview-chip.accent {
+    background: linear-gradient(135deg, #0f7bff 0%, #2f97ff 100%) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail .mobile-overview-chip.accent-alt {
+    background: linear-gradient(135deg, #14b56e 0%, #20cf78 100%) !important;
+    border-color: transparent !important;
+    color: #fff !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #mobileOverviewActionRail .mobile-overview-menu {
+    background: #fff !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #view-overview .overview-budget-wrap,
+  body.mobile-ui.mobile-shell-v2 #view-overview .expenses-table-container {
+    margin: 0 !important;
+    border-radius: 24px !important;
+    background: var(--mobile-panel-bg) !important;
+    border: 1px solid var(--mobile-panel-border) !important;
+    box-shadow: var(--mobile-shadow) !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #expenseSummary.budget-bar,
+  body.mobile-ui.mobile-shell-v2 .budget-bar {
+    border-radius: 22px !important;
+    box-shadow: none !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #view-overview .expenses-table-container {
+    padding: 10px !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tblAllTimeline tr.exp-item:not(.exp-details) {
+    border-radius: 20px !important;
+    border: 1px solid rgba(27, 70, 140, .08) !important;
+    background: #fff !important;
+    box-shadow: 0 10px 22px rgba(31, 52, 93, .08) !important;
+    margin-bottom: 10px !important;
+  }
+
+  body.mobile-ui.mobile-shell-v2 #tblAllTimeline td {
+    padding: 12px !important;
+  }
+}
