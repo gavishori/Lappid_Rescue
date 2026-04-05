@@ -7107,8 +7107,9 @@ button, .btn, .menu-btn, select, input, textarea {
 /* ===== FIX: Compact mobile overview layout ===== */
 @media (max-width: 820px) {
 
-  /* Collapse #tabs entirely in trip mode — mobile navigates via ≡ section menus.
-     The bar was the source of the blank "▼" gap above the action rail. */
+  /* JS sets display:flex inline on #tabs when a trip opens (enterTripMode).
+     On mobile we patch JS to skip that, but this rule is the CSS safety net
+     in case any other code path sets the inline style. */
   body.trip-mode #tabs,
   .container.trip-mode #tabs {
     display: none !important;
@@ -7120,8 +7121,18 @@ button, .btn, .menu-btn, select, input, textarea {
     border: none !important;
   }
 
-  /* Belt-and-suspenders: nuke any surviving tab-select-wrap so the
-     dropdown arrow box can never reappear. */
+  /* Hide overviewHeaderBar — it lives inside #tabs but has its own height
+     which can leave a blank strip even when #tabs itself collapses. */
+  #overviewHeaderBar {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Nuke every form of tab-select-wrap unconditionally on mobile. */
   .tab-select-wrap,
   .tabs .tab-select-wrap,
   #tabs > .tab-select-wrap,
@@ -7136,21 +7147,19 @@ button, .btn, .menu-btn, select, input, textarea {
     pointer-events: none !important;
   }
 
-  /* Remove the top gap on the overview section — the rail provides its own margin. */
+  /* Remove top gap on overview section — rail provides its own breathing room. */
   #view-overview {
     padding-top: 0 !important;
   }
 
-  /* Tight top breathing room; bottom margin keeps it off the list cards. */
+  /* Action rail sits snug under the header. */
   #mobileOverviewActionRail,
   .mobile-overview-action-rail {
     margin-top: 8px !important;
     margin-bottom: 10px !important;
   }
 
-  /* If the standalone ≡ button ever lands directly on view-overview
-     (race condition before the rail is built), keep it hidden — it
-     will reappear correctly once the rail picks it up. */
+  /* Suppress the standalone ≡ that can appear before the rail is built. */
   #view-overview > #mobileOverviewMenuBtn {
     display: none !important;
   }

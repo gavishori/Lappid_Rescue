@@ -1884,7 +1884,7 @@ function enterTripMode(){
   container.classList.add('trip-mode');
   container.classList.remove('home-mode');
   syncHomeMapMode();
-  $('#tabs').style.display = 'flex';
+  if(!isMobileViewport()) $('#tabs').style.display = 'flex';
   $('#btnAllTrips').style.display = 'inline-block';
   updateHeaderDestination();
 }
@@ -1955,7 +1955,7 @@ if (token && tripId) {
   $('#sidebar').style.display = 'none';
   $('#btnLogin').style.display = 'none';
   $('#btnLogout').style.display = 'none';
-  $('#tabs').style.display = 'flex';
+  if(!isMobileViewport()) $('#tabs').style.display = 'flex';
   // Switch to trip-mode so content is visible
   const container = document.querySelector('.container');
   container.classList.remove('home-mode'); container.classList.add('trip-mode');
