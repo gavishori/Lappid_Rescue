@@ -554,13 +554,6 @@ textarea{min-height:80px}
   max-width:220px;
 }
 
-.overview-headerbar .mode-select{
-  height:38px;
-  border-radius:10px;
-  padding:0 10px;
-  flex:0 0 140px;
-  max-width:160px;
-}
 .overview-headerbar .overview-quick{
   display:flex;
   gap:8px;
@@ -3617,7 +3610,6 @@ button, .btn, .menu-btn, select, input, textarea {
 
   .overview-headerbar .search-input,
   .overview-actions .search-input,
-  .overview-headerbar .mode-select,
   .overview-headerbar .overview-quick,
   .overview-headerbar .hits,
   .overview-actions .hits,
@@ -4152,7 +4144,6 @@ button, .btn, .menu-btn, select, input, textarea {
   .overview-actions .btn,
   .list-actions .btn,
   .overview-headerbar .search-input,
-  .overview-headerbar .mode-select,
   .overview-actions .search-input{
     width:100% !important;
     max-width:100% !important;

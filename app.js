@@ -740,18 +740,12 @@ function syncJournalSelectionUi(){
         if (overviewEl) { setActiveTab(overviewEl); showView('overview'); }
       } catch (_) {}
 
-      const modeSel = document.getElementById('overviewMode');
-      if (modeSel) {
-        modeSel.value = (v === 'mix') ? 'all' : v;
-        modeSel.dispatchEvent(new Event('change', { bubbles: true }));
-      } else {
-        try {
-          const nextMode = (v === 'mix') ? 'all' : v;
-          state.overviewMode = nextMode;
-          localStorage.setItem('overviewMode', nextMode);
-          if (state.current) renderAllTimeline(state.current, state.allSort);
-        } catch (_) {}
-      }
+      try {
+        const nextMode = (v === 'mix') ? 'all' : v;
+        state.overviewMode = nextMode;
+        localStorage.setItem('overviewMode', nextMode);
+        if (state.current) renderAllTimeline(state.current, state.allSort);
+      } catch (_) {}
       return;
     }
 
@@ -8605,7 +8599,6 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ __initGpxManager(); }ca
     if (!root) return;
 
     const input = document.getElementById('searchAll');
-    const modeSel = document.getElementById('overviewMode');
     const count = document.getElementById('allHitCount');
     const prev = document.getElementById('btnAllPrev');
     const next = document.getElementById('btnAllNext');
@@ -8613,37 +8606,11 @@ document.addEventListener('DOMContentLoaded', ()=>{ try{ __initGpxManager(); }ca
 
     if (!input || !count || !prev || !next || !toggle) return;
 
-    // Overview filter mode (default: show all)
-    (function bindMode(){
-      if (!modeSel) return;
-      // load preference
-      try{
-        const stored = localStorage.getItem('overviewMode');
-        if (stored) state.overviewMode = stored;
-      }catch(_){ }
-      if (!state.overviewMode) state.overviewMode = 'all';
-      modeSel.value = String(state.overviewMode);
-
-      if (!modeSel.dataset.bound){
-        modeSel.addEventListener('change', ()=>{
-          const v = (modeSel.value || 'all');
-          if (v !== 'journal') {
-            state.journalSelectionMode = false;
-            state.journalSelectedIds = new Set();
-            state._jrLastIndex = null;
-          }
-          state.overviewMode = v;
-          try{ localStorage.setItem('overviewMode', v); }catch(_){ }
-          try{ syncOverviewTabLabel(); }catch(_){ }
-          // re-render timeline with the new filter
-          try{ if (state.current) renderAllTimeline(state.current, state.allSort); }catch(_){ }
-          // reapply collapse button text + rerun search (if any)
-          try{ applyCollapsedUI(); }catch(_){ }
-          try{ runSearch(); }catch(_){ }
-        });
-        modeSel.dataset.bound = '1';
-      }
-    })();
+    try{
+      const stored = localStorage.getItem('overviewMode');
+      if (stored) state.overviewMode = stored;
+    }catch(_){ }
+    if (!state.overviewMode) state.overviewMode = 'all';
 
     // In global-collapsed mode, clicking a header row should toggle ONLY its own details row
     const tbody = document.getElementById('tblAllTimeline');
