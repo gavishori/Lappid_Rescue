@@ -9122,3 +9122,112 @@ window.addEventListener('resize', ()=>{
     setTimeout(syncMobileMapInfoCloseButton, 0);
   }, true);
 })();
+
+/* === exact mobile modal layout v2 === */
+(function(){
+  const MODAL_IDS = ['expenseModal','journalModal'];
+
+  function isMobile(){
+    return window.innerWidth <= 820;
+  }
+
+  function currentViewport(){
+    const vv = window.visualViewport;
+    return {
+      width: Math.round(vv?.width || window.innerWidth || document.documentElement.clientWidth || 0),
+      height: Math.round(vv?.height || window.innerHeight || document.documentElement.clientHeight || 0),
+      top: Math.round(vv?.offsetTop || 0)
+    };
+  }
+
+  function updateBaseHeight(){
+    const vp = currentViewport();
+    const candidate = Math.max(window.innerHeight || 0, vp.height + vp.top);
+    const keyboardOpen = vp.height < (window.innerHeight || vp.height) - 120;
+    if(!keyboardOpen){
+      window.__exactModalBaseHeight = Math.max(window.__exactModalBaseHeight || 0, candidate);
+    }
+    if(!(window.__exactModalBaseHeight > 0)){
+      window.__exactModalBaseHeight = candidate;
+    }
+  }
+
+  function clearModalStyles(dlg){
+    if(!dlg) return;
+    ['top','left','right','bottom','width','minWidth','maxWidth','height','minHeight','maxHeight','position'].forEach((k)=> dlg.style[k] = '');
+    const body = dlg.querySelector(':scope > .body');
+    if(body){
+      ['height','minHeight','maxHeight'].forEach((k)=> body.style[k] = '');
+    }
+  }
+
+  function applyModalLayout(dlg){
+    if(!dlg || !dlg.open || !isMobile()) return;
+    updateBaseHeight();
+    const vp = currentViewport();
+    const baseH = window.__exactModalBaseHeight || Math.max(window.innerHeight || 0, vp.height + vp.top);
+    const width = Math.max(320, vp.width - 16);
+    const requested = Math.round(baseH * 0.50);
+    const usable = Math.max(260, vp.height - 8);
+    const height = Math.max(260, Math.min(requested, usable));
+    const top = vp.top + 8;
+
+    dlg.style.position = 'fixed';
+    dlg.style.left = '8px';
+    dlg.style.right = '8px';
+    dlg.style.top = `${top}px`;
+    dlg.style.bottom = 'auto';
+    dlg.style.width = `${width}px`;
+    dlg.style.minWidth = `${width}px`;
+    dlg.style.maxWidth = `${width}px`;
+    dlg.style.height = `${height}px`;
+    dlg.style.minHeight = `${height}px`;
+    dlg.style.maxHeight = `${height}px`;
+
+    const header = dlg.querySelector(':scope > header');
+    const footer = dlg.querySelector(':scope > .footer');
+    const body = dlg.querySelector(':scope > .body');
+    if(body){
+      const headerH = Math.round(header?.getBoundingClientRect().height || 36);
+      const footerH = Math.round(footer?.getBoundingClientRect().height || 56);
+      const bodyH = Math.max(120, height - headerH - footerH);
+      body.style.height = `${bodyH}px`;
+      body.style.minHeight = `${bodyH}px`;
+      body.style.maxHeight = `${bodyH}px`;
+    }
+  }
+
+  function refreshOpenModals(){
+    MODAL_IDS.forEach((id)=> applyModalLayout(document.getElementById(id)));
+  }
+
+  function wireDialog(dlg){
+    if(!dlg || dlg.dataset.exactMobileModalWired === '1') return;
+    dlg.dataset.exactMobileModalWired = '1';
+    const mo = new MutationObserver(()=>{
+      if(dlg.open) setTimeout(()=> applyModalLayout(dlg), 30);
+      else clearModalStyles(dlg);
+    });
+    mo.observe(dlg, { attributes:true, attributeFilter:['open'] });
+    dlg.addEventListener('close', ()=> clearModalStyles(dlg));
+  }
+
+  function init(){
+    if(!isMobile()) return;
+    updateBaseHeight();
+    MODAL_IDS.forEach((id)=> wireDialog(document.getElementById(id)));
+    refreshOpenModals();
+    if(window.visualViewport && !window.visualViewport.__exactModalWired){
+      window.visualViewport.__exactModalWired = true;
+      window.visualViewport.addEventListener('resize', ()=> setTimeout(refreshOpenModals, 10));
+      window.visualViewport.addEventListener('scroll', ()=> setTimeout(refreshOpenModals, 10));
+    }
+    window.addEventListener('resize', ()=> setTimeout(refreshOpenModals, 10));
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init, { once:true });
+  }else{
+    init();
+  }
+})();
