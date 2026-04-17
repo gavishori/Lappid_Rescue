@@ -74,41 +74,25 @@ function normalizeMobileOverviewHeader(){
     const select = document.getElementById('overviewTabSelect');
     const wrap = select?.closest('.tab-select-wrap');
     const overviewHidden = !document.getElementById('view-overview') || document.getElementById('view-overview').hidden;
-    const store = window.__overviewTabWrapStore || (window.__overviewTabWrapStore = {});
 
     if(!isMobileViewport()){
       if(tabs) tabs.classList.remove('mobile-tabs-compact');
-      if(!wrap && store.parent && store.node){
-        try{
-          if(store.nextSibling && store.nextSibling.parentNode === store.parent){
-            store.parent.insertBefore(store.node, store.nextSibling);
-          }else{
-            store.parent.appendChild(store.node);
-          }
-        }catch(_){ }
-      }
-      const restoredWrap = document.getElementById('overviewTabSelect')?.closest('.tab-select-wrap');
-      if(restoredWrap){
-        restoredWrap.hidden = false;
-        restoredWrap.removeAttribute('aria-hidden');
-        restoredWrap.style.display = '';
+      if(wrap){
+        wrap.hidden = false;
+        wrap.removeAttribute('aria-hidden');
+        wrap.style.display = '';
       }
       if(headerBar) headerBar.hidden = overviewHidden;
       return;
     }
 
-    if(wrap){
-      store.parent = wrap.parentNode;
-      store.nextSibling = wrap.nextSibling;
-      store.node = wrap;
-      try{ wrap.remove(); }catch(_){
-        wrap.hidden = false;
-        wrap.setAttribute('aria-hidden', 'true');
-        wrap.style.display = 'none';
-      }
-    }
     if(tabs) tabs.classList.add('mobile-tabs-compact');
-    if(headerBar) headerBar.hidden = true;
+    if(wrap){
+      wrap.hidden = false;
+      wrap.removeAttribute('aria-hidden');
+      wrap.style.display = '';
+    }
+    if(headerBar) headerBar.hidden = overviewHidden;
   }catch(err){
     console.error('normalizeMobileOverviewHeader failed', err);
   }
@@ -917,45 +901,8 @@ function syncJournalSelectionUi(){
   }
 
   function ensureOverviewActionRail(){
-    const host = document.getElementById('view-overview');
-    if(!host) return;
-    let rail = document.getElementById('mobileOverviewActionRail');
-    if(rail) return;
-    const menuBtn = document.getElementById('mobileOverviewMenuBtn');
-    const searchInput = document.getElementById('searchAll');
-    rail = document.createElement('div');
-    rail.id = 'mobileOverviewActionRail';
-    rail.className = 'mobile-overview-action-rail';
-    if(menuBtn) rail.appendChild(menuBtn);
-    rail.insertAdjacentHTML('beforeend', `
-      <button type="button" id="mobileOverviewExpenseBtn" class="btn mobile-overview-icon-btn" aria-label="הוסף הוצאה">
-        <span class="mobile-action-glyph" aria-hidden="true">+$</span>
-        <span class="mobile-action-text">הוצאה</span>
-      </button>
-      <button type="button" id="mobileOverviewJournalBtn" class="btn mobile-overview-icon-btn" aria-label="הוסף יומן">
-        <span class="mobile-action-glyph" aria-hidden="true">+✎</span>
-        <span class="mobile-action-text">יומן</span>
-      </button>
-      <button type="button" id="mobileOverviewSortBtn" class="btn mobile-overview-icon-btn" aria-label="מיון">
-        <span class="mobile-action-glyph" aria-hidden="true">⇅</span>
-        <span class="mobile-action-text">מיון</span>
-      </button>
-      <button type="button" id="mobileOverviewToggleBtn" class="btn mobile-overview-icon-btn" aria-label="צמצם או פרוס">
-        <span class="mobile-action-glyph" aria-hidden="true">↕</span>
-        <span class="mobile-action-text">פריסה</span>
-      </button>
-    `);
-    if(searchInput){
-      searchInput.hidden = false;
-      searchInput.placeholder = 'חיפוש';
-      searchInput.classList.add('mobile-overview-search');
-      if(searchInput.parentElement !== rail) rail.appendChild(searchInput);
-    }
-    host.prepend(rail);
-    rail.querySelector('#mobileOverviewSortBtn')?.addEventListener('click', ()=> triggerButton('btnAllSort'));
-    rail.querySelector('#mobileOverviewToggleBtn')?.addEventListener('click', ()=> triggerButton('btnAllToggle'));
-    rail.querySelector('#mobileOverviewExpenseBtn')?.addEventListener('click', ()=> triggerButton('btnQuickAddExpense'));
-    rail.querySelector('#mobileOverviewJournalBtn')?.addEventListener('click', ()=> triggerButton('btnQuickAddJournal'));
+    const rail = document.getElementById('mobileOverviewActionRail');
+    if(rail) rail.remove();
   }
 
   function syncMobileViewportVars(){
@@ -6353,8 +6300,30 @@ function renderExpenseSummary(t){
   bar.classList.add('budget-bar-structured');
   if(isMobileViewport()){
     bar.classList.add('budget-bar-mobile');
-    bar.hidden = true;
-    bar.innerHTML = '';
+    bar.hidden = false;
+    bar.innerHTML = `
+      <button type="button" id="budgetSummaryTrigger" class="btn budget-summary-trigger" aria-label="פתח סיכום תקציב">
+        <span>תקציב נסיעה</span>
+      </button>
+      <button type="button" id="budgetCurrencyPill" class="btn budget-currency-pill" title="החלף מטבע">${cur}</button>
+      <div class="budget-progress ${band}" aria-label="התקדמות תקציב">
+        <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+        <div class="pct" aria-hidden="true">${pct}%</div>
+      </div>
+    `;
+    bar.querySelector('#budgetSummaryTrigger')?.addEventListener('click', openCurrentBudgetSummary);
+    bar.querySelector('#budgetCurrencyPill')?.addEventListener('click', ()=>{
+      const order = ['ILS', 'USD', 'EUR'];
+      const currentIdx = Math.max(0, order.indexOf(cur));
+      const nextCur = order[(currentIdx + 1) % order.length];
+      setActiveCurrency(nextCur);
+      try{
+        const ref = FB.doc(db,'trips', state.current.id || state.currentTripId);
+        FB.updateDoc(ref, { baseCurrency: nextCur }).catch(()=>{});
+        state.current.baseCurrency = nextCur;
+      }catch(_){}
+      renderExpenseSummary(state.current);
+    });
     return;
   }
 
