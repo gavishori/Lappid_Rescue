@@ -1,24 +1,27 @@
-FLYMILY clean build
+FLYMILY mobile-fit build
 
 Included files:
 - index.html
 - style.css
 - firebase.js
 - app.js
+- mobile-auth.css
+- mobile-auth.js
 
-Changes in this clean build:
-- Removed previous-version helper files from the package.
-- Switched the app entry point to a single app.js file.
-- Exposed invalidateMap globally to fix window.invalidateMap runtime errors.
-- Added safe title fallbacks for expenses and journal rows so user-entered titles do not disappear.
-- Added clean overview desktop layout overrides so expense and journal rows render with consistent width and field order.
+Mobile adaptation performed:
+- Added a final mobile override layer at the end of style.css so it wins over earlier duplicated rules.
+- Locked the outer frame to the viewport and blocked horizontal overflow at html/body/app/container/content/tab/dialog/table levels.
+- Rebuilt mobile navigation into compact icon tabs to save width.
+- Converted list/table areas into mobile card-style layouts with wrapping text and clamped menus.
+- Reworked trip list, meta screen, budget, expenses, journal, map, share/import/export, and modal layouts for narrow screens.
+- Replaced wide action labels with compact icon actions where screen width is limited.
+- Preserved vertical scrolling only inside content areas or modal bodies when text is long.
+- Added a small mobile viewport hardening script in app.js that clamps dynamically rendered wide elements after renders/resizes.
 
+Validation:
+- app.js syntax checked with: node --check app.js
+- CSS brace balance checked after patching.
 
-Deep cleanup in this package:
-- Removed duplicate mobile compact CSS block.
-- Removed redundant share-duration event wiring.
-- Removed duplicate ensureExpenseCurrencyOption implementation.
-- Fixed RTL/LTR bidi rendering for date, time, amount, and currency cells.
-- Removed duplicate HTML id usage for logout buttons.
-- Preserved module entry structure: index.html -> firebase.js -> app.js.
-- JS syntax validated with node --check.
+Notes:
+- No Firebase configuration or business logic was changed.
+- The unused previous-version file "style - Copy.css" was not included in this clean package.

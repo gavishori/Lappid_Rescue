@@ -9200,3 +9200,48 @@ window.addEventListener('resize', ()=>{
     init();
   }
 })();
+
+/* ==========================================================
+   Mobile viewport hardening — no horizontal scroll.
+   Keeps the outer frame locked to the visual viewport and marks
+   any accidental wide node so CSS can compress it instead of
+   expanding the page.
+   ========================================================== */
+(function(){
+  function isMobileHardFit(){
+    return window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  }
+
+  function hardFitMobileViewport(){
+    if(!isMobileHardFit()) return;
+    try{
+      document.documentElement.style.overflowX = 'hidden';
+      document.body.style.overflowX = 'hidden';
+      document.body.classList.add('mobile-hard-fit');
+      const vw = Math.max(0, document.documentElement.clientWidth || window.innerWidth || 0);
+      const candidates = document.querySelectorAll('body, #previewRoot, .app, .container, .content, .sidebar, .tabview, .card, table, tbody, tr, td, dialog, .modal, .share-page, .share-grid, .map-toolbar, .leaflet-container');
+      candidates.forEach(function(el){
+        if(!el || !el.style) return;
+        el.style.maxWidth = el === document.body ? '100%' : '100vw';
+        el.style.minWidth = '0';
+        if(el.scrollWidth > vw + 1){ el.classList.add('mobile-overflow-clamped'); }
+      });
+    }catch(err){
+      console.warn('mobile hard fit failed', err);
+    }
+  }
+
+  window.__hardFitMobileViewport = hardFitMobileViewport;
+  document.addEventListener('DOMContentLoaded', hardFitMobileViewport);
+  window.addEventListener('resize', hardFitMobileViewport, { passive:true });
+  window.addEventListener('orientationchange', function(){ setTimeout(hardFitMobileViewport, 80); }, { passive:true });
+  window.addEventListener('pageshow', hardFitMobileViewport, { passive:true });
+  try{
+    const mo = new MutationObserver(function(){
+      if(isMobileHardFit()) requestAnimationFrame(hardFitMobileViewport);
+    });
+    document.addEventListener('DOMContentLoaded', function(){
+      try{ mo.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['style','class','hidden'] }); }catch(_){ }
+    });
+  }catch(_){ }
+})();
