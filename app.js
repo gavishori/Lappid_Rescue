@@ -9451,3 +9451,205 @@ window.addEventListener('resize', ()=>{
   window.addEventListener('resize', ()=>{ clampHorizontalOverflow(); syncModalFrame(); }, {passive:true});
   window.addEventListener('orientationchange', ()=>setTimeout(()=>{ clampHorizontalOverflow(); syncModalFrame(); }, 250), {passive:true});
 })();
+
+/* =========================================================
+   MOBILE HARD LOCK V3 — runtime guard and broken controls fix.
+   ========================================================= */
+(function(){
+  const MQL = () => window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+
+  function setViewportVars(){
+    const vv = window.visualViewport;
+    const w = Math.max(320, Math.floor(vv?.width || document.documentElement.clientWidth || window.innerWidth || 360));
+    const h = Math.max(480, Math.floor(vv?.height || document.documentElement.clientHeight || window.innerHeight || 640));
+    document.documentElement.style.setProperty('--fly-vw', w + 'px');
+    document.documentElement.style.setProperty('--fly-vh', h + 'px');
+  }
+
+  function hardNoHorizontal(){
+    if(!MQL()) return;
+    setViewportVars();
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+    document.body.style.maxWidth = '100%';
+    document.body.style.width = '100%';
+    if(window.scrollX) window.scrollTo(0, window.scrollY || 0);
+
+    const vw = Math.max(320, Math.floor(window.visualViewport?.width || document.documentElement.clientWidth || window.innerWidth || 360));
+    $$('body *').forEach(el=>{
+      if(!(el instanceof HTMLElement)) return;
+      if(el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
+      const cs = getComputedStyle(el);
+      if(cs.position === 'fixed' || el.tagName === 'DIALOG') return;
+      const r = el.getBoundingClientRect();
+      if(r.width > vw + 1 || r.left < -1 || r.right > vw + 1){
+        el.classList.add('mobile-overflow-clamped');
+      }
+    });
+  }
+
+  function hardenDialogs(){
+    if(!MQL()) return;
+    ['tripModal','expenseModal','journalModal','rowMenuModal','mobileSectionMenuDialog'].forEach(id=>{
+      const dlg = document.getElementById(id);
+      if(!dlg) return;
+      dlg.classList.add('mobile-fixed-frame');
+      dlg.style.maxWidth = 'calc(var(--fly-vw, 100vw) - 16px)';
+      dlg.style.width = 'calc(var(--fly-vw, 100vw) - 16px)';
+      dlg.style.overflowX = 'hidden';
+      const body = dlg.querySelector('.body');
+      if(body){
+        body.classList.add('mobile-modal-body-scroll');
+        body.style.overflowX = 'hidden';
+      }
+    });
+  }
+
+  function isHidden(row){
+    if(!row) return true;
+    return row.hidden || row.style.display === 'none' || getComputedStyle(row).display === 'none';
+  }
+
+  function notesRows(tbody){
+    if(!tbody) return [];
+    return $$('tr.exp-item', tbody).filter(r => r.querySelector('td.notes') || r.classList.contains('exp-details'));
+  }
+
+  function setDetailsCollapsed(tbodyId, buttonId, storageKey, collapsed){
+    const tbody = document.getElementById(tbodyId);
+    const btn = document.getElementById(buttonId);
+    notesRows(tbody).forEach(r=>{ r.style.display = collapsed ? 'none' : ''; r.hidden = false; });
+    if(btn) btn.textContent = collapsed ? 'פתח הכל' : 'צמצם הכל';
+    try{ localStorage.setItem(storageKey, collapsed ? '1' : '0'); }catch(_){ }
+  }
+
+  function currentDetailsCollapsed(tbodyId){
+    const rows = notesRows(document.getElementById(tbodyId));
+    return rows.length > 0 && rows.every(isHidden);
+  }
+
+  function overviewSetCollapsed(collapsed){
+    setDetailsCollapsed('tblAllTimeline', 'btnAllToggle', 'allDetailsCollapsed', collapsed);
+    const root = document.getElementById('view-overview');
+    if(root) root.classList.toggle('all-collapsed', collapsed);
+  }
+
+  function sortExpenses(){
+    try{
+      if(typeof toggleExpenseSort === 'function') return toggleExpenseSort();
+      state.expenseSort = (state.expenseSort === 'asc') ? 'desc' : 'asc';
+      if(state.current && typeof renderExpenses === 'function') renderExpenses(state.current, state.expenseSort);
+    }catch(e){ console.warn('expense sort failed', e); }
+  }
+  function sortJournal(){
+    try{
+      state.journalSort = (state.journalSort === 'asc') ? 'desc' : 'asc';
+      if(state.current && typeof renderJournal === 'function') renderJournal(state.current, state.journalSort);
+    }catch(e){ console.warn('journal sort failed', e); }
+  }
+  function sortOverview(){
+    try{
+      state.allSort = (state.allSort === 'asc') ? 'desc' : 'asc';
+      try{ localStorage.setItem('allSort', state.allSort); }catch(_){ }
+      if(state.current && typeof renderAllTimeline === 'function') renderAllTimeline(state.current, state.allSort);
+    }catch(e){ console.warn('overview sort failed', e); }
+  }
+
+  function installControlFixes(){
+    if(window.__mobileHardLockV3Controls) return;
+    window.__mobileHardLockV3Controls = true;
+    document.addEventListener('click', function(ev){
+      const hit = ev.target && ev.target.closest && ev.target.closest('#btnAllToggle,#btnToggleExpenseDetails,#btnToggleJournalDetails,#btnAllSort,#btnSortExpenses,#btnSortJournal');
+      if(!hit) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation && ev.stopImmediatePropagation();
+      if(hit.id === 'btnAllToggle') overviewSetCollapsed(!currentDetailsCollapsed('tblAllTimeline'));
+      else if(hit.id === 'btnToggleExpenseDetails') setDetailsCollapsed('tblExpenses','btnToggleExpenseDetails','expenseDetailsCollapsed', !currentDetailsCollapsed('tblExpenses'));
+      else if(hit.id === 'btnToggleJournalDetails') setDetailsCollapsed('tblJournal','btnToggleJournalDetails','journalDetailsCollapsed', !currentDetailsCollapsed('tblJournal'));
+      else if(hit.id === 'btnAllSort') sortOverview();
+      else if(hit.id === 'btnSortExpenses') sortExpenses();
+      else if(hit.id === 'btnSortJournal') sortJournal();
+      setTimeout(()=>{ applySavedCollapse(); hardNoHorizontal(); }, 60);
+      return false;
+    }, true);
+  }
+
+  function applySavedCollapse(){
+    try{ if(localStorage.getItem('allDetailsCollapsed') === '1') overviewSetCollapsed(true); }catch(_){ }
+    try{ if(localStorage.getItem('expenseDetailsCollapsed') === '1') setDetailsCollapsed('tblExpenses','btnToggleExpenseDetails','expenseDetailsCollapsed', true); }catch(_){ }
+    try{ if(localStorage.getItem('journalDetailsCollapsed') === '1') setDetailsCollapsed('tblJournal','btnToggleJournalDetails','journalDetailsCollapsed', true); }catch(_){ }
+  }
+
+  function enhanceInstantLoginAgain(){
+    // Face ID / password managers may fill fields without input events. This only submits once both fields have values.
+    const pairs = [
+      ['#lsEmail','#lsPass','#lsError','#loginScreen'],
+      ['#authEmail','#authPass','#authError','#authModal'],
+      ['#mEmail','#mPass','#mError','#mobileAuthOverlay']
+    ];
+    pairs.forEach(([emSel,pwSel,errSel,closeSel])=>{
+      const em = $(emSel), pw = $(pwSel);
+      if(!em || !pw || pw.dataset.instantV3 === '1') return;
+      pw.dataset.instantV3 = '1';
+      let inFlight = false, timer = 0, last = '';
+      const submit = async ()=>{
+        const email = (em.value||'').trim(), pass = pw.value||'';
+        if(!email || !pass || inFlight) return;
+        const key = email + '\u0000' + pass;
+        if(key === last) return;
+        last = key; inFlight = true;
+        try{
+          if(typeof FB !== 'undefined' && FB.signInWithEmailAndPassword){
+            await FB.signInWithEmailAndPassword(FB.auth, email, pass);
+          }else if(typeof signInWithEmailAndPassword === 'function'){
+            await signInWithEmailAndPassword(auth, email, pass);
+          }
+          const closer = $(closeSel);
+          if(closer?.tagName === 'DIALOG' && closer.open) closer.close();
+          if(closer?.id === 'mobileAuthOverlay') closer.style.display = 'none';
+        }catch(e){
+          last = '';
+          const err = $(errSel); if(err) err.textContent = (typeof xErr === 'function') ? xErr(e) : 'שם משתמש או סיסמה שגויים';
+        }finally{ inFlight = false; }
+      };
+      const schedule = ()=>{ clearTimeout(timer); timer = setTimeout(submit, 120); };
+      ['input','change','keyup','blur','animationstart'].forEach(type=>{
+        em.addEventListener(type, schedule, {passive:true});
+        pw.addEventListener(type, schedule, {passive:true});
+      });
+      let scans = 0;
+      const scan = setInterval(()=>{
+        scans++;
+        if((em.value||'').trim() && (pw.value||'')) schedule();
+        if(scans > 80 || document.body.dataset.authstate === 'in') clearInterval(scan);
+      }, 250);
+    });
+  }
+
+  function boot(){
+    setViewportVars();
+    enhanceInstantLoginAgain();
+    hardNoHorizontal();
+    hardenDialogs();
+    enhanceInstantLoginAgain();
+    hardNoHorizontal();
+    hardenDialogs();
+    installControlFixes();
+    applySavedCollapse();
+    setTimeout(()=>{ setViewportVars(); hardenDialogs(); hardNoHorizontal(); applySavedCollapse(); }, 200);
+    setTimeout(()=>{ setViewportVars(); hardenDialogs(); hardNoHorizontal(); applySavedCollapse(); }, 900);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  window.addEventListener('resize', boot, {passive:true});
+  window.addEventListener('orientationchange', ()=>setTimeout(boot, 250), {passive:true});
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize', boot, {passive:true});
+    visualViewport.addEventListener('scroll', ()=>{ if(window.scrollX) window.scrollTo(0, window.scrollY || 0); }, {passive:true});
+  }
+  new MutationObserver(()=>{ if(MQL()){ hardenDialogs(); hardNoHorizontal(); applySavedCollapse(); } }).observe(document.documentElement, {subtree:true, childList:true, attributes:true, attributeFilter:['open','style','class','hidden']});
+})();
