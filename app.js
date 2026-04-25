@@ -6345,7 +6345,7 @@ function __textQualityScore(text){
   const s = String(text || '');
   const hebrew = (s.match(/[\u0590-\u05FF]/g) || []).length;
   const printable = (s.match(/[A-Za-z0-9 .,;:!?\-_/()[\]{}"'@\n\r]/g) || []).length;
-  const suspicious = (s.match(/(?:Ã.|×.|�)/g) || []).length;
+  const suspicious = (s.match(/(?:Ã.|×.| )/g) || []).length;
   return (hebrew * 4) + (printable * 0.05) - (suspicious * 6);
 }
 
@@ -9629,27 +9629,53 @@ window.addEventListener('resize', ()=>{
     });
   }
 
-  function boot(){
-    setViewportVars();
-    enhanceInstantLoginAgain();
-    hardNoHorizontal();
-    hardenDialogs();
-    enhanceInstantLoginAgain();
-    hardNoHorizontal();
-    hardenDialogs();
-    installControlFixes();
-    applySavedCollapse();
-    setTimeout(()=>{ setViewportVars(); hardenDialogs(); hardNoHorizontal(); applySavedCollapse(); }, 200);
-    setTimeout(()=>{ setViewportVars(); hardenDialogs(); hardNoHorizontal(); applySavedCollapse(); }, 900);
+ function boot() {
+    // 1. הגדרת משתני Viewport למניעת קפיצות של גובה המסך (vh)
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+    // 2. פונקציית נעילה אופקית - מחזירה את המסך ל-0 אם הוא מנסה לזוז הצידה
+    const lockWidth = () => {
+      document.body.style.width = window.innerWidth + 'px';
+      if (window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+    };
+    
+    // מאזינים לשינויי גודל, סיבוב מסך וגלילה
+    window.addEventListener('resize', lockWidth, {passive: true});
+    window.addEventListener('scroll', () => {
+      if (window.scrollX > 0) window.scrollTo(0, window.scrollY);
+    }, {passive: true});
+    
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', lockWidth, {passive: true});
+    }
+
+    lockWidth(); // הפעלה ראשונית של הנעילה
+    
+    // 3. הפעלת הלוגיקה של האפליקציה (בדיקה שפונקציות קיימות לפני קריאה)
+    if (typeof enhanceInstantLoginAgain === 'function') enhanceInstantLoginAgain();
+    if (typeof applySavedCollapse === 'function') applySavedCollapse();
+    if (typeof hardenDialogs === 'function') hardenDialogs();
+    if (typeof installControlFixes === 'function') installControlFixes();
+    
+    // תיקון השהיה קצר לוודא שהכל התיישב במקום
+    setTimeout(lockWidth, 200);
   }
 
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-  window.addEventListener('resize', boot, {passive:true});
-  window.addEventListener('orientationchange', ()=>setTimeout(boot, 250), {passive:true});
-  if(window.visualViewport){
-    visualViewport.addEventListener('resize', boot, {passive:true});
-    visualViewport.addEventListener('scroll', ()=>{ if(window.scrollX) window.scrollTo(0, window.scrollY || 0); }, {passive:true});
+  // אתחול האפליקציה ברגע שהדף מוכן
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
-  new MutationObserver(()=>{ if(MQL()){ hardenDialogs(); hardNoHorizontal(); applySavedCollapse(); } }).observe(document.documentElement, {subtree:true, childList:true, attributes:true, attributeFilter:['open','style','class','hidden']});
-})();
+
+  // מאזין לשינויים ב-DOM (כדי לוודא שהנעילה נשמרת גם כשנוספים אלמנטים)
+  const mobileObserver = new MutationObserver(() => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    document.body.style.width = window.innerWidth + 'px';
+  });
+  
+  mobileObserver.observe(document.documentElement, { subtree: true, childList: true });
+
+})(); // סגירת ה-Closure של הקובץ (וודא שיש ( בקצה העליון של הקובץ)
