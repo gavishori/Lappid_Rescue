@@ -9,11 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  
   <link rel="stylesheet" href="./style.css" />
   <link rel="stylesheet" href="./mobile-auth.css" />
-  
-  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAYAAADL1t+KAAAQAElEQVR4AexdB4BdRdX+ZuaW99723XSS0KWEDtIUBFERFVEUVEABFREURBAEFQ2CYEFQbIAiRWpoIkiHhN5CJ7SE9L59X71t5v/mbRZDlfwSSjKXd97MnXLmzDd3zzdn">
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAYAAADL1t+KAAAQAEl">
 </head>
 <body data-authstate="out">
 
@@ -22,49 +20,51 @@
       <div class="header-content">
         <h1>FLYMILY</h1>
         <div class="header-actions">
+          <button id="btnWhatsappShare" class="chip-btn ghost" title="שיתוף בוואטסאפ">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WA" style="width:20px;">
+          </button>
           <button id="btnLogin" class="btn-login-mobile">התחבר</button>
         </div>
       </div>
     </header>
 
     <main id="mainContent">
-      </main>
+      <section id="tripSelectorSection" class="card" style="margin: 10px;">
+        <div style="display: flex; gap: 10px; flex-direction: column;">
+          <select id="activeTripSelect" class="input main-select"></select>
+          <div class="quick-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div id="quickTotal" class="stat-box"></div>
+            <div id="quickDaily" class="stat-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <div id="dynamicLists"></div>
+    </main>
+
+    <div id="mobileActions" class="fab-container">
+      <button id="btnMobileAddExp" class="fab primary">+</button>
+    </div>
   </div>
 
   <dialog id="expenseModal" class="modal">
     <div class="header">
-      <h3>הוצאה חדשה</h3>
-      <button class="chip-btn ghost" id="expCancelTop" type="button">✕</button>
+      <h3>💰 הוצאה חדשה</h3>
+      <button class="chip-btn ghost" id="expCancelTop">✕</button>
     </div>
     <div class="body">
+      <div class="field-row"><span>📅</span><input type="date" id="expDate"></div>
+      <div class="field-row"><span>📝</span><input type="text" id="expDesc" placeholder="מה קנינו?"></div>
       <div class="field-row">
-        <span>📅</span>
-        <input type="date" id="expDate">
-      </div>
-      <div class="field-row">
-        <span>📝</span>
-        <input type="text" id="expDesc" placeholder="תיאור ההוצאה">
-      </div>
-      <div class="field-row">
-        <span>💰</span>
-        <div style="display: flex; gap: 8px;">
+        <span>💵</span>
+        <div style="display: flex; gap: 5px; width: 100%;">
           <input type="number" id="expAmount" inputmode="decimal" placeholder="סכום" style="flex: 1;">
-          <select id="expCurrency"></select>
+          <select id="expCurrency" style="width: 80px;"></select>
         </div>
       </div>
-      <div class="field-row">
-        <span>📂</span>
-        <select id="expCat"></select>
-      </div>
-      <div class="field-row">
-        <span>💳</span>
-        <select id="expMethod"></select>
-      </div>
-      <div class="field-row">
-        <span>📍</span>
-        <button type="button" id="btnEditExpLocation" class="btn secondary">בחר מיקום</button>
-      </div>
-      <div id="expLocationPreview" class="location-preview"></div>
+      <div class="field-row"><span>📂</span><select id="expCat"></select></div>
+      <div class="field-row"><span>💳</span><select id="expMethod"></select></div>
+      <div class="field-row"><span>📍</span><button id="btnEditExpLocation" class="btn secondary">מיקום</button></div>
     </div>
     <div class="footer">
       <button id="expSave" class="btn primary">שמור</button>
@@ -74,23 +74,13 @@
 
   <dialog id="journalModal" class="modal">
     <div class="header">
-      <h3>יומן מסע</h3>
-      <button class="chip-btn ghost" id="jrCancelTop" type="button">✕</button>
+      <h3>✍️ יומן מסע</h3>
+      <button class="chip-btn ghost" id="jrCancelTop">✕</button>
     </div>
     <div class="body">
-      <div class="field-row">
-        <span>📅</span>
-        <input type="date" id="jrDate">
-      </div>
-      <div class="field-row">
-        <span>✍️</span>
-        <textarea id="jrText" placeholder="מה קרה היום?" rows="5"></textarea>
-      </div>
-      <div class="field-row">
-        <span>📍</span>
-        <button type="button" id="btnEditJrLocation" class="btn secondary">הוסף מיקום</button>
-      </div>
-      <div id="jrLocationPreview" class="location-preview"></div>
+      <div class="field-row"><span>📅</span><input type="date" id="jrDate"></div>
+      <div class="field-row"><span>📝</span><textarea id="jrText" rows="4"></textarea></div>
+      <div class="field-row"><span>📍</span><button id="btnEditJrLocation" class="btn secondary">הוסף מיקום</button></div>
     </div>
     <div class="footer">
       <button id="jrSave" class="btn primary">שמור</button>
@@ -99,19 +89,9 @@
   </dialog>
 
   <dialog id="filterDialog" class="modal">
-    <div class="header">
-      <h3>סינון הוצאות</h3>
-      <button class="chip-btn ghost" id="filterCancelTop" type="button">✕</button>
-    </div>
+    <div class="header"><h3>🔍 סינון</h3><button id="filterCancelTop" class="chip-btn ghost">✕</button></div>
     <div class="body">
-      <div class="field-row">
-        <span>🔍</span>
-        <input type="text" id="filterText" placeholder="חיפוש חופשי...">
-      </div>
-      <div class="field-row">
-        <span>📂</span>
-        <select id="filterCat"></select>
-      </div>
+      <div class="field-row"><span>📂</span><select id="filterCat"></select></div>
     </div>
     <div class="footer">
       <button id="filterApply" class="btn primary">סנן</button>
@@ -120,27 +100,16 @@
   </dialog>
 
   <dialog id="breakdownDialog" class="modal">
-    <div class="header">
-      <h3>פילוח הוצאות</h3>
-      <button class="chip-btn ghost" id="closeBreakdownDlg" type="button">סגור</button>
-    </div>
-    <div class="body">
-      <div id="categoryBreakdownDialog"></div>
-    </div>
+    <div class="header"><h3>📊 פילוח</h3><button id="closeBreakdownDlg" class="chip-btn ghost">✕</button></div>
+    <div class="body"><div id="categoryBreakdownDialog"></div></div>
   </dialog>
 
   <div id="mobileAuthOverlay" aria-hidden="true">
     <div id="mobileAuthCard">
-      <header>כניסה למערכת</header>
+      <header>כניסה</header>
       <div class="body">
-        <div class="row">
-          <label for="mEmail">אימייל</label>
-          <input id="mEmail" type="email" placeholder="you@example.com">
-        </div>
-        <div class="row">
-          <label for="mPass">סיסמה</label>
-          <input id="mPass" type="password" placeholder="••••••••">
-        </div>
+        <div class="row"><label>אימייל</label><input id="mEmail" type="email"></div>
+        <div class="row"><label>סיסמה</label><input id="mPass" type="password"></div>
         <div id="mError"></div>
         <div class="actions">
           <button id="mBtnLogin" class="btn primary">התחבר</button>
@@ -150,7 +119,7 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module" src="./firebase.js"></script>
   <script src="./app.js"></script>
   <script src="./mobile-auth.js"></script>
