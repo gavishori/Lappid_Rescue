@@ -504,12 +504,9 @@ function wireHeaderControls(){
     if(loggedIn){
       target.classList.add('is-authenticated', 'icon-only');
       target.innerHTML = '<span aria-hidden="true">⇦</span>';
-      target.setAttribute('aria-label', 'חשבון מחובר');
-      target.title = 'חשבון מחובר';
-      target.addEventListener('click', (ev)=>{
-        ev.preventDefault();
-        openAccountMenu();
-      }, {passive:false});
+      target.setAttribute('aria-label', 'יציאה');
+      target.title = 'יציאה';
+      target.addEventListener('click', performPrimaryLogout, {passive:false});
     } else {
       target.textContent = 'התחברות';
       target.setAttribute('aria-label', 'התחברות');
@@ -538,9 +535,9 @@ function wireHeaderControls(){
     if(loggedIn){
       target.classList.add('is-authenticated', 'icon-only');
       target.innerHTML = '<span aria-hidden="true">&#10140;</span>';
-      target.setAttribute('aria-label', 'חשבון מחובר');
-      target.title = 'חשבון מחובר';
-      bindTap(target, ()=> openAccountMenu(), 'authTapWired');
+      target.setAttribute('aria-label', 'יציאה');
+      target.title = 'יציאה';
+      bindTap(target, performPrimaryLogout, 'authTapWired');
     } else {
       target.textContent = 'התחברות';
       target.setAttribute('aria-label', 'התחברות');
@@ -592,9 +589,9 @@ function finalMobileAuthSwap(loggedIn, email=''){
   if(loggedIn){
     btn.classList.add('icon-only', 'is-authenticated');
     btn.innerHTML = '<span aria-hidden="true">&#10140;</span>';
-    btn.setAttribute('aria-label', 'חשבון מחובר');
-    btn.title = 'חשבון מחובר';
-    bindTap(btn, ()=> openAccountMenu(), 'finalAuthTapWired');
+    btn.setAttribute('aria-label', 'יציאה');
+    btn.title = 'יציאה';
+    bindTap(btn, performPrimaryLogout, 'finalAuthTapWired');
   }else{
     btn.textContent = 'התחברות';
     btn.setAttribute('aria-label', 'התחברות');
@@ -854,8 +851,8 @@ function syncJournalSelectionUi(){
       add('הצג הוצאות', ()=> setOverviewSelectValue('expenses'));
       add('נתוני נסיעה', ()=> setOverviewSelectValue('meta'));
       add('ייבוא / ייצוא / שיתוף', ()=> setOverviewSelectValue('share'));
-      add('איפה ביקרתי', ()=> triggerButton('btnToggleVisited'));
-      add('איפה ביזבזתי', ()=> triggerButton('btnToggleSpent'));
+      add('איפה טיילתי', ()=> triggerButton('btnToggleVisited'));
+      add('איפה בזבזתי', ()=> triggerButton('btnToggleSpent'));
       add('GPX', ()=> triggerButton('btnToggleGPX'));
     } else if(currentSection === 'share'){
       title.textContent = 'ייבוא / ייצוא / שיתוף';
@@ -1822,29 +1819,8 @@ const jourEntries = _sortByCreated(Object.entries(state._lastTripObj.journal||{}
 
     state.maps.big.addLayer(expensesLG);
     state.maps.big.addLayer(journalLG);
-    document.getElementById('btnToggleSpent')?.classList.add('active');
-    document.getElementById('btnToggleVisited')?.classList.add('active');
-    // --- Map toolbar: toggle visibility of layers + button state ---
-    const btnSpent   = document.getElementById('btnToggleSpent');
-    const btnVisited = document.getElementById('btnToggleVisited');
-
-    function applyMapToolbarVisibility(){
-      if(btnSpent && btnSpent.classList.contains('active')){
-        if(!state.maps.big.hasLayer(expensesLG)) state.maps.big.addLayer(expensesLG);
-      } else {
-        if(state.maps.big.hasLayer(expensesLG)) state.maps.big.removeLayer(expensesLG);
-      }
-      if(btnVisited && btnVisited.classList.contains('active')){
-        if(!state.maps.big.hasLayer(journalLG)) state.maps.big.addLayer(journalLG);
-      } else {
-        if(state.maps.big.hasLayer(journalLG)) state.maps.big.removeLayer(journalLG);
-      }
-      invalidateMap(state.maps.big);
-    }
-    btnSpent?.addEventListener('click', ()=>{ btnSpent.classList.toggle('active'); applyMapToolbarVisibility(); });
-    btnVisited?.addEventListener('click', ()=>{ btnVisited.classList.toggle('active'); applyMapToolbarVisibility(); });
-    // ensure initial visibility matches default state
-    applyMapToolbarVisibility();
+    __wireMapToolbarButtons();
+    __applyBigMapLayerVisibility();
     
 
     invalidateMap(state.maps.big);
@@ -2343,6 +2319,36 @@ function normalizeTripSummaryDoc(doc){
   return buildTripSummary(raw);
 }
 
+function getSearchableTrips(){
+  const uid = state.user?.uid;
+  return (state.trips || []).map(trip => {
+    const full = loadTripCache(uid, trip?.id);
+    return full ? { ...trip, ...full, id: trip.id } : trip;
+  });
+}
+
+async function hydrateTripsForSearch(expectedSearch){
+  if(state._tripSearchHydrating) return;
+  const ids = (state.trips || []).map(t => t?.id).filter(Boolean);
+  if(!ids.length) return;
+  state._tripSearchHydrating = true;
+  try{
+    await Promise.all(ids.map(async (id) => {
+      try{
+        const snap = await FB.getDoc(FB.doc(db, 'trips', id));
+        if(!snap.exists()) return;
+        saveTripCache(state.user?.uid, normalizeTripShape({ id: snap.id, ...snap.data() }));
+      }catch(_){}
+    }));
+  }finally{
+    state._tripSearchHydrating = false;
+    const currentSearch = ($('#searchTrips')?.value || '').trim().toLowerCase();
+    if(expectedSearch && currentSearch === expectedSearch){
+      renderTripList();
+    }
+  }
+}
+
 function scheduleTripListBackfill(trips){
   if(__tripListBackfillTimer){
     clearTimeout(__tripListBackfillTimer);
@@ -2457,9 +2463,14 @@ async function renderTripList(){
   let s = null;
   if(search){
     s = search.toLowerCase();
-    items = items.map(t=> ({...t, __match: matchInfo(t, s)}))
+    const searchTrips = getSearchableTrips();
+    items = searchTrips.map(t=> ({...t, __match: matchInfo(t, s)}))
                  .filter(t=> t.__match.hit)
                  .sort((a,b)=> b.__match.score - a.__match.score);
+    const hasFullDataInCache = searchTrips.some(t => Object.keys(t?.expenses || {}).length || Object.keys(t?.journal || {}).length);
+    if(!hasFullDataInCache || (!items.length && !state._tripSearchHydrating)){
+      hydrateTripsForSearch(s);
+    }
   }
   state._tripListRenderToken = (state._tripListRenderToken || 0) + 1;
   const renderToken = state._tripListRenderToken;
@@ -2469,7 +2480,7 @@ async function renderTripList(){
   } else {
     const buildTripMarkup = (chunk)=> chunk.map(t=> state.viewMode==='grid' ? cardHTML(t, s) : rowHTML(t, s)).join('');
     const bindTripListInteractions = (root)=>{
-      root.querySelectorAll('[data-trip]').forEach(el=>{
+      root.querySelectorAll('.trip-card[data-trip], .trip-row[data-trip]').forEach(el=>{
         if(el.dataset.tripBound === '1') return;
         el.dataset.tripBound = '1';
         el.addEventListener('click', ()=> openTrip(el.dataset.trip));
@@ -2538,7 +2549,7 @@ function cardHTML(t, s){
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-more-vertical"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
       </button>
     </div>
-    ${s ? `<div class="muted" style="margin-top:6px;width:100%">התאמות: ${where.map(w=>`<span class="pill hl-pill" data-trip="${t.id}" data-term="${s}" data-type="${w.type}" data-item="${w.itemId}">${w.label}</span>`).join(' ')}</div>` : ''}
+    ${s ? `<div class="trip-search-matches"><div class="trip-search-title">התאמות בנסיעה</div><div class="trip-match-list">${where.map(w=>`<span class="pill hl-pill trip-match-pill" data-trip="${t.id}" data-term="${s}" data-type="${w.type}" data-item="${w.itemId || ''}" data-field="${w.field || ''}">${w.label}</span>`).join(' ')}</div></div>` : ''}
   </div>`;
 }
 function rowHTML(t, s){
@@ -2548,12 +2559,12 @@ function rowHTML(t, s){
     <div class="row-main-content">
       <strong>${esc(t.destination||'ללא יעד')}</strong>
       <span class="muted">${period}</span>
-      <div class="pill types-pill" data-trip="${t.id}" data-keyword="${esc((t.types||'').toString())}">${esc((t.types||'').toString())}</div>
+    <div class="pill types-pill" data-trip="${t.id}" data-keyword="${esc((t.types||'').toString())}">${esc((t.types||'').toString())}</div>
     </div>
     <button class="menu-btn" data-id="${t.id}" aria-label="פעולות">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-more-vertical"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
     </button>
-    ${s ? `<div class="muted" style="grid-column:1/-1;margin-top:4px">התאמות: ${where.map(w=>`<span class="pill hl-pill" data-trip="${t.id}" data-term="${s}" data-type="${w.type}" data-item="${w.itemId}">${w.label}</span>`).join(' ')}</div>` : ''}
+    ${s ? `<div class="trip-search-matches trip-search-matches-inline"><div class="trip-search-title">התאמות בנסיעה</div><div class="trip-match-list">${where.map(w=>`<span class="pill hl-pill trip-match-pill" data-trip="${t.id}" data-term="${s}" data-type="${w.type}" data-item="${w.itemId || ''}" data-field="${w.field || ''}">${w.label}</span>`).join(' ')}</div></div>` : ''}
   </div>`;
 }
 
@@ -3247,6 +3258,9 @@ function appendExpenseRowToTimeline(body, e){
   tr1.className = 'exp-item';
   tr1.dataset.kind = 'expense';
   tr1.dataset.mobileLayout = 'expense-two-line';
+  tr1.dataset.itemType = 'expense';
+  tr1.dataset.itemId = String(e.id || '');
+  tr1.dataset.itemRole = 'main';
   tr1.innerHTML = `
     <td class="cell header date">${bidiWrap(d.format('DD/MM/YYYY'))}</td>
     <td class="cell header time"></td>
@@ -3257,6 +3271,9 @@ function appendExpenseRowToTimeline(body, e){
   `;
   const tr2 = document.createElement('tr');
   tr2.className = 'exp-item exp-details';
+  tr2.dataset.itemType = 'expense';
+  tr2.dataset.itemId = String(e.id || '');
+  tr2.dataset.itemRole = 'detail';
   tr2.innerHTML = `<td class="cell notes" colspan="6">${desc}</td>`;
   if(isMobileViewport?.()) tr2.hidden = true;
   body.appendChild(tr1); body.appendChild(tr2);
@@ -3278,6 +3295,9 @@ function appendJournalRowToTimeline(body, j, mapIndex){
   tr1.className = 'exp-item';
   tr1.dataset.kind = 'journal';
   tr1.dataset.mobileLayout = 'journal-card';
+  tr1.dataset.itemType = 'journal';
+  tr1.dataset.itemId = String(j.id || '');
+  tr1.dataset.itemRole = 'main';
   tr1.innerHTML = `
     ${selectionOn ? `<td class="cell select-cell"><input type="checkbox" class="jr-select" data-id="${esc(j.id)}" ${checkedAttr}></td>` : ''}
     <td class="cell header date">${bidiWrap(d.format('DD/MM/YYYY'))}</td>
@@ -3288,6 +3308,9 @@ function appendJournalRowToTimeline(body, j, mapIndex){
   `;
   const tr2 = document.createElement('tr');
   tr2.className = 'exp-item exp-details';
+  tr2.dataset.itemType = 'journal';
+  tr2.dataset.itemId = String(j.id || '');
+  tr2.dataset.itemRole = 'detail';
   tr2.innerHTML = `<td class="cell notes" colspan="${selectionOn ? 7 : 6}">${text}</td>`;
   if(isMobileViewport?.()) tr2.hidden = true;
   body.appendChild(tr1); body.appendChild(tr2);
@@ -3738,6 +3761,7 @@ $('#lsReset').addEventListener('click', async ()=>{
 (function(){
   const $ = (sel)=>document.querySelector(sel);
   const isMobileViewport = ()=> /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || window.innerWidth <= 820;
+  let __prefillAutoLoginTried = false;
 
   async function doLogin(emailSel, passSel, errSel){
     const email = $(emailSel)?.value?.trim();
@@ -3799,6 +3823,19 @@ $('#lsReset').addEventListener('click', async ()=>{
     });
   });
 
+  function tryAutoLoginIfPrefilled(){
+    if(__prefillAutoLoginTried) return;
+    const email = $('#lsEmail')?.value?.trim();
+    const pass = $('#lsPass')?.value;
+    if(!email || !pass) return;
+    __prefillAutoLoginTried = true;
+    doLogin('#lsEmail', '#lsPass', '#lsError');
+  }
+
+  [80, 350, 900].forEach((delay)=>{
+    setTimeout(tryAutoLoginIfPrefilled, delay);
+  });
+
   window.__isMobileViewport = isMobileViewport;
 })();
 
@@ -3816,45 +3853,126 @@ function snippet(text, s, len=60){
 }
 function matchInfo(t, s){
   let score = 0, where = [];
-  const dst = (t.destination||''); if(dst.toLowerCase().includes(s)){ score+=5; where.push({label:`<span class="match-source">יעד:</span> ${snippet(dst,s)}`, type:'meta', itemId:null}); }
-  const types = (Array.isArray(t.types)? t.types.join(', '): (t.types||'')); if(types.toLowerCase().includes(s)){ score+=2; where.push({label:`<span class="match-source">סוגים:</span> ${snippet(types,s)}`, type:'meta', itemId:null}); }
-  const people = (Array.isArray(t.people)? t.people.join(', '): (t.people||'')); if(people.toLowerCase().includes(s)){ score+=1; where.push({label:`<span class="match-source">משתתפים:</span> ${snippet(people,s)}`, type:'meta', itemId:null}); }
+  const dst = (t.destination||''); if(dst.toLowerCase().includes(s)){ score+=5; where.push({label:`<span class="match-source">יעד:</span> ${snippet(dst,s)}`, type:'meta', field:'destination', itemId:null}); }
+  const types = (Array.isArray(t.types)? t.types.join(', '): (t.types||'')); if(types.toLowerCase().includes(s)){ score+=2; where.push({label:`<span class="match-source">סוגים:</span> ${snippet(types,s)}`, type:'meta', field:'types', itemId:null}); }
+  const people = (Array.isArray(t.people)? t.people.join(', '): (t.people||'')); if(people.toLowerCase().includes(s)){ score+=1; where.push({label:`<span class="match-source">משתתפים:</span> ${snippet(people,s)}`, type:'meta', field:'people', itemId:null}); }
   const ex = Object.entries(t.expenses||{}); let exHits = 0; ex.forEach(([id, e])=>{ if((e.desc||'').toLowerCase().includes(s) || (e.category||'').toLowerCase().includes(s)){ exHits++; where.push({label:`<span class="match-source">הוצאות:</span> ${snippet(e.desc||e.category||'', s)}`, type:'expense', itemId:id});} });
   if(exHits) score += Math.min(3, exHits);
   const jr = Object.entries(t.journal||{}); let jrHits = 0; jr.forEach(([id, j])=>{ if((j.text||'').toLowerCase().includes(s) || (j.placeName||'').toLowerCase().includes(s)){ jrHits++; where.push({label:`<span class="match-source">יומן:</span> ${snippet(j.text||j.placeName||'', s)}`, type:'journal', itemId:id});} });
   if(jrHits) score += Math.min(3, jrHits);
   return { hit: score>0, score, where };
 }
-// Add the new function to highlight and scroll to the element
-function highlightAndScroll(element, s){
-  if(!element) return;
-  const text = element.innerHTML;
-  element.innerHTML = text.replace(new RegExp(`(${s})`, 'gi'), '<mark>$1</mark>');
-  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+function flashElement(el, ms = 2400){
+  if(!el) return;
+  el.classList.add('flash-green');
+  setTimeout(()=> el.classList.remove('flash-green'), ms);
 }
 
-function searchAndNavigate(tripId, query, type, itemId){
-  openTrip(tripId).then(()=>{
-    if(type === 'expense'){
-      // "הוצאות" ו"יומן" הוסרו מהטאבים; הכל מופיע ב"הצג הכל"
-      document.querySelector('#tabs [data-tab="overview"]')?.click();
-      setTimeout(()=>{
-        const cont = document.querySelector(`#view-overview`) || document.querySelector(`#tblAllTimeline`);
-        if(cont) highlightAllInContainer(cont, query);
-      }, 300);
-    } else if(type === 'journal'){
-      document.querySelector('#tabs [data-tab="overview"]')?.click();
-      setTimeout(()=>{
-        const cont = document.querySelector(`#view-overview`) || document.querySelector(`#tblAllTimeline`);
-        if(cont) highlightAllInContainer(cont, query);
-      }, 300);
-    } else if (type === 'meta') {
-      document.querySelector('#tabs [data-tab="meta"]')?.click();
-      setTimeout(()=>{
-        const cont = document.querySelector('#view-meta') || document.querySelector('#view-meta .dest-col');
-        if(cont) highlightAllInContainer(cont, query);
-      }, 300);
+function focusInputMatch(el, query){
+  if(!el) return false;
+  const value = String(el.value || '');
+  const q = String(query || '').toLowerCase();
+  const idx = value.toLowerCase().indexOf(q);
+  flashElement(el);
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
+  try{ el.focus({ preventScroll:true }); }catch(_){ try{ el.focus(); }catch(__){} }
+  if(idx >= 0 && typeof el.setSelectionRange === 'function'){
+    try{ el.setSelectionRange(idx, idx + String(query || '').length); }catch(_){}
+    return true;
+  }
+  return idx >= 0;
+}
+
+function focusMetaMatch(field, query){
+  document.querySelector('#tabs [data-tab="meta"]')?.click();
+  setTimeout(()=>{
+    if(field === 'destination'){
+      focusInputMatch(document.getElementById('metaDestination'), query);
+      return;
     }
+    if(field === 'people'){
+      focusInputMatch(document.getElementById('metaPeople'), query);
+      return;
+    }
+    if(field === 'types'){
+      const chips = Array.from(document.querySelectorAll('#view-meta .metaType'));
+      const hits = chips.filter(btn => (btn.textContent || '').toLowerCase().includes(String(query || '').toLowerCase()));
+      const first = hits[0] || chips[0];
+      if(first){
+        hits.forEach(btn => flashElement(btn));
+        first.scrollIntoView({ behavior:'smooth', block:'center', inline:'nearest' });
+      }
+      return;
+    }
+    const cont = document.querySelector('#view-meta');
+    if(cont) highlightAllInContainer(cont, query);
+  }, 260);
+}
+
+function findTimelineMatchCells(type, itemId){
+  const main = document.querySelector(`#tblAllTimeline tr[data-item-type="${type}"][data-item-id="${itemId}"][data-item-role="main"]`);
+  const detail = document.querySelector(`#tblAllTimeline tr[data-item-type="${type}"][data-item-id="${itemId}"][data-item-role="detail"]`);
+  if(detail){
+    detail.hidden = false;
+    detail.classList.add('force-open');
+  }
+  if(main) main.classList.add('force-open');
+  const cells = [];
+  if(type === 'expense' && main){
+    cells.push(...main.querySelectorAll('.title, .category'));
+  }
+  if(type === 'journal' && main){
+    cells.push(...main.querySelectorAll('.location'));
+  }
+  if(detail){
+    const notes = detail.querySelector('.notes');
+    if(notes) cells.push(notes);
+  }
+  return { main, detail, cells };
+}
+
+function focusTimelineMatch(type, itemId, query){
+  document.querySelector('#tabs [data-tab="overview"]')?.click();
+  try{
+    state.overviewMode = 'all';
+    localStorage.setItem('overviewMode', 'all');
+    if(state.current) renderAllTimeline(state.current, state.allSort || 'desc');
+  }catch(_){}
+  const attemptFocus = (triesLeft = 8)=>{
+    const { main, detail, cells } = findTimelineMatchCells(type, itemId);
+    if(!main && triesLeft > 0){
+      return setTimeout(()=> attemptFocus(triesLeft - 1), 120);
+    }
+    const body = document.getElementById('tblAllTimeline');
+    if(body){
+      body.querySelectorAll('tr.exp-details.force-open').forEach(tr=>{
+        if(String(tr.dataset.itemId) !== String(itemId)) tr.classList.remove('force-open');
+      });
+      body.querySelectorAll('tr.exp-item.force-open').forEach(tr=>{
+        if(String(tr.dataset.itemId) !== String(itemId)) tr.classList.remove('force-open');
+      });
+    }
+    let hit = null;
+    cells.forEach(cell => {
+      const found = highlightAllInContainer(cell, query);
+      if(!hit && found) hit = found;
+    });
+    const anchor = hit || detail?.querySelector('.notes') || detail || main;
+    if(anchor) anchor.scrollIntoView({ behavior:'smooth', block:'center' });
+    flashElement(main);
+    flashElement(detail);
+  };
+  setTimeout(()=> attemptFocus(), 260);
+}
+
+function searchAndNavigate(tripId, query, type, itemId, field){
+  openTrip(tripId).then(()=>{
+    if(type === 'expense' || type === 'journal'){
+      focusTimelineMatch(type, itemId, query);
+      return;
+    }
+    focusMetaMatch(field, query);
   });
 }
 
@@ -4215,12 +4333,25 @@ function loadLastLocation(){
     return d;
   }catch(_){ return null; }
 }
+function updateLocationButtonLabel(kind, name){
+  try{
+    const buttonId = kind === 'journal' ? 'btnEditJrLocation' : 'btnEditExpLocation';
+    const btn = document.getElementById(buttonId);
+    if(!btn) return;
+    const label = btn.querySelector('.journal-location-trigger-label');
+    const text = String(name || '').trim() || 'מיקום / עריכה';
+    if(label) label.textContent = text;
+    btn.title = text;
+    btn.setAttribute('aria-label', text);
+    btn.classList.toggle('has-location-name', Boolean(String(name || '').trim()));
+  }catch(_){ }
+}
 function updateExpLocationPreview(){
   try{
     const prev = document.getElementById('expLocationPreview');
-    if(!prev) return;
     const name = (document.getElementById('expLocationName')?.value || '').trim();
-    prev.textContent = name ? name : 'מיקום נשמר אוטומטית';
+    if(prev) prev.textContent = name ? name : 'מיקום נשמר אוטומטית';
+    updateLocationButtonLabel('expense', name);
   }catch(_){ }
 }
 async function setExpenseLocation(lat, lng, name, opts){
@@ -4236,9 +4367,9 @@ async function setExpenseLocation(lat, lng, name, opts){
 function updateJrLocationPreview(){
   try{
     const prev = document.getElementById('jrLocationPreview');
-    if(!prev) return;
     const name = (document.getElementById('jrPlaceName')?.value || '').trim();
-    prev.textContent = name ? name : 'מיקום נשמר אוטומטית';
+    if(prev) prev.textContent = name ? name : 'מיקום נשמר אוטומטית';
+    updateLocationButtonLabel('journal', name);
   }catch(_){ }
 }
 async function setJournalLocation(lat, lng, name, opts){
@@ -4511,7 +4642,7 @@ const usStateAliasMap = {
   'massachusetts':'massachusetts','ma':'massachusetts','מסצ׳וסטס':'massachusetts','boston':'massachusetts','בוסטון':'massachusetts',
   'pennsylvania':'pennsylvania','pa':'pennsylvania','פנסילבניה':'pennsylvania','פילדלפיה':'pennsylvania','philadelphia':'pennsylvania',
   'virginia':'virginia','va':'virginia','וירג׳יניה':'virginia',
-  'washington':'washington','wa':'washington','washington state':'washington','מדינת וושינגטון':'washington','וושינגטון':'washington','seattle':'washington','סיאטל':'washington',
+  'washington':'washington','wa':'washington','washington state':'washington','מדינת וושינגטון':'washington','וושינגטון':'washington',
   'district of columbia':'district of columbia','dc':'district of columbia','washington dc':'district of columbia','washington d c':'district of columbia','washington, dc':'district of columbia','וושינגטון די סי':'district of columbia','וושינגטון די.סי.':'district of columbia','וושינגטון די סי':'district of columbia'
 };
 function _cleanCountryLabel(v){
@@ -5770,6 +5901,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 // ---- Explicit login flow only (no auto-submit) ----
 let __loginInFlight = false;
+let __authModalAutoLoginTried = false;
 async function loginWithCredentials(emailSel='#authEmail', passSel='#authPass', errSel='#authError'){
   if(__loginInFlight) return;
   __loginInFlight = true;
@@ -5795,6 +5927,19 @@ document.addEventListener('click', (ev)=>{
   const t = ev.target;
   if(!t) return;
   if(t.matches('#authPrimary')){ loginWithCredentials(); }
+});
+
+function tryAutoLoginAuthModal(){
+  if(__authModalAutoLoginTried) return;
+  const email = document.querySelector('#authEmail')?.value?.trim();
+  const pass = document.querySelector('#authPass')?.value;
+  if(!email || !pass) return;
+  __authModalAutoLoginTried = true;
+  loginWithCredentials('#authEmail', '#authPass', '#authError');
+}
+
+[120, 450, 1000].forEach((delay)=>{
+  setTimeout(tryAutoLoginAuthModal, delay);
 });
 // ===== Auth UI helpers (final) =====
 // Toggle app/login screens on auth state change + start subscriptions
@@ -5962,11 +6107,14 @@ function highlightAllInContainer(container, s){
 document.addEventListener('click', (ev) => {
   const el = ev.target.closest('.hl-pill');
   if (!el) return;
+  ev.preventDefault();
+  ev.stopPropagation();
   const tripId = el.dataset.trip;
   const term = el.dataset.term || '';
   const type = el.dataset.type || 'meta';
   const itemId = el.dataset.item || null;
-  searchAndNavigate(tripId, term, type, itemId);
+  const field = el.dataset.field || '';
+  searchAndNavigate(tripId, term, type, itemId, field);
 });
 // --- end Keyword highlighting helpers ---
 
@@ -6038,13 +6186,62 @@ function normalizeEditorLinks(editor){
         a.classList.add('link-icon');
         a.textContent = '';
         a.style.display = 'inline-flex';
+      } else {
+        a.style.display = 'inline';
       }
       a.setAttribute('target','_blank');
       a.setAttribute('rel','noopener');
-      a.style.display = 'inline';
     }catch(_){}
   });
 }
+
+function bindEditorResizeHandles(){
+  try{
+    if(window.__editorResizeHandlesBound) return;
+    window.__editorResizeHandlesBound = true;
+
+    const MIN_BY_KIND = { expense: 84, journal: 100 };
+    const MAX_BY_KIND = { expense: 220, journal: 260 };
+
+    document.addEventListener('pointerdown', (ev)=>{
+      const handle = ev.target.closest('.editor-resize-handle[data-editor-resize]');
+      if(!handle || window.innerWidth <= 820) return;
+
+      const kind = handle.getAttribute('data-editor-resize');
+      const modal = handle.closest('dialog');
+      if(!modal) return;
+
+      ev.preventDefault();
+      const styles = getComputedStyle(modal);
+      const initial = parseFloat(styles.getPropertyValue('--editor-row-height')) || MIN_BY_KIND[kind] || 90;
+      const min = MIN_BY_KIND[kind] || 84;
+      const max = MAX_BY_KIND[kind] || 220;
+      const startY = ev.clientY;
+      const pointerId = ev.pointerId;
+
+      try{ handle.setPointerCapture(pointerId); }catch(_){}
+
+      const onMove = (moveEv)=>{
+        const delta = moveEv.clientY - startY;
+        const next = Math.max(min, Math.min(max, initial + delta));
+        modal.style.setProperty('--editor-row-height', `${next}px`, 'important');
+      };
+
+      const onEnd = ()=>{
+        document.removeEventListener('pointermove', onMove, true);
+        document.removeEventListener('pointerup', onEnd, true);
+        document.removeEventListener('pointercancel', onEnd, true);
+        try{ handle.releasePointerCapture(pointerId); }catch(_){}
+      };
+
+      document.addEventListener('pointermove', onMove, true);
+      document.addEventListener('pointerup', onEnd, true);
+      document.addEventListener('pointercancel', onEnd, true);
+    }, true);
+  }catch(_){}
+}
+
+bindEditorResizeHandles();
 
 function pasteAsIconLink(editor, url){
   const a = document.createElement('a');
@@ -6345,7 +6542,7 @@ function __textQualityScore(text){
   const s = String(text || '');
   const hebrew = (s.match(/[\u0590-\u05FF]/g) || []).length;
   const printable = (s.match(/[A-Za-z0-9 .,;:!?\-_/()[\]{}"'@\n\r]/g) || []).length;
-  const suspicious = (s.match(/(?:Ã.|×.| )/g) || []).length;
+  const suspicious = (s.match(/(?:Ã.|×.|�)/g) || []).length;
   return (hebrew * 4) + (printable * 0.05) - (suspicious * 6);
 }
 
@@ -6961,49 +7158,8 @@ window.initBigMap = function(){
       }
     });
 
-    const btnSpent = document.getElementById('btnToggleSpent');
-    const btnVisited = document.getElementById('btnToggleVisited');
-
-    if(btnSpent && !btnSpent.classList.contains('active')) btnSpent.classList.add('active');
-    if(btnVisited && !btnVisited.classList.contains('active')) btnVisited.classList.add('active');
-
-    function applyMapToolbarVisibility(){
-      const showSpent = !btnSpent || btnSpent.classList.contains('active');
-      const showVisited = !btnVisited || btnVisited.classList.contains('active');
-
-      if(showSpent){
-        if(!state.maps.big.hasLayer(expensesLG)) state.maps.big.addLayer(expensesLG);
-      }else{
-        if(state.maps.big.hasLayer(expensesLG)) state.maps.big.removeLayer(expensesLG);
-      }
-
-      if(showVisited){
-        if(!state.maps.big.hasLayer(journalLG)) state.maps.big.addLayer(journalLG);
-        if(!state.gpx?.enabled && !state.maps.big.hasLayer(gpxPointsLG)) state.maps.big.addLayer(gpxPointsLG);
-      }else{
-        if(state.maps.big.hasLayer(journalLG)) state.maps.big.removeLayer(journalLG);
-        if(state.maps.big.hasLayer(gpxPointsLG)) state.maps.big.removeLayer(gpxPointsLG);
-      }
-
-      try{ __syncManagedGpxWithVisited(); }catch(_){}
-
-      invalidateMap(state.maps.big);
-    }
-
-    if(btnSpent){
-      btnSpent.onclick = ()=>{
-        btnSpent.classList.toggle('active');
-        applyMapToolbarVisibility();
-      };
-    }
-    if(btnVisited){
-      btnVisited.onclick = ()=>{
-        btnVisited.classList.toggle('active');
-        applyMapToolbarVisibility();
-      };
-    }
-
-    applyMapToolbarVisibility();
+    __wireMapToolbarButtons();
+    __applyBigMapLayerVisibility();
 
     if(pts.length){
       state.maps.big.fitBounds(L.latLngBounds(pts).pad(0.2));
@@ -8383,8 +8539,8 @@ function __downsamplePath(path, maxPoints){
 }
 
 function __isVisitedLayerEnabled(){
-  const btnVisited = document.getElementById('btnToggleVisited');
-  return !btnVisited || btnVisited.classList.contains('active');
+  const visibility = __ensureMapLayerVisibility();
+  return visibility.visited !== false;
 }
 
 function __syncManagedGpxWithVisited(){
@@ -8402,23 +8558,129 @@ function __syncManagedGpxWithVisited(){
   }
 }
 
+function __ensureMapLayerVisibility(){
+  state.mapLayerVisibility = state.mapLayerVisibility || {};
+  if(typeof state.mapLayerVisibility.spent !== 'boolean') state.mapLayerVisibility.spent = true;
+  if(typeof state.mapLayerVisibility.visited !== 'boolean') state.mapLayerVisibility.visited = true;
+  state.gpx = state.gpx || { files:new Map(), order:[], enabled:false };
+  return state.mapLayerVisibility;
+}
+
+function __syncMapToolbarButtons(){
+  const visibility = __ensureMapLayerVisibility();
+  const buttons = [
+    ['btnToggleSpent', visibility.spent],
+    ['btnToggleVisited', visibility.visited],
+    ['btnToggleGPX', !!state.gpx?.enabled]
+  ];
+  buttons.forEach(([id, active])=>{
+    const btn = document.getElementById(id);
+    if(!btn) return;
+    btn.classList.toggle('active', !!active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function __toggleMapLayer(map, layer, visible){
+  if(!map || !layer) return;
+  if(visible){
+    if(!map.hasLayer(layer)) map.addLayer(layer);
+  }else if(map.hasLayer(layer)){
+    map.removeLayer(layer);
+  }
+}
+
+function __applyBigMapLayerVisibility(){
+  const map = state.maps && state.maps.big;
+  if(!map) return;
+  const visibility = __ensureMapLayerVisibility();
+  const layers = state.maps.layers || {};
+  __toggleMapLayer(map, layers.expenses, visibility.spent);
+  __toggleMapLayer(map, layers.journal, visibility.visited);
+  __toggleMapLayer(map, layers.gpxPoints, !!state.gpx?.enabled);
+
+  if(state.gpx?.enabled){
+    try{ __syncManagedGpxWithVisited(); }catch(_){}
+  }else if(state.gpx?.files){
+    for(const id of state.gpx.order || []){
+      const f = state.gpx.files.get(id);
+      if(f?.layer && map.hasLayer(f.layer)) map.removeLayer(f.layer);
+    }
+  }
+
+  invalidateMap(map);
+}
+
+function __wireMapToolbarButtons(){
+  const btnSpent = document.getElementById('btnToggleSpent');
+  const btnVisited = document.getElementById('btnToggleVisited');
+  const btnGPX = document.getElementById('btnToggleGPX');
+  const gpxPanel = document.getElementById('gpxManagerPanel');
+
+  if(btnSpent && btnSpent.dataset.mapToolbarWired !== '1'){
+    btnSpent.dataset.mapToolbarWired = '1';
+    btnSpent.addEventListener('click', ()=>{
+      const visibility = __ensureMapLayerVisibility();
+      visibility.spent = !visibility.spent;
+      __syncMapToolbarButtons();
+      __applyBigMapLayerVisibility();
+    });
+  }
+
+  if(btnVisited && btnVisited.dataset.mapToolbarWired !== '1'){
+    btnVisited.dataset.mapToolbarWired = '1';
+    btnVisited.addEventListener('click', ()=>{
+      const visibility = __ensureMapLayerVisibility();
+      visibility.visited = !visibility.visited;
+      __syncMapToolbarButtons();
+      __applyBigMapLayerVisibility();
+    });
+  }
+
+  if(btnGPX && btnGPX.dataset.mapToolbarWired !== '1'){
+    btnGPX.dataset.mapToolbarWired = '1';
+    btnGPX.addEventListener('click', ()=>{
+      state.gpx = state.gpx || { files:new Map(), order:[], enabled:false };
+      if(state.gpx.enabled && gpxPanel?.hidden){
+        gpxPanel.hidden = false;
+        __syncMapToolbarButtons();
+        try{ __renderGpxPanel(); }catch(_){}
+        return;
+      }
+      state.gpx.enabled = !state.gpx.enabled;
+      if(gpxPanel) gpxPanel.hidden = !state.gpx.enabled;
+      __syncMapToolbarButtons();
+      if(state.gpx.enabled){
+        try{ __refreshGpxFromCurrent(); }catch(_){}
+        try{ __renderGpxPanel(); }catch(_){}
+      }
+      __applyBigMapLayerVisibility();
+    });
+  }
+
+  __syncMapToolbarButtons();
+}
+
 function __initGpxManager(){
   state.gpx = state.gpx || { files:new Map(), order:[], enabled:false };
   const btn = document.getElementById('btnToggleGPX');
   const panel = document.getElementById('gpxManagerPanel');
   if(!btn || !panel) return;
+  if(btn.dataset.mapToolbarWired === '1') return;
 
   btn.addEventListener('click', ()=>{
     const isPanelHidden = !!panel.hidden;
     if(state.gpx.enabled && isPanelHidden){
       panel.hidden = false;
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
       __renderGpxPanel();
       return;
     }
 
     state.gpx.enabled = !state.gpx.enabled;
     btn.classList.toggle('active', state.gpx.enabled);
+    btn.setAttribute('aria-pressed', state.gpx.enabled ? 'true' : 'false');
     panel.hidden = !state.gpx.enabled;
     if(state.gpx.enabled){
       __refreshGpxFromCurrent();
@@ -8667,7 +8929,10 @@ function __escapeHtml(s){
 }
 
 
-document.addEventListener('DOMContentLoaded', ()=>{ try{ __initGpxManager(); }catch(e){ console.error(e); } });
+document.addEventListener('DOMContentLoaded', ()=>{
+  try{ __wireMapToolbarButtons(); }catch(e){ console.error(e); }
+  try{ __initGpxManager(); }catch(e){ console.error(e); }
+});
 
 
 
@@ -9200,482 +9465,3 @@ window.addEventListener('resize', ()=>{
     init();
   }
 })();
-
-/* ==========================================================
-   Mobile viewport hardening — no horizontal scroll.
-   Keeps the outer frame locked to the visual viewport and marks
-   any accidental wide node so CSS can compress it instead of
-   expanding the page.
-   ========================================================== */
-(function(){
-  function isMobileHardFit(){
-    return window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
-  }
-
-  function hardFitMobileViewport(){
-    if(!isMobileHardFit()) return;
-    try{
-      document.documentElement.style.overflowX = 'hidden';
-      document.body.style.overflowX = 'hidden';
-      document.body.classList.add('mobile-hard-fit');
-      const vw = Math.max(0, document.documentElement.clientWidth || window.innerWidth || 0);
-      const candidates = document.querySelectorAll('body, #previewRoot, .app, .container, .content, .sidebar, .tabview, .card, table, tbody, tr, td, dialog, .modal, .share-page, .share-grid, .map-toolbar, .leaflet-container');
-      candidates.forEach(function(el){
-        if(!el || !el.style) return;
-        el.style.maxWidth = el === document.body ? '100%' : '100vw';
-        el.style.minWidth = '0';
-        if(el.scrollWidth > vw + 1){ el.classList.add('mobile-overflow-clamped'); }
-      });
-    }catch(err){
-      console.warn('mobile hard fit failed', err);
-    }
-  }
-
-  window.__hardFitMobileViewport = hardFitMobileViewport;
-  document.addEventListener('DOMContentLoaded', hardFitMobileViewport);
-  window.addEventListener('resize', hardFitMobileViewport, { passive:true });
-  window.addEventListener('orientationchange', function(){ setTimeout(hardFitMobileViewport, 80); }, { passive:true });
-  window.addEventListener('pageshow', hardFitMobileViewport, { passive:true });
-  try{
-    const mo = new MutationObserver(function(){
-      if(isMobileHardFit()) requestAnimationFrame(hardFitMobileViewport);
-    });
-    document.addEventListener('DOMContentLoaded', function(){
-      try{ mo.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['style','class','hidden'] }); }catch(_){ }
-    });
-  }catch(_){ }
-})();
-
-/* === FINAL MOBILE FIX PASS 2026-04-24 ===
-   Order implemented per request:
-   1) password-manager/Face-ID instant login after credentials are completed
-   2) hard no-horizontal-overflow guard
-   3) fixed mobile modal frames before content layout
-   4) repaired expand/collapse and sort controls via capture-phase handlers
-*/
-(function(){
-  const MOBILE_MAX = 820;
-  const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || window.innerWidth <= MOBILE_MAX;
-  const qs = (s, r=document) => r.querySelector(s);
-  const qsa = (s, r=document) => Array.from(r.querySelectorAll(s));
-  const hasValue = el => !!(el && String(el.value || '').trim().length);
-
-  function stableAuthSignIn(email, pass){
-    const authObj = window.auth || window.FB?.auth || (typeof auth !== 'undefined' ? auth : null);
-    const fbObj = window.FB || (typeof FB !== 'undefined' ? FB : null);
-    if(!fbObj?.signInWithEmailAndPassword || !authObj) throw new Error('Firebase Auth לא אותחל');
-    return fbObj.signInWithEmailAndPassword(authObj, email, pass);
-  }
-
-  function makeInstantLogin({emailSel, passSel, errSel, closeSel}){
-    const email = qs(emailSel);
-    const pass = qs(passSel);
-    if(!email || !pass || pass.dataset.instantLoginBound === '1') return;
-    pass.dataset.instantLoginBound = '1';
-    let timer = 0;
-    let inFlight = false;
-    let lastKey = '';
-
-    async function tryLogin(reason){
-      if(inFlight) return;
-      const e = String(email.value || '').trim();
-      const p = String(pass.value || '');
-      if(!e || !p || p.length < 4) return;
-      const key = `${e}\u0000${p}`;
-      if(key === lastKey && reason !== 'manual') return;
-      lastKey = key;
-      const errEl = qs(errSel);
-      try{
-        inFlight = true;
-        if(errEl) errEl.textContent = 'מתחבר...';
-        await stableAuthSignIn(e, p);
-        if(errEl) errEl.textContent = '';
-        const closer = closeSel ? qs(closeSel) : null;
-        if(closer?.open) closer.close();
-        const overlay = qs('#mobileAuthOverlay');
-        if(overlay){ overlay.style.display = 'none'; overlay.setAttribute('aria-hidden','true'); }
-      }catch(err){
-        lastKey = '';
-        if(errEl) errEl.textContent = (typeof xErr === 'function') ? xErr(err) : 'שם משתמש או סיסמה שגויים';
-        try{ if(typeof showMobileAuthDebug === 'function') showMobileAuthDebug(err); }catch(_){ }
-      }finally{
-        inFlight = false;
-      }
-    }
-
-    function schedule(reason, delay=220){
-      clearTimeout(timer);
-      if(!hasValue(email) || !hasValue(pass)) return;
-      timer = setTimeout(()=>tryLogin(reason), delay);
-    }
-
-    ['input','change','compositionend','keyup'].forEach(ev=>{
-      email.addEventListener(ev, ()=>schedule(ev), {passive:true});
-      pass.addEventListener(ev, ()=>schedule(ev), {passive:true});
-    });
-    // Password managers / Face-ID often fill fields without a normal input event.
-    email.addEventListener('animationstart', ()=>schedule('autofill', 80), {passive:true});
-    pass.addEventListener('animationstart', ()=>schedule('autofill', 80), {passive:true});
-    email.addEventListener('blur', ()=>schedule('blur', 80), {passive:true});
-    pass.addEventListener('blur', ()=>schedule('blur', 80), {passive:true});
-    pass.addEventListener('keydown', ev=>{ if(ev.key === 'Enter'){ ev.preventDefault(); tryLogin('manual'); } });
-
-    let scans = 0;
-    const scan = setInterval(()=>{
-      scans++;
-      if(hasValue(email) && hasValue(pass)) schedule('poll', 50);
-      if(scans > 80 || document.body.dataset.authstate === 'in') clearInterval(scan);
-    }, 250);
-  }
-
-  function installInstantLogin(){
-    makeInstantLogin({emailSel:'#lsEmail', passSel:'#lsPass', errSel:'#lsError'});
-    makeInstantLogin({emailSel:'#authEmail', passSel:'#authPass', errSel:'#authError', closeSel:'#authModal'});
-    makeInstantLogin({emailSel:'#mEmail', passSel:'#mPass', errSel:'#mError'});
-  }
-
-  function clampHorizontalOverflow(){
-    if(!isMobile()) return;
-    document.documentElement.classList.add('mobile-no-x');
-    document.body.classList.add('mobile-no-x');
-    const vw = Math.max(320, window.innerWidth || document.documentElement.clientWidth || 360);
-    qsa('body *').forEach(el=>{
-      if(!(el instanceof HTMLElement)) return;
-      const cs = getComputedStyle(el);
-      if(cs.position === 'fixed' || el.tagName === 'DIALOG') return;
-      const rect = el.getBoundingClientRect();
-      if(rect.width > vw + 1 || rect.left < -1 || rect.right > vw + 1){
-        el.classList.add('mobile-overflow-clamped');
-      }
-    });
-  }
-
-  function syncModalFrame(){
-    if(!isMobile()) return;
-    ['tripModal','expenseModal','journalModal'].forEach(id=>{
-      const dlg = document.getElementById(id);
-      if(!dlg) return;
-      dlg.classList.add('mobile-fixed-frame');
-      const body = dlg.querySelector('.body');
-      if(body) body.classList.add('mobile-modal-body-scroll');
-    });
-  }
-
-  function setOverviewCollapsed(collapsed){
-    const root = qs('#view-overview');
-    const table = qs('#tblAllTimeline');
-    if(!root || !table) return;
-    root.classList.toggle('all-collapsed', !!collapsed);
-    qsa('tr.exp-details, tr.exp-item:has(td.notes)', table).forEach(row=>{
-      row.style.display = collapsed ? 'none' : '';
-      row.classList.remove('force-open');
-    });
-    qsa('tr.exp-item.force-open', table).forEach(row=>row.classList.remove('force-open'));
-    const btn = qs('#btnAllToggle');
-    if(btn) btn.textContent = collapsed ? 'פתח הכל' : 'צמצם הכל';
-    try{ localStorage.setItem('allDetailsCollapsed', collapsed ? '1' : '0'); }catch(_){ }
-  }
-
-  function currentCollapsed(){
-    const root = qs('#view-overview');
-    if(root?.classList.contains('all-collapsed')) return true;
-    const rows = qsa('#tblAllTimeline tr.exp-details, #tblAllTimeline tr.exp-item:has(td.notes)');
-    return rows.length > 0 && rows.every(r => r.style.display === 'none' || getComputedStyle(r).display === 'none');
-  }
-
-  function toggleOverviewSort(){
-    const btn = qs('#barSort, #btnAllSort, #btnSortAll, #overviewSortBtn, .sort-icon-btn');
-    if(typeof toggleExpenseSort === 'function'){
-      toggleExpenseSort();
-      return;
-    }
-    try{
-      state.allSort = state.allSort === 'asc' ? 'desc' : 'asc';
-      if(state.current && typeof renderAllTimeline === 'function') renderAllTimeline(state.current, state.allSort);
-      if(btn) btn.setAttribute('aria-label', state.allSort === 'asc' ? 'מיון עולה' : 'מיון יורד');
-    }catch(_){ }
-  }
-
-  function installOverviewControlsFix(){
-    document.addEventListener('click', (ev)=>{
-      const toggle = ev.target.closest && ev.target.closest('#btnAllToggle');
-      if(toggle){
-        ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation?.();
-        setOverviewCollapsed(!currentCollapsed());
-        return false;
-      }
-      const sort = ev.target.closest && ev.target.closest('#barSort, #btnAllSort, #btnSortAll, #overviewSortBtn, .sort-icon-btn');
-      if(sort){
-        ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation?.();
-        toggleOverviewSort();
-        return false;
-      }
-    }, true);
-
-    document.addEventListener('click', (ev)=>{
-      const root = qs('#view-overview');
-      if(!root?.classList.contains('all-collapsed')) return;
-      if(ev.target.closest('button,a,input,textarea,select')) return;
-      const tr = ev.target.closest('#tblAllTimeline tr.exp-item:not(.exp-details)');
-      if(!tr) return;
-      const details = tr.nextElementSibling;
-      if(!details || !details.classList.contains('exp-details')) return;
-      const open = details.classList.contains('force-open');
-      details.classList.toggle('force-open', !open);
-      tr.classList.toggle('force-open', !open);
-      details.style.display = !open ? '' : 'none';
-    }, true);
-
-    const oldAfter = window.__overviewApplyAfterRender;
-    window.__overviewApplyAfterRender = function(){
-      try{ oldAfter && oldAfter(); }catch(_){ }
-      try{ setOverviewCollapsed(localStorage.getItem('allDetailsCollapsed') === '1'); }catch(_){ }
-      try{ clampHorizontalOverflow(); }catch(_){ }
-    };
-  }
-
-  function boot(){
-    installInstantLogin();          // סעיף 1
-    clampHorizontalOverflow();      // סעיף 2
-    installInstantLogin();          // בדיקה חוזרת / rebinding after DOM changes
-    clampHorizontalOverflow();      // בדיקה חוזרת
-    syncModalFrame();               // סעיף 3
-    installInstantLogin(); clampHorizontalOverflow(); syncModalFrame(); // בדיקה 1,2,3
-    installOverviewControlsFix();   // סעיף 4
-    setTimeout(()=>{ clampHorizontalOverflow(); syncModalFrame(); }, 350);
-    setTimeout(()=>{ clampHorizontalOverflow(); syncModalFrame(); }, 1200);
-  }
-
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
-  window.addEventListener('resize', ()=>{ clampHorizontalOverflow(); syncModalFrame(); }, {passive:true});
-  window.addEventListener('orientationchange', ()=>setTimeout(()=>{ clampHorizontalOverflow(); syncModalFrame(); }, 250), {passive:true});
-})();
-
-/* =========================================================
-   MOBILE HARD LOCK V3 — runtime guard and broken controls fix.
-   ========================================================= */
-(function(){
-  const MQL = () => window.matchMedia && window.matchMedia('(max-width: 820px)').matches;
-  const $ = (s, r=document) => r.querySelector(s);
-  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
-
-  function setViewportVars(){
-    const vv = window.visualViewport;
-    const w = Math.max(320, Math.floor(vv?.width || document.documentElement.clientWidth || window.innerWidth || 360));
-    const h = Math.max(480, Math.floor(vv?.height || document.documentElement.clientHeight || window.innerHeight || 640));
-    document.documentElement.style.setProperty('--fly-vw', w + 'px');
-    document.documentElement.style.setProperty('--fly-vh', h + 'px');
-  }
-
-  function hardNoHorizontal(){
-    if(!MQL()) return;
-    setViewportVars();
-    document.documentElement.style.overflowX = 'hidden';
-    document.body.style.overflowX = 'hidden';
-    document.body.style.maxWidth = '100%';
-    document.body.style.width = '100%';
-    if(window.scrollX) window.scrollTo(0, window.scrollY || 0);
-
-    const vw = Math.max(320, Math.floor(window.visualViewport?.width || document.documentElement.clientWidth || window.innerWidth || 360));
-    $$('body *').forEach(el=>{
-      if(!(el instanceof HTMLElement)) return;
-      if(el.tagName === 'SCRIPT' || el.tagName === 'STYLE') return;
-      const cs = getComputedStyle(el);
-      if(cs.position === 'fixed' || el.tagName === 'DIALOG') return;
-      const r = el.getBoundingClientRect();
-      if(r.width > vw + 1 || r.left < -1 || r.right > vw + 1){
-        el.classList.add('mobile-overflow-clamped');
-      }
-    });
-  }
-
-  function hardenDialogs(){
-    if(!MQL()) return;
-    ['tripModal','expenseModal','journalModal','rowMenuModal','mobileSectionMenuDialog'].forEach(id=>{
-      const dlg = document.getElementById(id);
-      if(!dlg) return;
-      dlg.classList.add('mobile-fixed-frame');
-      dlg.style.maxWidth = 'calc(var(--fly-vw, 100vw) - 16px)';
-      dlg.style.width = 'calc(var(--fly-vw, 100vw) - 16px)';
-      dlg.style.overflowX = 'hidden';
-      const body = dlg.querySelector('.body');
-      if(body){
-        body.classList.add('mobile-modal-body-scroll');
-        body.style.overflowX = 'hidden';
-      }
-    });
-  }
-
-  function isHidden(row){
-    if(!row) return true;
-    return row.hidden || row.style.display === 'none' || getComputedStyle(row).display === 'none';
-  }
-
-  function notesRows(tbody){
-    if(!tbody) return [];
-    return $$('tr.exp-item', tbody).filter(r => r.querySelector('td.notes') || r.classList.contains('exp-details'));
-  }
-
-  function setDetailsCollapsed(tbodyId, buttonId, storageKey, collapsed){
-    const tbody = document.getElementById(tbodyId);
-    const btn = document.getElementById(buttonId);
-    notesRows(tbody).forEach(r=>{ r.style.display = collapsed ? 'none' : ''; r.hidden = false; });
-    if(btn) btn.textContent = collapsed ? 'פתח הכל' : 'צמצם הכל';
-    try{ localStorage.setItem(storageKey, collapsed ? '1' : '0'); }catch(_){ }
-  }
-
-  function currentDetailsCollapsed(tbodyId){
-    const rows = notesRows(document.getElementById(tbodyId));
-    return rows.length > 0 && rows.every(isHidden);
-  }
-
-  function overviewSetCollapsed(collapsed){
-    setDetailsCollapsed('tblAllTimeline', 'btnAllToggle', 'allDetailsCollapsed', collapsed);
-    const root = document.getElementById('view-overview');
-    if(root) root.classList.toggle('all-collapsed', collapsed);
-  }
-
-  function sortExpenses(){
-    try{
-      if(typeof toggleExpenseSort === 'function') return toggleExpenseSort();
-      state.expenseSort = (state.expenseSort === 'asc') ? 'desc' : 'asc';
-      if(state.current && typeof renderExpenses === 'function') renderExpenses(state.current, state.expenseSort);
-    }catch(e){ console.warn('expense sort failed', e); }
-  }
-  function sortJournal(){
-    try{
-      state.journalSort = (state.journalSort === 'asc') ? 'desc' : 'asc';
-      if(state.current && typeof renderJournal === 'function') renderJournal(state.current, state.journalSort);
-    }catch(e){ console.warn('journal sort failed', e); }
-  }
-  function sortOverview(){
-    try{
-      state.allSort = (state.allSort === 'asc') ? 'desc' : 'asc';
-      try{ localStorage.setItem('allSort', state.allSort); }catch(_){ }
-      if(state.current && typeof renderAllTimeline === 'function') renderAllTimeline(state.current, state.allSort);
-    }catch(e){ console.warn('overview sort failed', e); }
-  }
-
-  function installControlFixes(){
-    if(window.__mobileHardLockV3Controls) return;
-    window.__mobileHardLockV3Controls = true;
-    document.addEventListener('click', function(ev){
-      const hit = ev.target && ev.target.closest && ev.target.closest('#btnAllToggle,#btnToggleExpenseDetails,#btnToggleJournalDetails,#btnAllSort,#btnSortExpenses,#btnSortJournal');
-      if(!hit) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      ev.stopImmediatePropagation && ev.stopImmediatePropagation();
-      if(hit.id === 'btnAllToggle') overviewSetCollapsed(!currentDetailsCollapsed('tblAllTimeline'));
-      else if(hit.id === 'btnToggleExpenseDetails') setDetailsCollapsed('tblExpenses','btnToggleExpenseDetails','expenseDetailsCollapsed', !currentDetailsCollapsed('tblExpenses'));
-      else if(hit.id === 'btnToggleJournalDetails') setDetailsCollapsed('tblJournal','btnToggleJournalDetails','journalDetailsCollapsed', !currentDetailsCollapsed('tblJournal'));
-      else if(hit.id === 'btnAllSort') sortOverview();
-      else if(hit.id === 'btnSortExpenses') sortExpenses();
-      else if(hit.id === 'btnSortJournal') sortJournal();
-      setTimeout(()=>{ applySavedCollapse(); hardNoHorizontal(); }, 60);
-      return false;
-    }, true);
-  }
-
-  function applySavedCollapse(){
-    try{ if(localStorage.getItem('allDetailsCollapsed') === '1') overviewSetCollapsed(true); }catch(_){ }
-    try{ if(localStorage.getItem('expenseDetailsCollapsed') === '1') setDetailsCollapsed('tblExpenses','btnToggleExpenseDetails','expenseDetailsCollapsed', true); }catch(_){ }
-    try{ if(localStorage.getItem('journalDetailsCollapsed') === '1') setDetailsCollapsed('tblJournal','btnToggleJournalDetails','journalDetailsCollapsed', true); }catch(_){ }
-  }
-
-  function enhanceInstantLoginAgain(){
-    // Face ID / password managers may fill fields without input events. This only submits once both fields have values.
-    const pairs = [
-      ['#lsEmail','#lsPass','#lsError','#loginScreen'],
-      ['#authEmail','#authPass','#authError','#authModal'],
-      ['#mEmail','#mPass','#mError','#mobileAuthOverlay']
-    ];
-    pairs.forEach(([emSel,pwSel,errSel,closeSel])=>{
-      const em = $(emSel), pw = $(pwSel);
-      if(!em || !pw || pw.dataset.instantV3 === '1') return;
-      pw.dataset.instantV3 = '1';
-      let inFlight = false, timer = 0, last = '';
-      const submit = async ()=>{
-        const email = (em.value||'').trim(), pass = pw.value||'';
-        if(!email || !pass || inFlight) return;
-        const key = email + '\u0000' + pass;
-        if(key === last) return;
-        last = key; inFlight = true;
-        try{
-          if(typeof FB !== 'undefined' && FB.signInWithEmailAndPassword){
-            await FB.signInWithEmailAndPassword(FB.auth, email, pass);
-          }else if(typeof signInWithEmailAndPassword === 'function'){
-            await signInWithEmailAndPassword(auth, email, pass);
-          }
-          const closer = $(closeSel);
-          if(closer?.tagName === 'DIALOG' && closer.open) closer.close();
-          if(closer?.id === 'mobileAuthOverlay') closer.style.display = 'none';
-        }catch(e){
-          last = '';
-          const err = $(errSel); if(err) err.textContent = (typeof xErr === 'function') ? xErr(e) : 'שם משתמש או סיסמה שגויים';
-        }finally{ inFlight = false; }
-      };
-      const schedule = ()=>{ clearTimeout(timer); timer = setTimeout(submit, 120); };
-      ['input','change','keyup','blur','animationstart'].forEach(type=>{
-        em.addEventListener(type, schedule, {passive:true});
-        pw.addEventListener(type, schedule, {passive:true});
-      });
-      let scans = 0;
-      const scan = setInterval(()=>{
-        scans++;
-        if((em.value||'').trim() && (pw.value||'')) schedule();
-        if(scans > 80 || document.body.dataset.authstate === 'in') clearInterval(scan);
-      }, 250);
-    });
-  }
-
- function boot() {
-    // 1. הגדרת משתני Viewport למניעת קפיצות של גובה המסך (vh)
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-
-    // 2. פונקציית נעילה אופקית - מחזירה את המסך ל-0 אם הוא מנסה לזוז הצידה
-    const lockWidth = () => {
-      document.body.style.width = window.innerWidth + 'px';
-      if (window.scrollX !== 0) window.scrollTo(0, window.scrollY);
-    };
-    
-    // מאזינים לשינויי גודל, סיבוב מסך וגלילה
-    window.addEventListener('resize', lockWidth, {passive: true});
-    window.addEventListener('scroll', () => {
-      if (window.scrollX > 0) window.scrollTo(0, window.scrollY);
-    }, {passive: true});
-    
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', lockWidth, {passive: true});
-    }
-
-    lockWidth(); // הפעלה ראשונית של הנעילה
-    
-    // 3. הפעלת הלוגיקה של האפליקציה (בדיקה שפונקציות קיימות לפני קריאה)
-    if (typeof enhanceInstantLoginAgain === 'function') enhanceInstantLoginAgain();
-    if (typeof applySavedCollapse === 'function') applySavedCollapse();
-    if (typeof hardenDialogs === 'function') hardenDialogs();
-    if (typeof installControlFixes === 'function') installControlFixes();
-    
-    // תיקון השהיה קצר לוודא שהכל התיישב במקום
-    setTimeout(lockWidth, 200);
-  }
-
-  // אתחול האפליקציה ברגע שהדף מוכן
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
-
-  // מאזין לשינויים ב-DOM (כדי לוודא שהנעילה נשמרת גם כשנוספים אלמנטים)
-  const mobileObserver = new MutationObserver(() => {
-    const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
-    document.body.style.width = window.innerWidth + 'px';
-  });
-  
-  mobileObserver.observe(document.documentElement, { subtree: true, childList: true });
-
-})(); // סגירת ה-Closure של הקובץ (וודא שיש ( בקצה העליון של הקובץ)

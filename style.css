@@ -4,6 +4,2199 @@
   --glass: color-mix(in oklab, var(--card) 78%, transparent);
 }
 
+/* === TRUE EOF OVERRIDE #11: final vertical fit polish === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:4px !important;
+    max-height:calc(100dvh - 8px) !important;
+    grid-template-rows:38px minmax(0, auto) 52px !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    padding:0 20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    padding:8px 20px 6px !important;
+    gap:5px !important;
+  }
+
+  html body dialog#expenseModal[open]{
+    --editor-row-height:82px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:94px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:42px var(--editor-row-height) 34px 48px 48px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:42px var(--editor-row-height) 34px 48px !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  html body #expenseModal select,
+  html body #journalModal select,
+  html body #expenseModal input,
+  html body #journalModal input,
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    gap:3px !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:52px !important;
+    min-height:52px !important;
+    max-height:52px !important;
+    padding:6px 20px !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #7: make only the description resize handle work === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:96px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:118px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:48px var(--editor-row-height) 34px 62px 62px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:48px var(--editor-row-height) 34px 62px !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  html body #journalModal #jrText{
+    height:100% !important;
+    min-height:84px !important;
+    max-height:260px !important;
+    overflow-y:auto !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:8px !important;
+    bottom:6px !important;
+    width:22px !important;
+    height:22px !important;
+    min-width:22px !important;
+    min-height:22px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:5 !important;
+    opacity:.8 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:4px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    transform:skew(-18deg) !important;
+    opacity:.75 !important;
+  }
+}
+
+/* === FINAL lock: desktop expense/journal fit + stable link icons === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:12px !important;
+    bottom:12px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(650px, calc(100vw - 48px)) !important;
+    max-width:min(650px, calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    grid-template-rows:44px minmax(0, 1fr) 62px !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal[open]{
+    --editor-row-height:84px;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:100px;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:56px var(--editor-row-height) 32px 72px 108px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:56px var(--editor-row-height) 32px 108px !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr) !important;
+    gap:10px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .exp-date-col,
+  html body #expenseModal .exp-time-col,
+  html body #expenseModal .exp-location-col,
+  html body #journalModal .jr-date-col,
+  html body #journalModal .jr-time-col,
+  html body #journalModal .jr-location-col{
+    min-width:0 !important;
+    align-self:end !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:44px !important;
+    height:44px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+    padding-bottom:18px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:0 !important;
+    height:100% !important;
+    max-height:100% !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:3px !important;
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    min-height:18px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:2 !important;
+    opacity:.72 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    opacity:.75 !important;
+    transform:skew(-18deg) !important;
+  }
+}
+
+html body .rtf a.link-icon,
+html body .rtf a.mail-icon,
+html body .cell.notes a.link-icon,
+html body .cell.notes a.mail-icon{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:24px !important;
+  min-width:24px !important;
+  height:24px !important;
+  text-decoration:none !important;
+  vertical-align:middle !important;
+}
+
+html body .rtf a.link-icon,
+html body .cell.notes a.link-icon,
+html body a.link-icon-only{
+  color:#1E88E5 !important;
+}
+
+html body .rtf a.link-icon:hover,
+html body .cell.notes a.link-icon:hover,
+html body a.link-icon-only:hover{
+  color:#1565C0 !important;
+}
+
+html body .rtf a.link-icon::before,
+html body .cell.notes a.link-icon::before{
+  content:"\1F517" !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+
+html body .rtf a.mail-icon::before,
+html body .cell.notes a.mail-icon::before{
+  content:"\2709" !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+
+/* === LAST OVERRIDE: readable trip budget fields and aligned edit dialogs === */
+#view-meta .card.meta-single{
+  overflow:visible !important;
+}
+
+#view-meta .budget-block{
+  display:grid !important;
+  gap:14px !important;
+}
+
+#view-meta .budget-row{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(160px, 1fr)) !important;
+  gap:16px !important;
+  align-items:end !important;
+  width:100% !important;
+}
+
+#view-meta .budget-row label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+  min-width:0 !important;
+  text-align:center !important;
+}
+
+#view-meta .budget-row .input{
+  width:100% !important;
+  min-width:0 !important;
+  height:44px !important;
+  min-height:44px !important;
+  padding:8px 12px !important;
+  text-align:center !important;
+  font-size:16px !important;
+  box-sizing:border-box !important;
+}
+
+#view-meta .budget-actions-row{
+  display:flex !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+@media (max-width: 720px){
+  #view-meta .budget-row{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    inset:24px auto auto 50% !important;
+    transform:translateX(-50%) !important;
+    width:min(760px, calc(100vw - 48px)) !important;
+    max-width:min(760px, calc(100vw - 48px)) !important;
+    height:calc(100dvh - 48px) !important;
+    max-height:calc(100dvh - 48px) !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:58px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:22px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:58px !important;
+    min-height:58px !important;
+    padding:0 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    min-height:0 !important;
+    padding:18px 26px !important;
+    overflow:auto !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content minmax(150px, 1fr) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content minmax(170px, 1fr) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+    line-height:1.25 !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:46px !important;
+    height:46px !important;
+    padding:10px 14px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    line-height:1.25 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    min-height:0 !important;
+    overflow:visible !important;
+    padding:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:130px !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:14px 16px !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    text-align:right !important;
+    cursor:text !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    justify-self:start !important;
+    align-self:start !important;
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    padding:8px 10px !important;
+    overflow:visible !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(220px, 1.45fr) minmax(150px, 1fr) minmax(104px, .55fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(150px, 1fr) minmax(130px, .9fr) minmax(210px, 1.35fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    padding:12px 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    padding:0 20px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:700 !important;
+  }
+}
+
+@media (max-width: 820px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open],
+  body.mobile-ui dialog#expenseModal[open],
+  body.mobile-ui dialog#journalModal[open]{
+    width:calc(100vw - 20px) !important;
+    max-width:calc(100vw - 20px) !important;
+    max-height:calc(100dvh - 20px) !important;
+    margin:auto !important;
+    overflow:hidden !important;
+    border-radius:20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body,
+  body.mobile-ui dialog#expenseModal > .body,
+  body.mobile-ui dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    padding:16px !important;
+    overflow:auto !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row,
+  body.mobile-ui #expenseModal .expense-main-row,
+  body.mobile-ui #expenseModal .expense-meta-row,
+  body.mobile-ui #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+
+  html body dialog#expenseModal label,
+  html body dialog#journalModal label,
+  body.mobile-ui dialog#expenseModal label,
+  body.mobile-ui dialog#journalModal label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  body.mobile-ui #expenseModal .input,
+  body.mobile-ui #journalModal .input{
+    width:100% !important;
+    min-height:46px !important;
+    height:auto !important;
+    font-size:16px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  body.mobile-ui #expText,
+  body.mobile-ui #jrText{
+    min-height:150px !important;
+    max-height:32vh !important;
+    overflow:auto !important;
+  }
+}
+
+/* === Form layout polish: trip data + add/edit dialogs === */
+#view-meta .card.meta-single{
+  overflow:visible !important;
+}
+
+#view-meta .budget-block{
+  display:grid !important;
+  gap:14px !important;
+}
+
+#view-meta .budget-row{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(160px, 1fr)) !important;
+  gap:16px !important;
+  align-items:end !important;
+  width:100% !important;
+}
+
+#view-meta .budget-row label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+  min-width:0 !important;
+  text-align:center !important;
+}
+
+#view-meta .budget-row .input{
+  width:100% !important;
+  min-width:0 !important;
+  height:44px !important;
+  min-height:44px !important;
+  padding:8px 12px !important;
+  text-align:center !important;
+  font-size:16px !important;
+}
+
+#view-meta .budget-actions-row{
+  display:flex !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+@media (max-width: 720px){
+  #view-meta .budget-row{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    inset:24px auto auto 50% !important;
+    transform:translateX(-50%) !important;
+    width:min(760px, calc(100vw - 48px)) !important;
+    max-width:min(760px, calc(100vw - 48px)) !important;
+    height:calc(100dvh - 48px) !important;
+    max-height:calc(100dvh - 48px) !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:58px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:22px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:58px !important;
+    min-height:58px !important;
+    padding:0 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    min-height:0 !important;
+    padding:18px 26px !important;
+    overflow:auto !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content minmax(150px, 1fr) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content minmax(170px, 1fr) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+    line-height:1.25 !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:46px !important;
+    height:46px !important;
+    padding:10px 14px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    line-height:1.25 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    min-height:0 !important;
+    overflow:visible !important;
+    padding:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:130px !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:14px 16px !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    text-align:right !important;
+    cursor:text !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    justify-self:start !important;
+    align-self:start !important;
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    padding:8px 10px !important;
+    overflow:visible !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(220px, 1.45fr) minmax(150px, 1fr) minmax(104px, .55fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(150px, 1fr) minmax(130px, .9fr) minmax(210px, 1.35fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    padding:12px 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    padding:0 20px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:700 !important;
+  }
+}
+
+@media (max-width: 820px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open],
+  body.mobile-ui dialog#expenseModal[open],
+  body.mobile-ui dialog#journalModal[open]{
+    width:calc(100vw - 20px) !important;
+    max-width:calc(100vw - 20px) !important;
+    max-height:calc(100dvh - 20px) !important;
+    margin:auto !important;
+    overflow:hidden !important;
+    border-radius:20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body,
+  body.mobile-ui dialog#expenseModal > .body,
+  body.mobile-ui dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    padding:16px !important;
+    overflow:auto !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row,
+  body.mobile-ui #expenseModal .expense-main-row,
+  body.mobile-ui #expenseModal .expense-meta-row,
+  body.mobile-ui #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+
+  html body dialog#expenseModal label,
+  html body dialog#journalModal label,
+  body.mobile-ui dialog#expenseModal label,
+  body.mobile-ui dialog#journalModal label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  body.mobile-ui #expenseModal .input,
+  body.mobile-ui #journalModal .input{
+    width:100% !important;
+    min-height:46px !important;
+    height:auto !important;
+    font-size:16px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  body.mobile-ui #expText,
+  body.mobile-ui #jrText{
+    min-height:150px !important;
+    max-height:32vh !important;
+    overflow:auto !important;
+  }
+}
+
+/* === Final desktop editor: true 10-line content box === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    --editor-font-size: 16px !important;
+    --editor-line-height: 1.5 !important;
+    --editor-visible-lines: 10 !important;
+    --editor-vertical-padding: 14px !important;
+    --editor-row-height: calc((var(--editor-visible-lines) * var(--editor-font-size) * var(--editor-line-height)) + (var(--editor-vertical-padding) * 2)) !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    font-size: var(--editor-font-size) !important;
+    line-height: var(--editor-line-height) !important;
+    font-weight: 400 !important;
+    min-height: var(--editor-row-height) !important;
+    height: var(--editor-row-height) !important;
+    max-height: var(--editor-row-height) !important;
+    padding-top: var(--editor-vertical-padding) !important;
+    padding-bottom: var(--editor-vertical-padding) !important;
+  }
+
+  html body #expText > *,
+  html body #jrText > *{
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  html body #expText b,
+  html body #expText strong,
+  html body #jrText b,
+  html body #jrText strong{
+    font-weight: 700 !important;
+  }
+
+  html body #expText i,
+  html body #expText em,
+  html body #jrText i,
+  html body #jrText em{
+    font-style: italic !important;
+  }
+}
+
+/* === Final desktop editor cleanup === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    top:24px !important;
+    left:50% !important;
+    right:auto !important;
+    bottom:auto !important;
+    transform:translateX(-50%) !important;
+    width:min(760px, calc(100vw - 64px)) !important;
+    max-width:min(760px, calc(100vw - 64px)) !important;
+    height:calc(100dvh - 48px) !important;
+    max-height:calc(100dvh - 48px) !important;
+    min-height:calc(100dvh - 48px) !important;
+    margin:0 !important;
+    resize:none !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:64px minmax(0, 1fr) 96px !important;
+    border-radius:28px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    --editor-row-height:320px !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    height:64px !important;
+    min-height:64px !important;
+    max-height:64px !important;
+    padding:0 28px !important;
+    border-bottom:1px solid color-mix(in oklab, var(--border) 75%, white 25%) !important;
+  }
+
+  html body dialog#expenseModal > header strong,
+  html body dialog#journalModal > header strong{
+    font-size:22px !important;
+    font-weight:700 !important;
+    line-height:1 !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:24px 28px !important;
+    display:grid !important;
+    gap:8px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content minmax(0, var(--editor-row-height, 296px)) min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content minmax(0, var(--editor-row-height, 296px)) min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    font-size:14px !important;
+    font-weight:500 !important;
+    color:var(--ink) !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .input,
+  html body #expenseModal select,
+  html body #expenseModal input[type="date"],
+  html body #expenseModal input[type="time"],
+  html body #journalModal .input,
+  html body #journalModal select,
+  html body #journalModal input[type="date"],
+  html body #journalModal input[type="time"],
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:0 16px !important;
+    border-radius:20px !important;
+    font-size:16px !important;
+    font-weight:400 !important;
+    line-height:1.2 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding-bottom:20px !important;
+    margin-top:14px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText) > .field-label,
+  html body dialog#journalModal .body > label:has(#jrText) > .field-label{
+    margin-top:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:320px !important;
+    height:320px !important;
+    max-height:320px !important;
+    padding:14px 16px !important;
+    padding-inline-start:34px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.5 !important;
+    font-size:16px !important;
+    font-weight:400 !important;
+    text-align:right !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expText strong,
+  html body #jrText strong,
+  html body #expText b,
+  html body #jrText b{
+    font-weight:700 !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:start !important;
+    margin:0 !important;
+    padding:8px 12px !important;
+    width:max-content !important;
+    max-width:100% !important;
+    border-radius:20px !important;
+  }
+
+  html body #rtfBubbleExp .styles,
+  html body #rtfBubbleExp .colors,
+  html body #rtfBubble .styles,
+  html body #rtfBubble .colors{
+    gap:10px !important;
+    align-items:center !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1.2fr) minmax(0, 1fr) 112px !important;
+    gap:16px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+    gap:16px !important;
+    align-items:end !important;
+  }
+
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr) !important;
+    gap:16px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:block !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    justify-content:flex-start !important;
+    gap:12px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    font-size:16px !important;
+    font-weight:400 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+
+  html body #expenseModal #expLocationPreview,
+  html body #journalModal #jrLocationPreview{
+    display:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    bottom:4px !important;
+    width:20px !important;
+    height:20px !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:6px !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    opacity:.72 !important;
+    z-index:4 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid #94a3b8 !important;
+    border-top:2px solid #94a3b8 !important;
+    transform:skew(-18deg) !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    display:grid !important;
+    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+    align-items:center !important;
+    gap:14px !important;
+    min-height:96px !important;
+    max-height:96px !important;
+    padding:20px 28px !important;
+    border-top:1px solid color-mix(in oklab, var(--border) 75%, white 25%) !important;
+    background:var(--card) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    width:100% !important;
+    min-width:0 !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:0 18px !important;
+    margin:0 !important;
+    border-radius:20px !important;
+    font-size:18px !important;
+    font-weight:600 !important;
+  }
+}
+
+/* === Search results polish === */
+#tripList .trip-search-matches{
+  width:100%;
+  margin-top:12px;
+  padding:12px 14px;
+  border:1px solid color-mix(in oklab, var(--brand) 14%, var(--border) 86%);
+  border-radius:14px;
+  background:linear-gradient(180deg, color-mix(in oklab, var(--brand) 5%, white 95%), color-mix(in oklab, var(--card) 88%, var(--brand) 12%));
+  box-shadow:0 8px 20px rgba(15,23,42,.05);
+}
+
+#tripList .trip-search-matches-inline{
+  grid-column:1 / -1;
+}
+
+#tripList .trip-search-title{
+  margin:0 0 10px;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.02em;
+  color:color-mix(in oklab, var(--brand) 68%, var(--ink) 32%);
+}
+
+#tripList .trip-match-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:flex-start;
+}
+
+#tripList .trip-match-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:36px;
+  max-width:100%;
+  padding:7px 12px;
+  border:1px solid color-mix(in oklab, var(--brand) 18%, var(--border) 82%);
+  border-radius:999px;
+  background:#fff;
+  color:var(--ink);
+  font-size:13px;
+  font-weight:600;
+  line-height:1.25;
+  box-shadow:0 4px 10px rgba(15,23,42,.04);
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:normal;
+  vertical-align:top;
+}
+
+#tripList .trip-match-pill:hover{
+  transform:translateY(-1px);
+  border-color:color-mix(in oklab, var(--brand) 42%, var(--border) 58%);
+  box-shadow:0 8px 16px rgba(15,23,42,.08);
+  background:color-mix(in oklab, var(--brand) 6%, white 94%);
+}
+
+#tripList .trip-match-pill:active{
+  transform:translateY(0);
+}
+
+#tripList .trip-match-pill .match-source{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  border-radius:999px;
+  background:color-mix(in oklab, var(--brand) 12%, white 88%);
+  color:color-mix(in oklab, var(--brand) 72%, var(--ink) 28%);
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+#tripList .trip-match-pill mark{
+  padding:0 .18em;
+  border-radius:5px;
+  background:#fff1a8;
+  color:inherit;
+  font-weight:800;
+}
+
+body.mobile-ui #tripList .trip-search-matches{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+}
+
+body.mobile-ui #tripList .trip-search-title{
+  margin-bottom:8px;
+  font-size:11px;
+}
+
+body.mobile-ui #tripList .trip-match-list{
+  gap:6px;
+}
+
+body.mobile-ui #tripList .trip-match-pill{
+  min-height:34px;
+  padding:6px 10px;
+  font-size:12px;
+}
+
+/* === FINAL desktop editor winner === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:20px !important;
+    bottom:20px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(720px, calc(100vw - 64px)) !important;
+    max-width:min(720px, calc(100vw - 64px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:56px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:24px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:14px 24px !important;
+    border-bottom:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header strong,
+  html body dialog#journalModal > header strong{
+    font-size:20px !important;
+    font-weight:700 !important;
+    line-height:1.1 !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:20px 24px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:14px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    align-content:start !important;
+    font-size:13px !important;
+    font-weight:600 !important;
+    color:var(--ink) !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    min-height:52px !important;
+    height:52px !important;
+    border-radius:18px !important;
+    font-size:16px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:124px !important;
+    height:124px !important;
+    max-height:124px !important;
+    padding:14px 16px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.45 !important;
+    text-align:right !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:end !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:-2px 0 2px !important;
+    overflow:hidden !important;
+    border-radius:18px !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.95fr) 110px !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(0,1.25fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:block !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    padding:0 14px !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    font-size:16px !important;
+    font-weight:500 !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview,
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    max-height:76px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    padding:14px 24px !important;
+    border-top:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:0 20px !important;
+    margin:0 !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:600 !important;
+  }
+}
+
+/* === FINAL desktop editor visual reset === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:20px !important;
+    bottom:20px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(720px, calc(100vw - 64px)) !important;
+    max-width:min(720px, calc(100vw - 64px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:56px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:24px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:14px 24px !important;
+    border-bottom:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header strong,
+  html body dialog#journalModal > header strong{
+    font-size:20px !important;
+    font-weight:700 !important;
+    line-height:1.1 !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:20px 24px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:14px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    align-content:start !important;
+    font-size:13px !important;
+    font-weight:600 !important;
+    color:var(--ink) !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    min-height:52px !important;
+    height:52px !important;
+    border-radius:18px !important;
+    font-size:16px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    min-height:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:124px !important;
+    height:124px !important;
+    max-height:124px !important;
+    padding:14px 16px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.45 !important;
+    text-align:right !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:end !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:-2px 0 2px !important;
+    overflow:hidden !important;
+    border-radius:18px !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.95fr) 110px !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(0,1.25fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:block !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    padding:0 14px !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    font-size:16px !important;
+    font-weight:500 !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview,
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    max-height:76px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    padding:14px 24px !important;
+    border-top:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:0 20px !important;
+    margin:0 !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:600 !important;
+  }
+}
+
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:12px !important;
+    bottom:12px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(680px, calc(100vw - 48px)) !important;
+    max-width:min(680px, calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:48px minmax(0, 1fr) 68px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:14px 20px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:12px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-content:start !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    min-height:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:92px !important;
+    height:92px !important;
+    max-height:92px !important;
+    padding:12px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.4 !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr) minmax(88px, .6fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-items:end !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    height:46px !important;
+    min-height:46px !important;
+    padding:0 12px !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label,
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    display:block !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    min-height:18px !important;
+    font-size:12px !important;
+    line-height:1.35 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:68px !important;
+    min-height:68px !important;
+    max-height:68px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:12px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:110px !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    padding:0 18px !important;
+    margin:0 !important;
+  }
+}
+
+/* === FINAL desktop modal cleanup === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:12px !important;
+    bottom:12px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(680px, calc(100vw - 48px)) !important;
+    max-width:min(680px, calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:48px minmax(0, 1fr) 68px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:14px 20px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:12px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-content:start !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    min-height:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:92px !important;
+    height:92px !important;
+    max-height:92px !important;
+    padding:12px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.4 !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr) minmax(88px, .6fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-items:end !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    height:46px !important;
+    min-height:46px !important;
+    padding:0 12px !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label,
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    display:block !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    min-height:18px !important;
+    font-size:12px !important;
+    line-height:1.35 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:68px !important;
+    min-height:68px !important;
+    max-height:68px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:12px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:110px !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    padding:0 18px !important;
+    margin:0 !important;
+  }
+}
+
+/* === FINAL desktop editor size and drag handle - WINNER === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+    padding-bottom:18px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:268px !important;
+    height:268px !important;
+    max-height:268px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:3px !important;
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    min-height:18px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:2 !important;
+    opacity:.72 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    opacity:.75 !important;
+    transform:skew(-18deg) !important;
+  }
+}
+
+/* === FINAL desktop editor size and drag handle === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+    padding-bottom:18px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:268px !important;
+    height:268px !important;
+    max-height:268px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:3px !important;
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    min-height:18px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:2 !important;
+    opacity:.72 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    opacity:.75 !important;
+    transform:skew(-18deg) !important;
+  }
+}
+
+html body a.link-icon-only{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:24px !important;
+  min-width:24px !important;
+  height:24px !important;
+  vertical-align:middle !important;
+  text-decoration:none !important;
+}
+
+html body a.link-icon-only::before{
+  content:"\1F517" !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+
 /* === Stable desktop editor modal: no page/body scroll, text scroll only === */
 @media (min-width: 821px){
   html body dialog#expenseModal[open],
@@ -8985,7 +11178,7 @@ button, .btn, .menu-btn, select, input, textarea {
   }
 
   /* ────────────────────────────────────────────────────────────
-     SCREEN 2 — Map toolbar buttons (אייפה טיילתי / ביזבזתי)
+     SCREEN 2 — Map toolbar buttons (איפה טיילתי / בזבזתי)
   ──────────────────────────────────────────────────────────── */
 
   body.mobile-ui .map-toolbar {
@@ -11008,11 +13201,11 @@ button, .btn, .menu-btn, select, input, textarea {
   }
 
   html body dialog#expenseModal > .body{
-    grid-template-rows:70px minmax(96px, var(--editor-text-row-height, 1fr)) 46px 86px 86px !important;
+    grid-template-rows:min-content minmax(240px, var(--editor-text-row-height, 1fr)) min-content min-content min-content !important;
   }
 
   html body dialog#journalModal > .body{
-    grid-template-rows:70px minmax(96px, var(--editor-text-row-height, 1fr)) 46px 86px !important;
+    grid-template-rows:min-content minmax(240px, var(--editor-text-row-height, 1fr)) min-content min-content !important;
   }
 
   html body dialog#expenseModal .body > label:has(#expTitle),
@@ -11168,16 +13361,16 @@ button, .btn, .menu-btn, select, input, textarea {
     padding:10px 18px !important;
     display:grid !important;
     gap:8px !important;
-    align-content:stretch !important;
+    align-content:start !important;
     box-sizing:border-box !important;
   }
 
   html body dialog#expenseModal > .body{
-    grid-template-rows:64px minmax(120px, 1fr) 40px 76px 104px !important;
+    grid-template-rows:64px 250px 40px 76px 120px !important;
   }
 
   html body dialog#journalModal > .body{
-    grid-template-rows:64px minmax(140px, 1fr) 40px 104px !important;
+    grid-template-rows:64px 290px 40px 120px !important;
   }
 
   html body dialog#expenseModal .body > label:has(#expText),
@@ -11229,6 +13422,52 @@ button, .btn, .menu-btn, select, input, textarea {
     min-height:0 !important;
   }
 
+  html body #expenseModal .expense-meta-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr) !important;
+    gap:10px !important;
+  }
+
+  html body #journalModal .journal-meta-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr) !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .exp-date-col,
+  html body #expenseModal .exp-time-col,
+  html body #expenseModal .exp-location-col,
+  html body #journalModal .jr-date-col,
+  html body #journalModal .jr-time-col,
+  html body #journalModal .jr-location-col{
+    align-self:end !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    min-height:44px !important;
+    height:44px !important;
+    width:100% !important;
+    min-width:0 !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+    padding:0 12px !important;
+  }
+
+  html body #expenseModal #expLocationPreview,
+  html body #journalModal #jrLocationPreview,
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-icon,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-icon{
+    flex:0 0 auto !important;
+  }
+
   html body #expenseModal > .footer,
   html body #journalModal > .footer{
     height:62px !important;
@@ -11241,6 +13480,35 @@ button, .btn, .menu-btn, select, input, textarea {
     padding:8px 18px !important;
     box-sizing:border-box !important;
     overflow:hidden !important;
+  }
+
+  html body .rtf a.link-icon,
+  html body .rtf a.mail-icon,
+  html body .cell.notes a.link-icon,
+  html body .cell.notes a.mail-icon{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:24px !important;
+    min-width:24px !important;
+    height:24px !important;
+    vertical-align:middle !important;
+    text-decoration:none !important;
+    margin:0 4px !important;
+  }
+
+  html body .rtf a.link-icon::before,
+  html body .cell.notes a.link-icon::before{
+    content:"🔗" !important;
+    font-size:18px !important;
+    line-height:1 !important;
+  }
+
+  html body .rtf a.mail-icon::before,
+  html body .cell.notes a.mail-icon::before{
+    content:"✉" !important;
+    font-size:18px !important;
+    line-height:1 !important;
   }
 }
 
@@ -11426,42 +13694,1697 @@ button, .btn, .menu-btn, select, input, textarea {
   }
 }
 
-/* ==========================================================
-   FINAL MOBILE FIT PASS — 2026-04-24
-   Goal: full-screen mobile adaptation with ZERO horizontal scroll.
-   This block intentionally lives at the end of style.css so it wins
-   over earlier duplicated mobile rules without touching app logic.
-   ========================================================== */
-@media (max-width: 820px){
-  :root{
-    --mobile-pad: clamp(10px, 3.2vw, 14px);
-    --mobile-gap: clamp(8px, 2.7vw, 12px);
-    --mobile-radius: 18px;
-    --tap: 44px;
+/* === FINAL desktop editor size and drag handle - LAST === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:84px !important;
   }
 
+  html body dialog#journalModal[open]{
+    --editor-row-height:100px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:56px var(--editor-row-height) 32px 72px 108px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:56px var(--editor-row-height) 32px 108px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+    padding-bottom:18px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:0 !important;
+    max-height:100% !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:3px !important;
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    min-height:18px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:2 !important;
+    opacity:.72 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    opacity:.75 !important;
+    transform:skew(-18deg) !important;
+  }
+}
+
+/* === FINAL lock: desktop expense/journal fit + stable link icons === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:20px !important;
+    bottom:20px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(720px, calc(100vw - 64px)) !important;
+    max-width:min(720px, calc(100vw - 64px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:56px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:24px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:14px 24px !important;
+    border-bottom:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header strong,
+  html body dialog#journalModal > header strong{
+    font-size:20px !important;
+    font-weight:700 !important;
+    line-height:1.1 !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:20px 24px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:14px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    align-content:start !important;
+    font-size:13px !important;
+    font-weight:600 !important;
+    color:var(--ink) !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    min-height:52px !important;
+    height:52px !important;
+    border-radius:18px !important;
+    font-size:16px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:124px !important;
+    height:124px !important;
+    max-height:124px !important;
+    padding:14px 16px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.45 !important;
+    text-align:right !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:end !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:-2px 0 2px !important;
+    overflow:hidden !important;
+    border-radius:18px !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.95fr) 110px !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(0,1.25fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:block !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    padding:0 14px !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    font-size:16px !important;
+    font-weight:500 !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview,
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    max-height:76px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    padding:14px 24px !important;
+    border-top:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:0 20px !important;
+    margin:0 !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:600 !important;
+  }
+}
+
+html body .rtf a.link-icon,
+html body .rtf a.mail-icon,
+html body .cell.notes a.link-icon,
+html body .cell.notes a.mail-icon{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:24px !important;
+  min-width:24px !important;
+  height:24px !important;
+  text-decoration:none !important;
+  vertical-align:middle !important;
+}
+
+html body .rtf a.link-icon,
+html body .cell.notes a.link-icon,
+html body a.link-icon-only{
+  color:#1E88E5 !important;
+}
+
+html body .rtf a.link-icon::before,
+html body .cell.notes a.link-icon::before,
+html body a.link-icon-only::before{
+  content:"" !important;
+  display:block !important;
+  width:18px !important;
+  height:18px !important;
+  background-color:currentColor !important;
+  -webkit-mask-repeat:no-repeat !important;
+  mask-repeat:no-repeat !important;
+  -webkit-mask-position:center !important;
+  mask-position:center !important;
+  -webkit-mask-size:contain !important;
+  mask-size:contain !important;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 1 0 7.07 7.07L13 19'/%3E%3C/svg%3E") !important;
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 1 0 7.07 7.07L13 19'/%3E%3C/svg%3E") !important;
+}
+
+html body .rtf a.mail-icon::before,
+html body .cell.notes a.mail-icon::before{
+  content:"\2709" !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+/* === TRUE EOF OVERRIDE: readable trip budget fields and aligned edit dialogs === */
+#view-meta .budget-row{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(160px, 1fr)) !important;
+  gap:16px !important;
+  align-items:end !important;
+  width:100% !important;
+}
+
+#view-meta .budget-row label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+  min-width:0 !important;
+  text-align:center !important;
+}
+
+#view-meta .budget-row .input{
+  width:100% !important;
+  min-width:0 !important;
+  height:44px !important;
+  min-height:44px !important;
+  text-align:center !important;
+  font-size:16px !important;
+  box-sizing:border-box !important;
+}
+
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    inset:24px auto auto 50% !important;
+    transform:translateX(-50%) !important;
+    width:min(760px, calc(100vw - 48px)) !important;
+    max-width:min(760px, calc(100vw - 48px)) !important;
+    height:calc(100dvh - 48px) !important;
+    max-height:calc(100dvh - 48px) !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:58px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:22px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    min-height:0 !important;
+    padding:18px 26px !important;
+    overflow:auto !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content minmax(150px, 1fr) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content minmax(170px, 1fr) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+    line-height:1.25 !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:46px !important;
+    height:46px !important;
+    padding:10px 14px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    line-height:1.25 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:130px !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:14px 16px !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    text-align:right !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    justify-self:start !important;
+    align-self:start !important;
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    padding:8px 10px !important;
+    overflow:visible !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(220px, 1.45fr) minmax(150px, 1fr) minmax(104px, .55fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(150px, 1fr) minmax(130px, .9fr) minmax(210px, 1.35fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    padding:12px 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    padding:0 20px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:700 !important;
+  }
+}
+
+@media (max-width: 820px){
+  #view-meta .budget-row{
+    grid-template-columns:1fr !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row,
+  body.mobile-ui #expenseModal .expense-main-row,
+  body.mobile-ui #expenseModal .expense-meta-row,
+  body.mobile-ui #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #2: keep budget fields and buttons on separate rows === */
+#view-meta .budget-block{
+  display:grid !important;
+  grid-template-columns:auto minmax(0, 1fr) !important;
+  grid-template-areas:
+    "title fields"
+    ". actions" !important;
+  gap:12px 18px !important;
+  align-items:end !important;
+  padding:14px !important;
+  overflow:visible !important;
+}
+
+#view-meta .budget-block h3{
+  grid-area:title !important;
+  margin:0 !important;
+  align-self:center !important;
+  white-space:nowrap !important;
+}
+
+#view-meta .budget-row{
+  grid-area:fields !important;
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(150px, 1fr)) !important;
+  gap:14px !important;
+  align-items:end !important;
+  min-width:0 !important;
+}
+
+#view-meta .budget-actions-row{
+  grid-area:actions !important;
+  display:flex !important;
+  justify-content:flex-start !important;
+  align-items:center !important;
+  gap:10px !important;
+  margin:0 !important;
+  min-width:0 !important;
+  position:static !important;
+  z-index:auto !important;
+}
+
+#view-meta .budget-row label,
+#view-meta .budget-actions-row .btn{
+  position:static !important;
+  z-index:auto !important;
+}
+
+#view-meta .budget-row .input{
+  width:100% !important;
+  max-width:none !important;
+}
+
+#view-meta .budget-actions-row .btn{
+  min-width:120px !important;
+  height:42px !important;
+}
+
+@media (max-width: 900px){
+  #view-meta .budget-block{
+    grid-template-columns:1fr !important;
+    grid-template-areas:
+      "title"
+      "fields"
+      "actions" !important;
+  }
+
+  #view-meta .budget-row{
+    grid-template-columns:1fr !important;
+  }
+
+  #view-meta .budget-actions-row{
+    justify-content:stretch !important;
+    flex-wrap:wrap !important;
+  }
+
+  #view-meta .budget-actions-row .btn{
+    flex:1 1 140px !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #3: budget controls in one desktop row === */
+#view-meta .budget-block{
+  display:grid !important;
+  grid-template-columns:auto repeat(3, minmax(120px, 1fr)) minmax(130px, .9fr) minmax(130px, .9fr) !important;
+  grid-template-areas:"title usd eur ils edit save" !important;
+  gap:12px !important;
+  align-items:end !important;
+  padding:14px !important;
+  overflow:visible !important;
+}
+
+#view-meta .budget-block h3{
+  grid-area:title !important;
+  margin:0 !important;
+  align-self:center !important;
+  white-space:nowrap !important;
+}
+
+#view-meta .budget-row,
+#view-meta .budget-actions-row{
+  display:contents !important;
+}
+
+#view-meta .budget-row label:nth-child(1){ grid-area:usd !important; }
+#view-meta .budget-row label:nth-child(2){ grid-area:eur !important; }
+#view-meta .budget-row label:nth-child(3){ grid-area:ils !important; }
+#view-meta #btnBudgetEdit{ grid-area:edit !important; }
+#view-meta #btnSaveMeta{ grid-area:save !important; }
+
+#view-meta .budget-row label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+  min-width:0 !important;
+  text-align:center !important;
+  position:static !important;
+}
+
+#view-meta .budget-row .input,
+#view-meta .budget-actions-row .btn{
+  width:100% !important;
+  max-width:none !important;
+  height:44px !important;
+  min-height:44px !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+  position:static !important;
+  z-index:auto !important;
+}
+
+#view-meta .budget-actions-row .btn{
+  min-width:0 !important;
+  padding:0 16px !important;
+}
+
+@media (max-width: 980px){
+  #view-meta .budget-block{
+    grid-template-columns:auto repeat(3, minmax(100px, 1fr)) minmax(112px, .8fr) minmax(112px, .8fr) !important;
+    gap:8px !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #4: full edit dialogs, no internal scrollbar, visible text/location === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:18px !important;
+    bottom:18px !important;
+    left:50% !important;
+    right:auto !important;
+    width:min(820px, calc(100vw - 56px)) !important;
+    max-width:min(820px, calc(100vw - 56px)) !important;
+    height:calc(100dvh - 36px) !important;
+    max-height:calc(100dvh - 36px) !important;
+    min-height:calc(100dvh - 36px) !important;
+    transform:translateX(-50%) !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:58px minmax(0, 1fr) 74px !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    overflow:hidden !important;
+    min-height:0 !important;
+    padding:18px 26px !important;
+    display:grid !important;
+    gap:14px !important;
+    align-content:stretch !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:52px minmax(210px, 1fr) 42px 74px 74px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:52px minmax(250px, 1fr) 42px 74px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:12px 14px !important;
+    line-height:1.45 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    align-items:end !important;
+    gap:12px !important;
+    min-height:0 !important;
+    margin:0 !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    grid-template-columns:minmax(230px,1.45fr) minmax(150px,.9fr) minmax(94px,.45fr) !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    grid-template-columns:minmax(150px,.85fr) minmax(120px,.7fr) minmax(260px,1.55fr) !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    align-items:end !important;
+    gap:4px !important;
+    padding-top:0 !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    height:46px !important;
+    min-height:46px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+    padding:0 14px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body #expenseModal #expLocationPreview,
+  html body #journalModal #jrLocationPreview{
+    display:none !important;
+  }
+}
+
+@media (max-width: 820px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open],
+  body.mobile-ui dialog#expenseModal[open],
+  body.mobile-ui dialog#journalModal[open]{
+    position:fixed !important;
+    inset:10px !important;
+    width:auto !important;
+    max-width:none !important;
+    height:calc(100dvh - 20px) !important;
+    min-height:calc(100dvh - 20px) !important;
+    max-height:calc(100dvh - 20px) !important;
+    transform:none !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:48px minmax(0, 1fr) auto !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body,
+  body.mobile-ui dialog#expenseModal > .body,
+  body.mobile-ui dialog#journalModal > .body{
+    overflow:hidden !important;
+    padding:12px !important;
+    display:grid !important;
+    gap:10px !important;
+    align-content:stretch !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  body.mobile-ui dialog#expenseModal > .body{
+    grid-template-rows:46px minmax(180px, 1fr) 36px 64px 64px !important;
+  }
+
+  html body dialog#journalModal > .body,
+  body.mobile-ui dialog#journalModal > .body{
+    grid-template-rows:46px minmax(220px, 1fr) 36px 64px !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  body.mobile-ui #expText,
+  body.mobile-ui #jrText{
+    height:100% !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:10px 12px !important;
+    line-height:1.4 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger,
+  body.mobile-ui #expenseModal .expense-location-trigger,
+  body.mobile-ui #journalModal .journal-location-trigger{
+    width:100% !important;
+    max-width:none !important;
+    display:flex !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label,
+  body.mobile-ui #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  body.mobile-ui #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #5: compact editor dialogs, toolbar directly under text === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    top:14px !important;
+    bottom:auto !important;
+    left:50% !important;
+    right:auto !important;
+    transform:translateX(-50%) !important;
+    width:min(820px, calc(100vw - 48px)) !important;
+    max-width:min(820px, calc(100vw - 48px)) !important;
+    height:auto !important;
+    min-height:0 !important;
+    max-height:calc(100dvh - 28px) !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:56px auto 66px !important;
+    overflow:hidden !important;
+    border-radius:20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    display:grid !important;
+    gap:10px !important;
+    padding:16px 24px !important;
+    overflow:visible !important;
+    align-content:start !important;
+    min-height:0 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:50px minmax(132px, auto) 38px 66px 66px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:50px minmax(150px, auto) 38px 66px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto auto !important;
+    gap:6px !important;
+    overflow:visible !important;
+    min-height:0 !important;
+    padding:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:auto !important;
+    min-height:132px !important;
+    max-height:190px !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    padding:12px 14px !important;
+    line-height:1.45 !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:start !important;
+    margin:0 !important;
+    width:max-content !important;
+    max-width:100% !important;
+    padding:8px 10px !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:8px !important;
+    overflow:visible !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    gap:12px !important;
+    align-items:end !important;
+    margin:0 !important;
+    min-height:0 !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    grid-template-columns:minmax(230px,1.45fr) minmax(150px,.9fr) minmax(96px,.48fr) !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    grid-template-columns:minmax(150px,.9fr) minmax(120px,.72fr) minmax(260px,1.55fr) !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    height:46px !important;
+    min-height:46px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+    padding:0 14px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:66px !important;
+    min-height:66px !important;
+    max-height:66px !important;
+    padding:10px 24px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    height:46px !important;
+    min-height:46px !important;
+    min-width:128px !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #6: keep editor footer fully inside viewport === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:8px !important;
+    bottom:auto !important;
+    height:auto !important;
+    max-height:calc(100dvh - 16px) !important;
+    grid-template-rows:54px minmax(0, auto) 58px !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:54px !important;
+    min-height:54px !important;
+    max-height:54px !important;
+    padding:0 24px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    padding:12px 24px !important;
+    gap:8px !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:48px 96px 34px 62px 62px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:48px 118px 34px 62px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:96px !important;
+    min-height:96px !important;
+    max-height:96px !important;
+    overflow-y:auto !important;
+  }
+
+  html body #journalModal #jrText{
+    height:118px !important;
+    min-height:118px !important;
+    max-height:118px !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    padding:5px 8px !important;
+    min-height:34px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  html body #expenseModal select,
+  html body #journalModal select,
+  html body #expenseModal input,
+  html body #journalModal input,
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:42px !important;
+    min-height:42px !important;
+    max-height:42px !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:58px !important;
+    min-height:58px !important;
+    max-height:58px !important;
+    padding:8px 24px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    height:42px !important;
+    min-height:42px !important;
+    max-height:42px !important;
+  }
+}
+/* === TRUE EOF OVERRIDE #8: final description resize handle fix only === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:96px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:118px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:48px var(--editor-row-height) 34px 62px 62px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:48px var(--editor-row-height) 34px 62px !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  html body #journalModal #jrText{
+    height:100% !important;
+    min-height:84px !important;
+    max-height:260px !important;
+    overflow-y:auto !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:8px !important;
+    bottom:6px !important;
+    width:22px !important;
+    height:22px !important;
+    min-width:22px !important;
+    min-height:22px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:5 !important;
+    opacity:.8 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:4px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    transform:skew(-18deg) !important;
+    opacity:.75 !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #9: resize must win + toolbar gets its own space === */
+@media (min-width: 821px){
+  html body dialog#expenseModal > .body{
+    grid-template-rows:48px var(--editor-row-height) minmax(46px, auto) 62px 62px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:48px var(--editor-row-height) minmax(46px, auto) 62px !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    min-height:42px !important;
+    height:auto !important;
+    margin:0 !important;
+    padding:7px 10px !important;
+    align-self:start !important;
+    z-index:1 !important;
+    box-sizing:border-box !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #10: compact spacing and always-visible editor footer === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:6px !important;
+    max-height:calc(100dvh - 12px) !important;
+    grid-template-rows:48px minmax(0, auto) 56px !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    padding:8px 20px !important;
+    gap:6px !important;
+    overflow:hidden !important;
+    align-content:start !important;
+  }
+
+  html body dialog#expenseModal[open]{
+    --editor-row-height:88px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:100px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:44px var(--editor-row-height) 36px 52px 52px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:44px var(--editor-row-height) 36px 52px !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  html body #journalModal #jrText{
+    height:100% !important;
+    min-height:72px !important;
+    max-height:180px !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    min-height:34px !important;
+    padding:5px 8px !important;
+    align-self:center !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  html body #expenseModal select,
+  html body #journalModal select,
+  html body #expenseModal input,
+  html body #journalModal input,
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    gap:10px !important;
+    align-items:end !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:7px 20px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:10px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    height:40px !important;
+    min-height:40px !important;
+    max-height:40px !important;
+    min-width:112px !important;
+  }
+}
+/* === TRUE EOF OVERRIDE #12: final vertical fit polish at real EOF === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:4px !important;
+    max-height:calc(100dvh - 8px) !important;
+    grid-template-rows:38px minmax(0, auto) 52px !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    padding:0 20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    padding:8px 20px 6px !important;
+    gap:5px !important;
+  }
+
+  html body dialog#expenseModal[open]{
+    --editor-row-height:82px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:94px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:42px var(--editor-row-height) 34px 48px 48px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:42px var(--editor-row-height) 34px 48px !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  html body #expenseModal select,
+  html body #journalModal select,
+  html body #expenseModal input,
+  html body #journalModal input,
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    gap:3px !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:52px !important;
+    min-height:52px !important;
+    max-height:52px !important;
+    padding:6px 20px !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #13: enlarge editor dialogs by about 15% === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    width:min(943px, calc(100vw - 32px)) !important;
+    max-width:min(943px, calc(100vw - 32px)) !important;
+    top:2px !important;
+    max-height:calc(100dvh - 4px) !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #14: restore previous width, only add vertical room === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    width:min(820px, calc(100vw - 48px)) !important;
+    max-width:min(820px, calc(100vw - 48px)) !important;
+    top:2px !important;
+    max-height:calc(100dvh - 4px) !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #15: taller modal only + toolbar on opposite side === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    height:min(440px, calc(100dvh - 4px)) !important;
+    min-height:min(440px, calc(100dvh - 4px)) !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    justify-self:end !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #16: clean desktop expense/journal modal layout === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    top:10px !important;
+    left:50% !important;
+    right:auto !important;
+    bottom:auto !important;
+    transform:translateX(-50%) !important;
+    width:min(860px, calc(100vw - 40px)) !important;
+    max-width:min(860px, calc(100vw - 40px)) !important;
+    height:min(560px, calc(100dvh - 20px)) !important;
+    max-height:calc(100dvh - 20px) !important;
+    min-height:min(500px, calc(100dvh - 20px)) !important;
+    display:grid !important;
+    grid-template-rows:54px minmax(0, 1fr) 64px !important;
+    overflow:hidden !important;
+    border-radius:22px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:54px !important;
+    min-height:54px !important;
+    max-height:54px !important;
+    padding:0 24px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    display:grid !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:16px 22px 12px !important;
+    gap:12px !important;
+    align-content:stretch !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:54px minmax(150px, 1fr) 44px 64px 64px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:54px minmax(190px, 1fr) 44px 64px !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:5px !important;
+    min-width:0 !important;
+    font-size:13px !important;
+    line-height:1.2 !important;
+    font-weight:700 !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    overflow:hidden !important;
+    position:relative !important;
+    padding:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:12px 14px !important;
+    border-radius:14px !important;
+    line-height:1.45 !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    box-sizing:border-box !important;
+  }
+
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    justify-self:end !important;
+    align-self:center !important;
+    display:flex !important;
+    align-items:center !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    width:max-content !important;
+    max-width:100% !important;
+    min-height:38px !important;
+    padding:6px 10px !important;
+    margin:0 !important;
+    overflow:visible !important;
+    box-sizing:border-box !important;
+    z-index:1 !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    align-items:end !important;
+    gap:12px !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    margin:0 !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    grid-template-columns:minmax(260px,1.45fr) minmax(170px,.9fr) minmax(90px,.45fr) !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    grid-template-columns:minmax(180px,.9fr) minmax(140px,.72fr) minmax(300px,1.55fr) !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  html body #expenseModal select,
+  html body #journalModal select,
+  html body #expenseModal input,
+  html body #journalModal input,
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    height:42px !important;
+    min-height:42px !important;
+    max-height:42px !important;
+    padding:9px 12px !important;
+    border-radius:14px !important;
+    font-size:15px !important;
+    line-height:1.2 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:64px !important;
+    min-height:64px !important;
+    max-height:64px !important;
+    padding:10px 22px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    height:42px !important;
+    min-height:42px !important;
+    max-height:42px !important;
+    min-width:126px !important;
+    border-radius:14px !important;
+    font-size:15px !important;
+    font-weight:700 !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #17: keep modal size, fit inner date/location/footer rows === */
+@media (min-width: 821px){
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    padding:12px 22px 8px !important;
+    gap:8px !important;
+    overflow:hidden !important;
+    align-content:start !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:50px 112px 40px 56px 56px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:50px 150px 40px 56px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:0 !important;
+    max-height:none !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    min-height:36px !important;
+    padding:5px 10px !important;
+    align-self:start !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    gap:10px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    grid-template-columns:minmax(240px,1.35fr) minmax(160px,.85fr) minmax(84px,.42fr) !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    grid-template-columns:minmax(170px,.85fr) minmax(130px,.7fr) minmax(260px,1.45fr) !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  html body #expenseModal select,
+  html body #journalModal select,
+  html body #expenseModal input,
+  html body #journalModal input,
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    padding:8px 12px !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    gap:3px !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    align-items:end !important;
+    min-width:0 !important;
+    padding:0 !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #18: fix only the content/description box === */
+@media (min-width: 821px){
+  html body dialog#expenseModal > .body{
+    grid-template-rows:50px 132px 40px 56px 56px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:50px 170px 40px 56px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:6px !important;
+    overflow:visible !important;
+    padding:0 !important;
+    min-height:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    display:block !important;
+    width:100% !important;
+    height:100% !important;
+    min-height:0 !important;
+    max-height:none !important;
+    padding:14px 16px !important;
+    border-radius:14px !important;
+    border:1px solid var(--border) !important;
+    line-height:1.45 !important;
+    overflow:auto !important;
+    box-sizing:border-box !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #19: mobile no-horizontal-scroll hardening === */
+@media (max-width: 820px){
   html,
   body{
     width:100% !important;
     max-width:100% !important;
     min-width:0 !important;
-    height:100% !important;
-    min-height:100dvh !important;
     overflow-x:hidden !important;
     overscroll-behavior-x:none !important;
   }
 
   body{
-    overflow-y:auto !important;
-    -webkit-text-size-adjust:100%;
-    touch-action:pan-y;
+    position:relative !important;
   }
 
   *,
   *::before,
   *::after{
     box-sizing:border-box !important;
-    max-width:100%;
   }
 
   img,
@@ -11472,1112 +15395,187 @@ button, .btn, .menu-btn, select, input, textarea {
     max-width:100% !important;
   }
 
+  .app,
+  .container,
+  .home-mode,
+  .sidebar,
+  .content,
+  .tabview,
+  .card,
+  .panel,
+  .section,
+  .tabs,
+  .overview-headerbar,
+  .overview-quick,
+  .list-actions,
+  .budget-bar,
+  .expenses-table-container,
+  .map-toolbar,
+  #view-meta,
+  #view-overview,
+  #view-expenses,
+  #view-journal,
+  #view-map,
+  #view-share{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    overflow-x:hidden !important;
+  }
+
+  .row,
+  .flex,
+  .tabs,
+  .overview-headerbar,
+  .overview-quick,
+  .list-actions,
+  .share-actions,
+  .map-toolbar,
+  .account-menu-actions{
+    flex-wrap:wrap !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  .btn,
+  button,
+  .input,
   input,
   select,
   textarea,
-  button,
-  .btn{
-    min-width:0 !important;
+  [contenteditable="true"]{
     max-width:100% !important;
-    font-size:16px;
-  }
-
-  .app,
-  #previewRoot,
-  .container,
-  .content,
-  .sidebar,
-  .tabview,
-  .card,
-  .trip-card,
-  .expenses-table-container{
-    width:100% !important;
-    max-width:100vw !important;
-    min-width:0 !important;
-    overflow-x:hidden !important;
-  }
-
-  .app{
-    min-height:100dvh !important;
-    height:100dvh !important;
-    display:grid !important;
-    grid-template-rows:auto minmax(0, 1fr) !important;
-  }
-
-  header{
-    position:sticky !important;
-    top:0 !important;
-    z-index:50 !important;
-    width:100% !important;
-    max-width:100vw !important;
-    min-height:56px !important;
-    padding:calc(8px + env(safe-area-inset-top, 0px)) var(--mobile-pad) 8px !important;
-    display:grid !important;
-    grid-template-columns:auto minmax(0, 1fr) auto auto !important;
-    gap:8px !important;
-    align-items:center !important;
-    overflow:hidden !important;
-  }
-
-  header .brand{
-    min-width:0 !important;
-    overflow:hidden !important;
-    white-space:nowrap !important;
-  }
-
-  header .brand img{
-    width:32px !important;
-    height:32px !important;
-    min-width:32px !important;
-    object-fit:contain !important;
-  }
-
-  header .brand-text,
-  header .brand span:not([aria-hidden]){
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-    white-space:nowrap !important;
-    font-size:.98rem !important;
-  }
-
-  header .spacer{
     min-width:0 !important;
   }
 
-  #btnTheme,
-  #btnLogin,
-  header .icon-only{
-    width:var(--tap) !important;
-    min-width:var(--tap) !important;
-    height:var(--tap) !important;
-    min-height:var(--tap) !important;
-    padding:0 !important;
-    display:inline-flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-    border-radius:14px !important;
-    flex:0 0 var(--tap) !important;
-  }
-
-  .container,
-  .container.home-mode,
-  .container.trip-mode{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) !important;
-    min-height:0 !important;
-    height:100% !important;
-    overflow:hidden !important;
-  }
-
-  .container.home-mode .sidebar,
-  .container.trip-mode .content{
-    height:100% !important;
-    min-height:0 !important;
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    -webkit-overflow-scrolling:touch;
-    padding:var(--mobile-pad) !important;
-  }
-
-  .container.trip-mode .content{
-    padding:0 !important;
-    display:grid !important;
-    grid-template-rows:auto minmax(0, 1fr) !important;
-  }
-
-  .tabs{
-    width:100% !important;
-    max-width:100vw !important;
-    min-width:0 !important;
-    overflow:hidden !important;
-    display:grid !important;
-    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
-    gap:8px !important;
-    padding:8px var(--mobile-pad) !important;
-    min-height:auto !important;
-  }
-
-  .tabs > button{
-    width:100% !important;
-    min-width:0 !important;
-    height:42px !important;
-    padding:0 6px !important;
-    font-size:0 !important;
-    border-radius:14px !important;
-    white-space:nowrap !important;
-  }
-
-  .tabs > button::before{
-    font-size:20px !important;
-    line-height:1 !important;
-  }
-  .tabs > button[data-tab="meta"]::before{ content:"✎"; }
-  .tabs > button[data-tab="map"]::before{ content:"⌖"; }
-  .tabs > button[data-tab="share"]::before{ content:"↥"; }
-
-  .tab-select-wrap,
-  #overviewHeaderBar,
-  #overviewTabSelect{
-    display:none !important;
-  }
-
-  .tabview{
-    min-height:0 !important;
-    height:100% !important;
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    -webkit-overflow-scrolling:touch;
-    padding:var(--mobile-pad) !important;
-  }
-
-  .section-title,
-  .list-actions,
-  .row,
-  .date-row,
-  .dest-row,
-  .budget-row,
-  .budget-actions-row,
-  .share-actions,
-  .share-grid,
-  .cards,
-  .grid{
-    min-width:0 !important;
-    max-width:100% !important;
-  }
-
-  #homeTripsHeader{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) var(--tap) !important;
-    gap:10px !important;
-    align-items:center !important;
-    margin:0 0 10px !important;
-  }
-
-  #homeTripsHeader h2{
-    font-size:clamp(1.45rem, 7vw, 2rem) !important;
-    line-height:1.05 !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-    white-space:nowrap !important;
-  }
-
-  #btnNewTrip{
-    width:var(--tap) !important;
-    height:var(--tap) !important;
-    min-width:var(--tap) !important;
-    font-size:0 !important;
-    padding:0 !important;
-    border-radius:14px !important;
-  }
-  #btnNewTrip::before{ content:"+"; font-size:28px; line-height:1; font-weight:800; }
-
-  #tripSearchActions{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) var(--tap) !important;
-    gap:10px !important;
-    padding:0 0 12px !important;
-  }
-
-  #searchTrips{
-    height:var(--tap) !important;
-  }
-
-  #btnSortTrips{
-    width:var(--tap) !important;
-    min-width:var(--tap) !important;
-    height:var(--tap) !important;
-    padding:0 !important;
-    font-size:0 !important;
-  }
-  #btnSortTrips::before{ content:"⇅"; font-size:20px; font-weight:800; }
-
-  #tripViewActions{ display:none !important; }
-
-  #tripList,
-  #tripList.grid,
-  #tripList.list,
-  .container.home-mode #tripList.grid{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) !important;
-    gap:10px !important;
-  }
-
-  .trip-card,
-  .trip-row{
-    padding:12px !important;
-    border-radius:var(--mobile-radius) !important;
-    overflow:hidden !important;
-  }
-
-  .trip-card *,
-  .trip-row *{
-    overflow-wrap:anywhere;
-    word-break:break-word;
-  }
-
-  .card{
-    padding:12px !important;
-    border-radius:var(--mobile-radius) !important;
-  }
-
-  #view-overview .overview-budget-wrap,
-  #expenseSummary{
-    width:100% !important;
-    max-width:100% !important;
-    overflow:hidden !important;
-  }
-
-  #expenseSummary.budget-bar{
-    display:grid !important;
-    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
-    gap:8px !important;
-  }
-
-  #expenseSummary.budget-bar > *,
-  #expenseSummary.budget-bar .bar-cols,
-  #expenseSummary.budget-bar .bar-actions{
-    min-width:0 !important;
-    max-width:100% !important;
-    overflow:hidden !important;
-  }
-
-  .expenses-table-container{
-    padding:0 !important;
-    background:transparent !important;
-    border:0 !important;
-    box-shadow:none !important;
-  }
-
-  table,
-  thead,
-  tbody,
-  tr,
-  th,
-  td{
-    max-width:100% !important;
-  }
-
-  table.expenses-table,
-  .expenses-table,
-  table.stacked{
-    display:block !important;
-    width:100% !important;
-    min-width:0 !important;
-    border-spacing:0 !important;
-    overflow:hidden !important;
-  }
-
-  .expenses-table thead{ display:none !important; }
-  .expenses-table tbody{ display:grid !important; gap:10px !important; width:100% !important; }
-
-  .expenses-table tr,
-  #tblAllTimeline tr,
-  #tblExpenses tr,
-  #tblJournal tr{
-    display:grid !important;
-    width:100% !important;
-    min-width:0 !important;
-    grid-template-columns:minmax(0, 1fr) auto !important;
-    gap:6px 10px !important;
-    padding:12px !important;
-    border:1px solid var(--border) !important;
-    border-radius:var(--mobile-radius) !important;
-    background:var(--card) !important;
-    box-shadow:0 10px 22px rgba(0,0,0,.08) !important;
-    overflow:hidden !important;
-  }
-
-  .expenses-table tr.exp-details,
-  .expenses-table tr:has(td.notes){
-    grid-template-columns:minmax(0, 1fr) !important;
-    margin-top:-10px !important;
-    border-radius:0 0 var(--mobile-radius) var(--mobile-radius) !important;
-    box-shadow:none !important;
-  }
-
-  .expenses-table td,
-  #tblAllTimeline td,
-  #tblExpenses td,
-  #tblJournal td{
-    display:block !important;
-    border:0 !important;
-    padding:0 !important;
-    min-width:0 !important;
-    max-width:100% !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis;
+  .btn,
+  button{
     white-space:normal !important;
     overflow-wrap:anywhere !important;
-    word-break:break-word !important;
-    text-align:right !important;
-  }
-
-  .expenses-table td.menu-cell,
-  #tblAllTimeline td.menu-cell,
-  #tblExpenses td.menu-cell,
-  #tblJournal td.menu-cell{
-    grid-column:2 !important;
-    grid-row:1 / span 3 !important;
-    width:var(--tap) !important;
-    min-width:var(--tap) !important;
-    justify-self:end !important;
-    overflow:visible !important;
-  }
-
-  .menu-btn,
-  .row-menu-btn,
-  .expenses-table .menu button{
-    width:var(--tap) !important;
-    height:var(--tap) !important;
-    min-width:var(--tap) !important;
-    padding:0 !important;
-    border-radius:14px !important;
-  }
-
-  .menu-list{
-    position:fixed !important;
-    inset:auto 8px calc(8px + env(safe-area-inset-bottom, 0px)) 8px !important;
-    width:calc(100vw - 16px) !important;
-    max-width:calc(100vw - 16px) !important;
-    min-width:0 !important;
-    border-radius:20px !important;
-    overflow:hidden !important;
-  }
-
-  #view-meta h2,
-  #view-expenses h2,
-  #view-share h2{
-    font-size:1.28rem !important;
-    margin:0 0 10px !important;
-  }
-
-  #view-meta .meta-single,
-  #view-meta .card{
-    display:grid !important;
-    gap:12px !important;
-  }
-
-  #view-meta .dest-row{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) var(--tap) !important;
-    gap:8px !important;
-    align-items:end !important;
-  }
-
-  #btnVerifyOnMap{
-    width:var(--tap) !important;
-    min-width:var(--tap) !important;
-    height:var(--tap) !important;
-    padding:0 !important;
-    font-size:0 !important;
-  }
-  #btnVerifyOnMap::before{ content:"⌖"; font-size:20px; }
-
-  #view-meta .date-row,
-  #tripModal .date-row,
-  #expenseModal .date-row,
-  #journalModal .date-row{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) !important;
-    gap:10px !important;
-  }
-
-  #view-meta .date-row .people-input,
-  #view-meta .date-row .multi-types{
-    grid-column:1 / -1 !important;
-  }
-
-  #view-meta .chips{
-    display:grid !important;
-    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
-    gap:8px !important;
-  }
-
-  #view-meta .chip{
-    min-width:0 !important;
-    width:100% !important;
-    padding:9px 6px !important;
-    text-align:center !important;
-    font-size:.9rem !important;
-  }
-
-  #view-meta .budget-block{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) !important;
-    padding:12px !important;
-    gap:10px !important;
-  }
-
-  #view-meta .budget-block h3{
-    margin:0 !important;
-    font-size:1.05rem !important;
-  }
-
-  #view-meta .budget-row{
-    display:grid !important;
-    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
-    gap:8px !important;
-  }
-
-  #view-meta .budget-row label{
-    align-items:stretch !important;
-    min-width:0 !important;
-    font-size:.85rem !important;
-  }
-
-  #view-meta .budget-row .input{
-    width:100% !important;
-    padding:9px 6px !important;
-    text-align:center !important;
-  }
-
-  #view-meta .budget-actions-row{
-    display:grid !important;
-    grid-template-columns:1fr 1fr !important;
-    gap:8px !important;
-    margin:0 !important;
-  }
-
-  #view-meta .budget-actions-row .btn{
-    width:100% !important;
-    height:var(--tap) !important;
-    padding:0 8px !important;
-  }
-
-  #view-expenses .list-actions,
-  #view-journal .list-actions{
-    display:grid !important;
-    grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
-    gap:8px !important;
-    padding:0 0 10px !important;
-  }
-
-  #view-expenses .list-actions .btn,
-  #view-expenses .list-actions .chip-btn,
-  #view-journal .list-actions .btn{
-    width:100% !important;
-    min-width:0 !important;
-    height:var(--tap) !important;
-    padding:0 6px !important;
-    font-size:0 !important;
-    border-radius:14px !important;
-  }
-
-  #btnAddExpense::before{ content:"+ ₪"; font-size:15px; font-weight:800; }
-  #openBreakdownBtn::before{ content:"◌"; font-size:20px; font-weight:800; }
-  #btnSortExpenses::before,
-  #btnSortJournal::before{ content:"⇅"; font-size:20px; font-weight:800; }
-  #btnFilterExpenses::before{ content:"⌕"; font-size:20px; font-weight:800; }
-  #btnToggleExpenseDetails::before,
-  #btnToggleJournalDetails::before{ content:"▤"; font-size:20px; font-weight:800; }
-  #btnAddJournal::before{ content:"+ ✎"; font-size:15px; font-weight:800; }
-  #btnDeleteSelectedJournal::before{ content:"⌫"; font-size:20px; font-weight:800; }
-  #btnCancelSelectionJournal::before{ content:"×"; font-size:22px; font-weight:800; }
-
-  #view-map > div{
-    width:100% !important;
-    height:100% !important;
-    min-height:0 !important;
-    overflow:hidden !important;
-  }
-
-  .map-toolbar{
-    left:8px !important;
-    right:8px !important;
-    top:8px !important;
-    display:grid !important;
-    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
-    gap:8px !important;
-    width:calc(100% - 16px) !important;
-    max-width:calc(100% - 16px) !important;
-  }
-
-  .map-toolbar .btn{
-    width:100% !important;
-    height:40px !important;
-    padding:0 6px !important;
-    font-size:.82rem !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-    white-space:nowrap !important;
-    background:var(--glass) !important;
-  }
-
-  .leaflet-container,
-  #bigMap,
-  #homeMap{
-    width:100% !important;
-    height:calc(100dvh - 124px) !important;
-    min-height:420px !important;
-    border-radius:var(--mobile-radius) !important;
-    overflow:hidden !important;
-  }
-
-  #gpxManagerPanel,
-  .gpx-panel{
-    max-width:calc(100vw - 24px) !important;
-    overflow-x:hidden !important;
-  }
-
-  .share-page,
-  .share-grid,
-  .share-card,
-  .share-actions{
-    width:100% !important;
-    min-width:0 !important;
-    overflow:hidden !important;
-  }
-
-  .share-page{
-    display:grid !important;
-    gap:12px !important;
-  }
-
-  .share-head p{
-    margin:.35rem 0 0 !important;
-    line-height:1.45 !important;
-  }
-
-  .share-grid{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) !important;
-    gap:12px !important;
-  }
-
-  .share-card{
-    padding:12px !important;
-    border-radius:var(--mobile-radius) !important;
-  }
-
-  .share-card-head{
-    display:flex !important;
-    align-items:center !important;
-    justify-content:space-between !important;
-    gap:10px !important;
-  }
-
-  .share-actions{
-    display:grid !important;
-    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
-    gap:8px !important;
-  }
-
-  .share-actions .btn{
-    width:100% !important;
-    min-height:var(--tap) !important;
-    padding:8px 6px !important;
-    font-size:.88rem !important;
-    white-space:normal !important;
-  }
-
-  dialog.modal[open],
-  #authModal[open],
-  #tripModal[open],
-  #expenseModal[open],
-  #journalModal[open],
-  #rowMenuModal[open],
-  #filterModal[open],
-  #breakdownDialog[open],
-  #confirmDeleteModal[open],
-  #unsavedChangesModal[open],
-  #mapSelectModal[open],
-  #tripTodayModal[open],
-  #fxDetailsModal[open],
-  #expLocationModal[open],
-  #jrLocationModal[open]{
-    position:fixed !important;
-    inset:auto var(--mobile-pad) calc(var(--mobile-pad) + env(safe-area-inset-bottom, 0px)) var(--mobile-pad) !important;
-    width:calc(100vw - (var(--mobile-pad) * 2)) !important;
-    max-width:calc(100vw - (var(--mobile-pad) * 2)) !important;
-    min-width:0 !important;
-    max-height:calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
-    margin:0 auto !important;
-    border-radius:24px !important;
-    overflow:hidden !important;
-  }
-
-  dialog.modal > header,
-  dialog.modal > .footer{
-    width:100% !important;
-    min-width:0 !important;
-    flex-shrink:0 !important;
-  }
-
-  dialog.modal > .body{
-    width:100% !important;
-    min-width:0 !important;
-    max-height:calc(100dvh - 150px) !important;
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    -webkit-overflow-scrolling:touch;
-  }
-
-  dialog.modal .row,
-  dialog.modal .date-row,
-  dialog.modal .expense-main-row,
-  dialog.modal .expense-meta-row,
-  dialog.modal .journal-meta-row{
-    display:grid !important;
-    grid-template-columns:minmax(0, 1fr) !important;
-    gap:10px !important;
-  }
-
-  dialog.modal label{
-    min-width:0 !important;
-    width:100% !important;
-  }
-
-  dialog.modal textarea{
-    min-height:140px !important;
-    max-height:42dvh !important;
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    resize:none !important;
-  }
-
-  dialog.modal .footer{
-    display:grid !important;
-    grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
-    gap:8px !important;
-    padding:10px 14px !important;
-  }
-
-  dialog.modal .footer .btn,
-  dialog.modal .footer button{
-    width:100% !important;
-    min-height:var(--tap) !important;
-  }
-
-  #mobileAuthOverlay{
-    max-width:100vw !important;
-    overflow:hidden !important;
-  }
-
-  #mobileAuthCard{
-    width:100% !important;
-    max-width:520px !important;
-  }
-}
-
-@media (max-width: 380px){
-  #view-meta .chips,
-    #view-meta .budget-row,
-    #view-expenses .list-actions,
-    #view-journal .list-actions,
-    .share-actions{
-      grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
-    }
-
-    .map-toolbar{
-      grid-template-columns:1fr !important;
-    }
-
-    .map-toolbar .btn{
-      height:36px !important;
-    }
-}
-
-/* === FINAL MOBILE HARDENING PASS 2026-04-24 === */
-@keyframes flymilyAutofillStart { from { outline-color: transparent; } to { outline-color: transparent; } }
-input:-webkit-autofill { animation-name: flymilyAutofillStart; animation-duration: .01s; }
-
-@media (max-width: 820px){
-  html,
-  body{
-    width:100% !important;
-    max-width:100% !important;
-    min-width:0 !important;
-    overflow-x:hidden !important;
-    overscroll-behavior-x:none !important;
-    touch-action:pan-y !important;
-  }
-
-  body.mobile-no-x,
-  html.mobile-no-x{
-    position:relative !important;
-    inline-size:100% !important;
-    max-inline-size:100% !important;
-    overflow-x:clip !important;
-  }
-
-  .app,
-  .container,
-  .sidebar,
-  .content,
-  .tabview,
-  .card,
-  .cards,
-  .grid,
-  .list,
-  .list-actions,
-  .tabs,
-  .top-dock,
-  .overview-actions,
-  .overview-headerbar,
-  .overview-budget-wrap,
-  .expenses-table-container,
-  table,
-  tbody,
-  tr,
-  td,
-  th,
-  form,
-  label,
-  .row,
-  .budget-block,
-  .budget-row,
-  .budget-actions-row{
-    max-width:100% !important;
-    min-width:0 !important;
-    box-sizing:border-box !important;
-  }
-
-  .mobile-overflow-clamped{
-    max-width:100% !important;
-    min-width:0 !important;
-    overflow-wrap:anywhere !important;
-    word-break:break-word !important;
-  }
-
-  .content,
-  .sidebar,
-  .tabview,
-  .card,
-  .expenses-table-container{
-    overflow-x:hidden !important;
-  }
-
-  .tabs{
-    display:grid !important;
-    grid-template-columns:repeat(4, minmax(0,1fr)) !important;
-    gap:6px !important;
-    padding:8px !important;
-    overflow:visible !important;
-  }
-
-  .tabs button,
-  .tabs .btn,
-  .tab-select-wrap,
-  .tab-select{
-    width:100% !important;
-    min-width:0 !important;
-    max-width:100% !important;
-    font-size:.82rem !important;
-    padding-inline:8px !important;
-    white-space:nowrap !important;
-  }
-
-  .overview-headerbar,
-  .overview-actions-top,
-  .overview-quick,
-  .list-actions{
-    display:grid !important;
-    grid-template-columns:repeat(4, minmax(0,1fr)) !important;
-    gap:6px !important;
-  }
-
-  .overview-headerbar .search-input,
-  .overview-headerbar .mode-select,
-  .overview-actions .search-input,
-  #searchAll,
-  #overviewMode{
-    grid-column:1 / -1 !important;
-    width:100% !important;
-    min-width:0 !important;
-    max-width:100% !important;
-  }
-
-  .overview-headerbar .hits,
-  #allHitCount{
-    min-width:0 !important;
-    width:auto !important;
-    text-align:center !important;
-  }
-
-  .budget-bar,
-  #expenseSummary.budget-bar{
-    width:100% !important;
-    max-width:100% !important;
-    display:grid !important;
-    grid-template-columns:repeat(2, minmax(0,1fr)) !important;
-    gap:8px !important;
-    overflow:hidden !important;
-  }
-
-  .budget-bar .bar-cols,
-  .budget-bar .bar-actions{
-    display:contents !important;
-  }
-
-  .expenses-table,
-  .expenses-table tbody,
-  .expenses-table tr,
-  .expenses-table td,
-  #tblAllTimeline,
-  #tblExpenses,
-  #tblJournal{
-    display:block !important;
-    width:100% !important;
-    max-width:100% !important;
-    min-width:0 !important;
-    overflow-x:hidden !important;
-  }
-
-  #tblAllTimeline tr.exp-item:not(.exp-details),
-  #tblExpenses tr.exp-item:not(.exp-details),
-  #tblJournal tr.exp-item:not(.exp-details){
-    display:grid !important;
-    grid-template-columns:minmax(0,1fr) 40px !important;
-    width:100% !important;
-    max-width:100% !important;
-  }
-
-  #tblAllTimeline td,
-  #tblExpenses td,
-  #tblJournal td{
-    max-width:100% !important;
-    min-width:0 !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-    white-space:normal !important;
-    overflow-wrap:anywhere !important;
-  }
-
-  #view-meta .date-row,
-  #view-meta .budget-block,
-  #view-meta .budget-row,
-  #view-meta .budget-actions-row,
-  #view-meta .dest-row,
-  #tripSearchActions{
-    display:grid !important;
-    grid-template-columns:1fr !important;
-    width:100% !important;
-    min-width:0 !important;
-  }
-
-  #view-meta .date-row > *,
-  #view-meta .budget-block > *,
-  #view-meta .budget-row > *,
-  #view-meta .budget-actions-row > *,
-  #view-meta .dest-row > *{
-    grid-column:auto !important;
-    width:100% !important;
-    min-width:0 !important;
-  }
-
-  #view-meta .chips{
-    display:grid !important;
-    grid-template-columns:repeat(3, minmax(0,1fr)) !important;
-  }
-
-  #view-meta .chip{
-    min-width:0 !important;
-    padding-inline:6px !important;
-    white-space:nowrap !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
   }
 
   input,
   select,
   textarea,
   .input,
-  button,
-  .btn{
+  .rtf{
+    overflow-x:hidden !important;
+  }
+
+  table,
+  thead,
+  tbody,
+  tr,
+  td,
+  th{
     max-width:100% !important;
     min-width:0 !important;
-    box-sizing:border-box !important;
   }
 
-  dialog.modal.mobile-fixed-frame[open],
-  #tripModal.mobile-fixed-frame[open],
-  #expenseModal.mobile-fixed-frame[open],
-  #journalModal.mobile-fixed-frame[open]{
+  table{
+    width:100% !important;
+    table-layout:fixed !important;
+  }
+
+  td,
+  th,
+  .cell,
+  .val,
+  .notes,
+  .title,
+  .location,
+  .muted,
+  .small-loc,
+  .amount,
+  .currency{
+    overflow-wrap:anywhere !important;
+    word-break:break-word !important;
+    min-width:0 !important;
+  }
+
+  #view-expenses .expenses-table-container,
+  #view-overview .expenses-table-container,
+  #view-journal .expenses-table-container,
+  .table-wrap{
+    overflow-x:hidden !important;
+  }
+
+  #view-expenses .expenses-table,
+  #view-overview .expenses-table,
+  #view-journal .expenses-table,
+  #tblExpenses,
+  #tblAllTimeline,
+  #tblJournal{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+  }
+
+  #view-overview .expenses-table td.cell,
+  #view-expenses .expenses-table td.cell,
+  #view-journal .expenses-table td.cell{
+    min-inline-size:0 !important;
+  }
+
+  #view-overview .expenses-table .map-action-btn,
+  #view-journal .expenses-table .map-action-btn,
+  #tblAllTimeline .map-action-btn,
+  #tblJournal .map-action-btn,
+  .map-action-btn{
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  dialog.modal[open],
+  body.mobile-ui dialog.modal[open]{
     position:fixed !important;
-    inset:8px !important;
     left:8px !important;
     right:8px !important;
-    top:8px !important;
-    bottom:8px !important;
-    transform:none !important;
-    margin:0 !important;
-    width:calc(100vw - 16px) !important;
+    width:auto !important;
+    max-width:none !important;
     min-width:0 !important;
-    max-width:calc(100vw - 16px) !important;
-    height:calc(100dvh - 16px) !important;
-    min-height:0 !important;
-    max-height:calc(100dvh - 16px) !important;
-    display:grid !important;
-    grid-template-rows:48px minmax(0,1fr) 56px !important;
-    overflow:hidden !important;
-    border-radius:20px !important;
-  }
-
-  dialog.modal.mobile-fixed-frame > header{
-    min-height:0 !important;
-    height:48px !important;
-    padding:8px 12px !important;
-    overflow:hidden !important;
-  }
-
-  dialog.modal.mobile-fixed-frame > .body,
-  .mobile-modal-body-scroll{
-    min-height:0 !important;
-    max-height:none !important;
-    height:auto !important;
-    overflow-y:auto !important;
+    margin:0 !important;
+    transform:none !important;
     overflow-x:hidden !important;
-    padding:10px !important;
+  }
+
+  dialog.modal > header,
+  dialog.modal > .header,
+  dialog.modal > .body,
+  dialog.modal > .footer,
+  body.mobile-ui dialog.modal > header,
+  body.mobile-ui dialog.modal > .header,
+  body.mobile-ui dialog.modal > .body,
+  body.mobile-ui dialog.modal > .footer{
+    max-width:100% !important;
+    min-width:0 !important;
+    overflow-x:hidden !important;
+  }
+
+  dialog.modal .row,
+  dialog.modal .date-row,
+  dialog.modal .expense-main-row,
+  dialog.modal .expense-meta-row,
+  dialog.modal .journal-meta-row,
+  dialog.modal .location-row{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
     display:grid !important;
     grid-template-columns:1fr !important;
-    align-content:start !important;
     gap:10px !important;
   }
 
-  dialog.modal.mobile-fixed-frame > .footer{
-    height:56px !important;
-    min-height:56px !important;
-    max-height:56px !important;
-    padding:8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  dialog.modal .footer,
+  dialog.modal > .footer{
     display:grid !important;
-    grid-template-columns:1fr 1fr !important;
-    gap:8px !important;
-    overflow:hidden !important;
+    grid-template-columns:repeat(auto-fit, minmax(0, 1fr)) !important;
   }
 
-  #expenseModal.mobile-fixed-frame .body > label,
-  #journalModal.mobile-fixed-frame .body > label,
-  #tripModal.mobile-fixed-frame .body > label,
-  #expenseModal.mobile-fixed-frame .row,
-  #journalModal.mobile-fixed-frame .row,
-  #tripModal.mobile-fixed-frame .row,
-  #expenseModal.mobile-fixed-frame .expense-main-row,
-  #expenseModal.mobile-fixed-frame .expense-meta-row,
-  #journalModal.mobile-fixed-frame .journal-meta-row{
-    display:grid !important;
-    grid-template-columns:1fr !important;
-    width:100% !important;
-    min-width:0 !important;
-    gap:8px !important;
-    margin:0 !important;
-  }
-
-  #expenseModal.mobile-fixed-frame #expText,
-  #journalModal.mobile-fixed-frame #jrText{
-    width:100% !important;
-    min-width:0 !important;
-    min-height:120px !important;
-    max-height:28dvh !important;
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    resize:none !important;
-    white-space:pre-wrap !important;
-    overflow-wrap:anywhere !important;
-  }
-
-  #expenseModal.mobile-fixed-frame .location-compact,
-  #journalModal.mobile-fixed-frame .location-compact{
-    display:grid !important;
-    grid-template-columns:1fr !important;
-    gap:6px !important;
-    width:100% !important;
-    min-width:0 !important;
-  }
-
-  #expenseModal.mobile-fixed-frame .rtf-bubble,
-  #journalModal.mobile-fixed-frame .rtf-bubble{
-    position:static !important;
-    transform:none !important;
-    width:100% !important;
+  .leaflet-container,
+  #bigMap,
+  #selectMap{
     max-width:100% !important;
     overflow:hidden !important;
-  }
-
-  #expenseModal.mobile-fixed-frame .rtf-bubble .colors,
-  #journalModal.mobile-fixed-frame .rtf-bubble .colors,
-  #expenseModal.mobile-fixed-frame .rtf-bubble .styles,
-  #journalModal.mobile-fixed-frame .rtf-bubble .styles{
-    display:flex !important;
-    flex-wrap:wrap !important;
-    max-width:100% !important;
-  }
-
-  #mobileAuthCard,
-  .login-card{
-    width:100% !important;
-    max-width:calc(100vw - 24px) !important;
-    min-width:0 !important;
-    overflow:hidden !important;
-  }
-
-  .login-card .row,
-  #mobileAuthCard .actions{
-    display:grid !important;
-    grid-template-columns:1fr !important;
-  }
-
-  #view-overview.all-collapsed tr.exp-details:not(.force-open),
-  #view-overview.all-collapsed tr.exp-item:has(td.notes):not(.force-open){
-    display:none !important;
-  }
-
-  #view-overview.all-collapsed tr.exp-details.force-open,
-  #view-overview.all-collapsed tr.exp-item.force-open:has(td.notes){
-    display:block !important;
-  }
-}
-
-/* =========================================================
-   MOBILE HARD LOCK V3 — final override, loaded last.
-   Goal: no horizontal page/layout overflow anywhere.
-   ========================================================= */
-@media (max-width: 820px) {
-  /* נעילת רוחב למניעת גלילה אופקית */
-  html, body {
-    overflow-x: hidden !important;
-    width: 100vw !important;
-    position: relative;
-  }
-
-  /* הפיכת כל הדיאלוגים ל-Bottom Sheet מושלם */
-  dialog.modal {
-    width: 100% !important;
-    max-width: 100vw !important;
-    height: 85dvh !important;
-    margin: 0 !important;
-    position: fixed !important;
-    bottom: 0 !important;
-    top: auto !important;
-    left: 0 !important;
-    border-radius: 20px 20px 0 0 !important;
-    border: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    background: var(--card) !important;
-  }
-
-  /* גוף המודל - רק גלילה אנכית */
-  dialog .body {
-    flex: 1;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 15px !important;
-  }
-
-  /* שדות קלט צפופים - אייקון בצד שמאל/ימין */
-  .field-row {
-    display: grid !important;
-    grid-template-columns: 35px 1fr !important; /* עמודה קטנה לאייקון */
-    gap: 10px;
-    align-items: center;
-    width: 100% !important;
-  }
-
-  /* כפתורי פעולה ברוחב מלא */
-  .footer {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px;
-    padding: 15px !important;
   }
 }
