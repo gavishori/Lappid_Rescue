@@ -836,6 +836,8 @@ function syncJournalSelectionUi(){
       add('הצג הוצאות', ()=> setOverviewSelectValue('expenses'));
       add('מפה', ()=> setOverviewSelectValue('map'));
       add('תקציב', ()=> openCurrentBudgetSummary());
+      add('מיין', ()=> triggerButton('btnAllSort'));
+      add('פתח / צמצם הכל', ()=> triggerButton('btnAllToggle'));
     } else if(currentSection === 'meta'){
       title.textContent = 'נתוני נסיעה';
       add('הצג יומן + הוצאות', ()=> setOverviewSelectValue('mix'));
@@ -898,8 +900,63 @@ function syncJournalSelectionUi(){
   }
 
   function ensureOverviewActionRail(){
-    const rail = document.getElementById('mobileOverviewActionRail');
-    if(rail) rail.remove();
+    if(!isCompactMobileHeader()) return;
+    const view = document.getElementById('view-overview');
+    const header = document.getElementById('overviewHeaderBar');
+    if(!view || !header) return;
+
+    const standaloneMenu = document.querySelector('#view-overview > #mobileOverviewMenuBtn');
+    if(standaloneMenu) standaloneMenu.remove();
+
+    let rail = document.getElementById('mobileOverviewActionRail');
+    if(!rail){
+      rail = document.createElement('div');
+      rail.id = 'mobileOverviewActionRail';
+      rail.className = 'mobile-overview-action-rail';
+      rail.setAttribute('aria-label', 'פעולות הצג הכל');
+
+      const makeProxy = (id, glyph, label) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = id;
+        btn.className = 'btn mobile-overview-icon-btn';
+        btn.setAttribute('aria-label', label);
+        btn.innerHTML = `<span class="mobile-action-glyph" aria-hidden="true">${glyph}</span><span class="mobile-action-text">${label}</span>`;
+        return btn;
+      };
+
+      rail.append(
+        makeProxy('mobileOverviewMenuBtn', '&#9776;', 'פעולות'),
+        makeProxy('mobileOverviewExpenseBtn', '+', 'הוצאה'),
+        makeProxy('mobileOverviewJournalBtn', '&#9998;', 'יומן'),
+        makeProxy('mobileOverviewSortBtn', '&#8645;', 'מיין'),
+        makeProxy('mobileOverviewToggleBtn', '&#8693;', 'פתח / צמצם')
+      );
+      view.prepend(rail);
+    }
+
+    const search = document.getElementById('searchAll');
+    if(search && search.parentElement !== rail){
+      search.classList.add('mobile-overview-search');
+      rail.appendChild(search);
+    }
+
+    const bindProxy = (id, action) => {
+      const btn = document.getElementById(id);
+      if(!btn || btn.dataset.mobileProxyBound === '1') return;
+      btn.dataset.mobileProxyBound = '1';
+      btn.addEventListener('click', (ev)=>{
+        ev.preventDefault();
+        ev.stopPropagation();
+        action();
+      }, { passive:false });
+    };
+
+    bindProxy('mobileOverviewMenuBtn', ()=> openMobileSectionMenu('overview'));
+    bindProxy('mobileOverviewExpenseBtn', ()=> triggerButton('btnQuickAddExpense'));
+    bindProxy('mobileOverviewJournalBtn', ()=> triggerButton('btnQuickAddJournal'));
+    bindProxy('mobileOverviewSortBtn', ()=> triggerButton('btnAllSort'));
+    bindProxy('mobileOverviewToggleBtn', ()=> triggerButton('btnAllToggle'));
   }
 
   function syncMobileViewportVars(){
@@ -9359,7 +9416,7 @@ window.addEventListener('resize', ()=>{
 
 /* === exact mobile modal layout v2 === */
 (function(){
-  const MODAL_IDS = ['expenseModal','journalModal'];
+  const MODAL_IDS = ['tripModal','expenseModal','journalModal'];
 
   function isMobile(){
     return window.innerWidth <= 820;
@@ -9388,7 +9445,7 @@ window.addEventListener('resize', ()=>{
 
   function clearModalStyles(dlg){
     if(!dlg) return;
-    ['top','left','right','bottom','width','minWidth','maxWidth','height','minHeight','maxHeight','position'].forEach((k)=> dlg.style[k] = '');
+    ['top','left','right','bottom','width','minWidth','maxWidth','height','minHeight','maxHeight','position','margin','transform'].forEach((k)=> dlg.style[k] = '');
     const body = dlg.querySelector(':scope > .body');
     if(body){
       ['height','minHeight','maxHeight'].forEach((k)=> body.style[k] = '');
@@ -9400,7 +9457,7 @@ window.addEventListener('resize', ()=>{
     updateBaseHeight();
     const vp = currentViewport();
     const baseH = window.__exactModalBaseHeight || Math.max(window.innerHeight || 0, vp.height + vp.top);
-    const width = Math.max(320, vp.width - 16);
+    const width = Math.max(0, vp.width - 16);
     const requested = Math.round(baseH * 0.50);
     const usable = Math.max(260, vp.height - 8);
     const height = Math.max(260, Math.min(requested, usable));
@@ -9411,12 +9468,14 @@ window.addEventListener('resize', ()=>{
     dlg.style.right = '8px';
     dlg.style.top = `${top}px`;
     dlg.style.bottom = 'auto';
-    dlg.style.width = `${width}px`;
-    dlg.style.minWidth = `${width}px`;
+    dlg.style.width = 'auto';
+    dlg.style.minWidth = '0';
     dlg.style.maxWidth = `${width}px`;
     dlg.style.height = `${height}px`;
     dlg.style.minHeight = `${height}px`;
     dlg.style.maxHeight = `${height}px`;
+    dlg.style.margin = '0';
+    dlg.style.transform = 'none';
 
     const header = dlg.querySelector(':scope > header');
     const footer = dlg.querySelector(':scope > .footer');
