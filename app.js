@@ -51,6 +51,14 @@ function legacyWireAuthPrimaryButton(){
     }
   };
 }
+function debounceFrame(fn){
+  let raf = 0;
+  return function(...args){
+    if(raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(()=>{ raf = 0; fn.apply(this,args); });
+  };
+}
+
 function isCompactMobileHeader(){
   return window.matchMedia('(max-width: 820px)').matches;
 }
@@ -559,8 +567,8 @@ document.addEventListener('DOMContentLoaded', wireHeaderControls);
 document.addEventListener('DOMContentLoaded', wireReliableMobileActions);
 document.addEventListener('DOMContentLoaded', syncViewportModeClasses);
 document.addEventListener('DOMContentLoaded', normalizeMobileOverviewHeader);
-window.addEventListener('resize', syncViewportModeClasses);
-window.addEventListener('resize', normalizeMobileOverviewHeader);
+window.addEventListener('resize', debounceFrame(syncViewportModeClasses));
+window.addEventListener('resize', debounceFrame(normalizeMobileOverviewHeader));
 window.addEventListener('pageshow', syncViewportModeClasses);
 window.addEventListener('pageshow', normalizeMobileOverviewHeader);
 
@@ -1435,7 +1443,7 @@ try{
       else { rootEls.forEach(el=>el.classList.remove('share-open')); }
     }catch(_e){}
 
-    if(tab==='overview') { setTimeout(()=> { try{ initBigMap(); }catch(_){} initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }, 80);}
+    if(tab==='overview') { setTimeout(()=> { try{ initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }catch(_){} }, 80);}
   }catch(e){}
 }
 
@@ -2119,7 +2127,7 @@ document.querySelectorAll('#tabs [data-tab]').forEach(el => el.addEventListener(
   setActiveTab(el);
   showView(nextTab);
   if(nextTab==='map') setTimeout(initBigMap, 50);
-  if(nextTab==='overview') { setTimeout(()=> { try{ initBigMap(); }catch(_){} initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }, 80);}
+  if(nextTab==='overview') { setTimeout(()=> { try{ initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }catch(_){} }, 80);}
 }));
 
 // Overview tab dropdown (All / Expenses / Journal)
@@ -2401,7 +2409,7 @@ async function hydrateTripsForSearch(expectedSearch){
     state._tripSearchHydrating = false;
     const currentSearch = ($('#searchTrips')?.value || '').trim().toLowerCase();
     if(expectedSearch && currentSearch === expectedSearch){
-      renderTripList();
+      scheduleRenderTripList();
     }
   }
 }
@@ -2430,8 +2438,33 @@ function applyTripsSnapshotPerf(snapAt, snapSize){
       docs: snapSize,
       subscribeToSnapshotMs: Math.round(snapAt - __subscribeTripsStartedAt)
     };
-    console.info('[perf] tripsSnapshot', window.__lastTripsSnapshotPerf);
   }catch(_){}
+}
+
+let __renderTripListQueued = false;
+function scheduleRenderTripList(){
+  if(__renderTripListQueued) return;
+  __renderTripListQueued = true;
+  const run = ()=>{
+    __renderTripListQueued = false;
+    try{ renderTripList(); }catch(e){ console.error(e); }
+  };
+  if(typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+  else setTimeout(run, 0);
+}
+
+function scheduleIdleWork(fn, delay=0){
+  const runner = ()=>{ try{ fn(); }catch(_){} };
+  if(typeof requestIdleCallback === 'function') requestIdleCallback(runner, { timeout: 2000 });
+  else setTimeout(runner, delay);
+}
+
+function markTripSummaryUpserted(id){
+  if(!id) return false;
+  state._summaryUpsertedIds = state._summaryUpsertedIds || new Set();
+  if(state._summaryUpsertedIds.has(id)) return true;
+  state._summaryUpsertedIds.add(id);
+  return false;
 }
 
 function subscribeTripsFull(reason='fallback'){
@@ -2442,12 +2475,12 @@ function subscribeTripsFull(reason='fallback'){
     state.trips = snap.docs
       .map(d=> normalizeTripShape({ id:d.id, ...d.data() }))
       .sort((a,b)=> (b.start||'').localeCompare(a.start||''));
-    renderTripList();
+    scheduleRenderTripList();
     setTimeout(()=>{ try{ maybeShowTodayPromptFromTrips(state.trips); }catch(_){ } }, 0);
     saveTripSummariesCache(state.user?.uid, state.trips);
     applyTripsSnapshotPerf(snapAt, snap.size);
     scheduleTripListBackfill(state.trips);
-    state.trips.forEach(trip => { try{ upsertTripSummary(trip); }catch(_){} });
+    scheduleIdleWork(()=>{ state.trips.forEach(trip => { try{ if(!markTripSummaryUpserted(trip.id)) upsertTripSummary(trip); }catch(_){} }); }, 1500);
     markTripSummariesHydrated(state.user?.uid);
   }, (err)=>{
     try{ state._unsubTripsFallback && state._unsubTripsFallback(); }catch(_){}
@@ -2471,7 +2504,7 @@ function subscribeTrips(){
     .sort((a,b)=> (b.start||'').localeCompare(a.start||''));
   if(cachedTrips.length){
     state.trips = cachedTrips;
-    renderTripList();
+    scheduleRenderTripList();
     setTimeout(()=>{ try{ maybeShowTodayPromptFromTrips(state.trips); }catch(_){ } }, 0);
   }
   try { state._unsubTrips && state._unsubTrips(); } catch(_) {}
@@ -2481,7 +2514,7 @@ function subscribeTrips(){
     const snapAt = (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
     if(snap.size === 0){
       state.trips = [];
-      renderTripList();
+      scheduleRenderTripList();
       applyTripsSnapshotPerf(snapAt, snap.size);
       if(!__tripSummaryFallbackStarted){
         __tripSummaryFallbackStarted = true;
@@ -2493,7 +2526,7 @@ function subscribeTrips(){
     state.trips = snap.docs
       .map(d=> normalizeTripSummaryDoc(d))
       .sort((a,b)=> (b.start||'').localeCompare(a.start||''));
-    renderTripList();
+    scheduleRenderTripList();
     setTimeout(()=>{ try{ maybeShowTodayPromptFromTrips(state.trips); }catch(_){ } }, 0);
     saveTripSummariesCache(state.user?.uid, state.trips);
     applyTripsSnapshotPerf(snapAt, snap.size);
@@ -2589,7 +2622,6 @@ async function renderTripList(){
       mode: state.viewMode,
       ms: Math.round(perfNow() - renderStart)
     };
-    console.info('[perf] renderTripList', window.__lastRenderTripListPerf);
   }catch(_){}
 }
 function cardHTML(t, s){
@@ -3580,7 +3612,7 @@ $('#tripSave').addEventListener('click', async ()=>{
 });
 
 // Sidebar actions
-$('#searchTrips').addEventListener('input', renderTripList);
+$('#searchTrips').addEventListener('input', scheduleRenderTripList);
 let sortAsc = false; $('#btnSortTrips').addEventListener('click', ()=>{
   sortAsc = !sortAsc; state.trips.sort((a,b)=> sortAsc ? (a.start||'').localeCompare(b.start||'') : (b.start||'').localeCompare(a.start||'')); renderTripList();
 });
@@ -9523,97 +9555,4 @@ window.addEventListener('resize', ()=>{
   }else{
     init();
   }
-})();
-
-/* === MOBILE FINAL DELIVERY JS — viewport sync + horizontal overflow guard === */
-(function(){
-  const MOBILE_MAX = 820;
-  const isMobile = () => Math.min(window.innerWidth || 9999, window.visualViewport?.width || 9999) <= MOBILE_MAX;
-  let raf = 0;
-
-  function syncViewportVars(){
-    try{
-      const vv = window.visualViewport;
-      const w = Math.round(vv?.width || window.innerWidth || document.documentElement.clientWidth || 0);
-      const h = Math.round(vv?.height || window.innerHeight || document.documentElement.clientHeight || 0);
-      document.documentElement.style.setProperty('--app-vw', `${w}px`);
-      document.documentElement.style.setProperty('--app-vh', `${h}px`);
-      document.documentElement.style.setProperty('--vvh', `${h}px`);
-      document.documentElement.style.setProperty('--vv-top', `${Math.round(vv?.offsetTop || 0)}px`);
-      document.body?.classList.toggle('mobile-ui', isMobile());
-      document.body?.classList.toggle('desktop-ui', !isMobile());
-    }catch(_){ }
-  }
-
-  function markOverflowOffenders(){
-    if(!isMobile()) return;
-    const vw = Math.round(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth || 0);
-    if(!vw) return;
-    try{
-      document.querySelectorAll('.mobile-overflow-offender').forEach(el => el.classList.remove('mobile-overflow-offender'));
-      const skip = new Set(['HTML','BODY','SCRIPT','STYLE','LINK','META','TITLE','PATH']);
-      const all = Array.from(document.body?.querySelectorAll('*') || []);
-      for(const el of all){
-        if(skip.has(el.tagName)) continue;
-        const cs = getComputedStyle(el);
-        if(cs.display === 'none' || cs.visibility === 'hidden') continue;
-        const r = el.getBoundingClientRect();
-        if(!r.width || !r.height) continue;
-        const overRight = r.right > vw + 1;
-        const overLeft = r.left < -1;
-        const tooWide = r.width > vw + 1;
-        if(overRight || overLeft || tooWide){
-          el.classList.add('mobile-overflow-offender');
-        }
-      }
-    }catch(_){ }
-  }
-
-  function refreshMobileLayout(){
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(()=>{
-      syncViewportVars();
-      markOverflowOffenders();
-      try{ normalizeMobileOverviewHeader?.(); }catch(_){ }
-      try{ wireReliableMobileActions?.(); }catch(_){ }
-    });
-  }
-
-  function hardenTouchableControls(root=document){
-    if(!isMobile()) return;
-    try{
-      root.querySelectorAll('button,.btn,.chip,.chip-btn,input,select,textarea,[contenteditable="true"]').forEach(el=>{
-        el.style.touchAction = 'manipulation';
-        el.style.webkitTapHighlightColor = 'transparent';
-      });
-    }catch(_){ }
-  }
-
-  function init(){
-    refreshMobileLayout();
-    hardenTouchableControls();
-    window.addEventListener('resize', refreshMobileLayout, { passive:true });
-    window.addEventListener('orientationchange', ()=> setTimeout(refreshMobileLayout, 120), { passive:true });
-    window.addEventListener('pageshow', refreshMobileLayout, { passive:true });
-    if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', refreshMobileLayout, { passive:true });
-      window.visualViewport.addEventListener('scroll', refreshMobileLayout, { passive:true });
-    }
-    document.addEventListener('click', ()=> setTimeout(refreshMobileLayout, 0), true);
-    document.addEventListener('input', ()=> setTimeout(refreshMobileLayout, 0), true);
-    try{
-      const mo = new MutationObserver((mutations)=>{
-        for(const m of mutations){
-          if(m.addedNodes && m.addedNodes.length){
-            m.addedNodes.forEach(n=>{ if(n.nodeType === 1) hardenTouchableControls(n); });
-          }
-        }
-        refreshMobileLayout();
-      });
-      mo.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['open','hidden','style','class'] });
-    }catch(_){ }
-  }
-
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once:true });
-  else init();
 })();
