@@ -9524,3 +9524,96 @@ window.addEventListener('resize', ()=>{
     init();
   }
 })();
+
+/* === MOBILE FINAL DELIVERY JS — viewport sync + horizontal overflow guard === */
+(function(){
+  const MOBILE_MAX = 820;
+  const isMobile = () => Math.min(window.innerWidth || 9999, window.visualViewport?.width || 9999) <= MOBILE_MAX;
+  let raf = 0;
+
+  function syncViewportVars(){
+    try{
+      const vv = window.visualViewport;
+      const w = Math.round(vv?.width || window.innerWidth || document.documentElement.clientWidth || 0);
+      const h = Math.round(vv?.height || window.innerHeight || document.documentElement.clientHeight || 0);
+      document.documentElement.style.setProperty('--app-vw', `${w}px`);
+      document.documentElement.style.setProperty('--app-vh', `${h}px`);
+      document.documentElement.style.setProperty('--vvh', `${h}px`);
+      document.documentElement.style.setProperty('--vv-top', `${Math.round(vv?.offsetTop || 0)}px`);
+      document.body?.classList.toggle('mobile-ui', isMobile());
+      document.body?.classList.toggle('desktop-ui', !isMobile());
+    }catch(_){ }
+  }
+
+  function markOverflowOffenders(){
+    if(!isMobile()) return;
+    const vw = Math.round(window.visualViewport?.width || window.innerWidth || document.documentElement.clientWidth || 0);
+    if(!vw) return;
+    try{
+      document.querySelectorAll('.mobile-overflow-offender').forEach(el => el.classList.remove('mobile-overflow-offender'));
+      const skip = new Set(['HTML','BODY','SCRIPT','STYLE','LINK','META','TITLE','PATH']);
+      const all = Array.from(document.body?.querySelectorAll('*') || []);
+      for(const el of all){
+        if(skip.has(el.tagName)) continue;
+        const cs = getComputedStyle(el);
+        if(cs.display === 'none' || cs.visibility === 'hidden') continue;
+        const r = el.getBoundingClientRect();
+        if(!r.width || !r.height) continue;
+        const overRight = r.right > vw + 1;
+        const overLeft = r.left < -1;
+        const tooWide = r.width > vw + 1;
+        if(overRight || overLeft || tooWide){
+          el.classList.add('mobile-overflow-offender');
+        }
+      }
+    }catch(_){ }
+  }
+
+  function refreshMobileLayout(){
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(()=>{
+      syncViewportVars();
+      markOverflowOffenders();
+      try{ normalizeMobileOverviewHeader?.(); }catch(_){ }
+      try{ wireReliableMobileActions?.(); }catch(_){ }
+    });
+  }
+
+  function hardenTouchableControls(root=document){
+    if(!isMobile()) return;
+    try{
+      root.querySelectorAll('button,.btn,.chip,.chip-btn,input,select,textarea,[contenteditable="true"]').forEach(el=>{
+        el.style.touchAction = 'manipulation';
+        el.style.webkitTapHighlightColor = 'transparent';
+      });
+    }catch(_){ }
+  }
+
+  function init(){
+    refreshMobileLayout();
+    hardenTouchableControls();
+    window.addEventListener('resize', refreshMobileLayout, { passive:true });
+    window.addEventListener('orientationchange', ()=> setTimeout(refreshMobileLayout, 120), { passive:true });
+    window.addEventListener('pageshow', refreshMobileLayout, { passive:true });
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', refreshMobileLayout, { passive:true });
+      window.visualViewport.addEventListener('scroll', refreshMobileLayout, { passive:true });
+    }
+    document.addEventListener('click', ()=> setTimeout(refreshMobileLayout, 0), true);
+    document.addEventListener('input', ()=> setTimeout(refreshMobileLayout, 0), true);
+    try{
+      const mo = new MutationObserver((mutations)=>{
+        for(const m of mutations){
+          if(m.addedNodes && m.addedNodes.length){
+            m.addedNodes.forEach(n=>{ if(n.nodeType === 1) hardenTouchableControls(n); });
+          }
+        }
+        refreshMobileLayout();
+      });
+      mo.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['open','hidden','style','class'] });
+    }catch(_){ }
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once:true });
+  else init();
+})();
