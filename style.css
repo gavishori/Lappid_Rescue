@@ -4,7 +4,3027 @@
   --glass: color-mix(in oklab, var(--card) 78%, transparent);
 }
 
-/* cleaned: removed duplicated legacy override block that was prepended before the base stylesheet */
+/* === FINAL FIXED RTL TIMELINE COLUMNS === */
+@media (min-width: 821px){
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px 190px 220px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map location time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{
+    grid-area:category !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title{
+    grid-area:title !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{
+    grid-area:location !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount{
+    grid-area:amount !important;
+    justify-content:flex-end !important;
+    direction:ltr !important;
+    text-align:left !important;
+    overflow:hidden !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.date{
+    grid-area:date !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.time{
+    grid-area:time !important;
+    display:flex !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.map-cell{
+    grid-area:map !important;
+    justify-content:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.menu-cell:not(.map-cell){
+    grid-area:menu !important;
+    justify-content:center !important;
+  }
+
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-details:not(.force-open){
+    display:none !important;
+  }
+}
+
+/* === LOCK EXPENSE CATEGORY COLUMN TO ONE FIXED GRID SLOT === */
+@media (min-width: 821px){
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    grid-template-columns:64px 132px 190px 260px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{
+    grid-area:category !important;
+    width:260px !important;
+    min-width:260px !important;
+    max-width:260px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    contain:paint !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+    flex:0 0 260px !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category *{
+    max-width:100% !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+  }
+}
+
+/* === FINAL RTL OVERVIEW ROW RESET ===
+   Visual order in Hebrew: date | time | title | category | amount | map | menu.
+   Keep the grid physically stable and set RTL only inside text cells. */
+@media (min-width: 821px){
+  #view-overview .expenses-table-container{
+    overflow-x:hidden !important;
+    max-width:100% !important;
+    direction:rtl !important;
+  }
+
+  #view-overview .expenses-table,
+  #view-overview #tblAllTimeline{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    table-layout:auto !important;
+    border-collapse:separate !important;
+    border-spacing:0 8px !important;
+    direction:rtl !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(122px,.75fr) minmax(130px,.8fr) minmax(240px,2fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    align-items:stretch !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin:0 0 0 !important;
+    padding:0 !important;
+    gap:0 !important;
+    border:1px solid var(--border) !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+    background:rgba(230, 161, 90, 0.15) !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(0,1fr) 132px !important;
+    grid-template-areas:"menu map location date" !important;
+    align-items:stretch !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    gap:0 !important;
+    border:1px solid var(--border) !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.cell{
+    min-width:0 !important;
+    max-width:none !important;
+    width:auto !important;
+    height:64px !important;
+    margin:0 !important;
+    padding:0 16px !important;
+    border:0 !important;
+    border-inline-start:1px solid var(--border) !important;
+    background:transparent !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.cell:last-child{
+    border-inline-start:0 !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.date{
+    grid-area:date !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.time{
+    grid-area:time !important;
+    display:flex !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.title{
+    grid-area:title !important;
+    justify-content:flex-start !important;
+    direction:rtl !important;
+    text-align:right !important;
+    font-weight:700 !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.category{
+    grid-area:category !important;
+    justify-content:flex-start !important;
+    direction:rtl !important;
+    text-align:right !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.amount{
+    grid-area:amount !important;
+    justify-content:flex-end !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    text-align:left !important;
+    font-weight:700 !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.location{
+    grid-area:location !important;
+    justify-content:flex-start !important;
+    direction:rtl !important;
+    text-align:right !important;
+  }
+
+  #view-overview #tblAllTimeline td.map-cell{
+    grid-area:map !important;
+    justify-content:center !important;
+    overflow:visible !important;
+  }
+
+  #view-overview #tblAllTimeline td.menu-cell:not(.map-cell){
+    grid-area:menu !important;
+    justify-content:center !important;
+    overflow:visible !important;
+  }
+
+  #view-overview #tblAllTimeline td.map-cell .map-action-btn,
+  #view-overview #tblAllTimeline td.menu-cell .menu-btn{
+    margin:0 !important;
+  }
+
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-details:not(.force-open){
+    display:none !important;
+  }
+
+  #view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-details,
+  #view-overview #tblAllTimeline tr.exp-details.force-open{
+    display:block !important;
+    width:100% !important;
+    margin:0 0 8px !important;
+    padding:0 !important;
+    border:1px solid var(--border) !important;
+    border-top:0 !important;
+    border-radius:0 0 18px 18px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-details > td.notes{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    padding:12px 16px !important;
+    border:0 !important;
+    background:transparent !important;
+    direction:rtl !important;
+    text-align:right !important;
+    box-sizing:border-box !important;
+  }
+}
+
+/* === FINAL FIXED RTL TIMELINE COLUMNS - LAST RULE WINS === */
+@media (min-width: 821px){
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px 190px 220px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map location time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{ grid-area:category !important; }
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title{ grid-area:title !important; }
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{ grid-area:location !important; }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount{
+    grid-area:amount !important;
+    justify-content:flex-end !important;
+    direction:ltr !important;
+    text-align:left !important;
+    overflow:hidden !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.date{
+    grid-area:date !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.time{
+    grid-area:time !important;
+    display:flex !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.map-cell{
+    grid-area:map !important;
+    justify-content:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.menu-cell:not(.map-cell){
+    grid-area:menu !important;
+    justify-content:center !important;
+  }
+
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-details:not(.force-open){
+    display:none !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #11: final vertical fit polish === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:4px !important;
+    max-height:calc(100dvh - 8px) !important;
+    grid-template-rows:38px minmax(0, auto) 52px !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    padding:0 20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    padding:8px 20px 6px !important;
+    gap:5px !important;
+  }
+
+  html body dialog#expenseModal[open]{
+    --editor-row-height:82px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:94px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:42px var(--editor-row-height) 34px 48px 48px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:42px var(--editor-row-height) 34px 48px !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  html body #expenseModal select,
+  html body #journalModal select,
+  html body #expenseModal input,
+  html body #journalModal input,
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:36px !important;
+    min-height:36px !important;
+    max-height:36px !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    gap:3px !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:52px !important;
+    min-height:52px !important;
+    max-height:52px !important;
+    padding:6px 20px !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+  }
+}
+
+/* === TRUE EOF OVERRIDE #7: make only the description resize handle work === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:96px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:118px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:48px var(--editor-row-height) 34px 62px 62px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:48px var(--editor-row-height) 34px 62px !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  html body #journalModal #jrText{
+    height:100% !important;
+    min-height:84px !important;
+    max-height:260px !important;
+    overflow-y:auto !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:8px !important;
+    bottom:6px !important;
+    width:22px !important;
+    height:22px !important;
+    min-width:22px !important;
+    min-height:22px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:5 !important;
+    opacity:.8 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:4px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    transform:skew(-18deg) !important;
+    opacity:.75 !important;
+  }
+}
+
+/* === FINAL lock: desktop expense/journal fit + stable link icons === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:12px !important;
+    bottom:12px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(650px, calc(100vw - 48px)) !important;
+    max-width:min(650px, calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    grid-template-rows:44px minmax(0, 1fr) 62px !important;
+    overflow:hidden !important;
+  }
+
+  html body dialog#expenseModal[open]{
+    --editor-row-height:84px;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:100px;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:56px var(--editor-row-height) 32px 72px 108px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:56px var(--editor-row-height) 32px 108px !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr) !important;
+    gap:10px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .exp-date-col,
+  html body #expenseModal .exp-time-col,
+  html body #expenseModal .exp-location-col,
+  html body #journalModal .jr-date-col,
+  html body #journalModal .jr-time-col,
+  html body #journalModal .jr-location-col{
+    min-width:0 !important;
+    align-self:end !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:44px !important;
+    height:44px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+    padding-bottom:18px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:0 !important;
+    height:100% !important;
+    max-height:100% !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:3px !important;
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    min-height:18px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:2 !important;
+    opacity:.72 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    opacity:.75 !important;
+    transform:skew(-18deg) !important;
+  }
+}
+
+html body .rtf a.link-icon,
+html body .rtf a.mail-icon,
+html body .cell.notes a.link-icon,
+html body .cell.notes a.mail-icon{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:24px !important;
+  min-width:24px !important;
+  height:24px !important;
+  text-decoration:none !important;
+  vertical-align:middle !important;
+}
+
+html body .rtf a.link-icon,
+html body .cell.notes a.link-icon,
+html body a.link-icon-only{
+  color:#1E88E5 !important;
+}
+
+html body .rtf a.link-icon:hover,
+html body .cell.notes a.link-icon:hover,
+html body a.link-icon-only:hover{
+  color:#1565C0 !important;
+}
+
+html body .rtf a.link-icon::before,
+html body .cell.notes a.link-icon::before{
+  content:"\1F517" !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+
+html body .rtf a.mail-icon::before,
+html body .cell.notes a.mail-icon::before{
+  content:"\2709" !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+
+/* === LAST OVERRIDE: readable trip budget fields and aligned edit dialogs === */
+#view-meta .card.meta-single{
+  overflow:visible !important;
+}
+
+#view-meta .budget-block{
+  display:grid !important;
+  gap:14px !important;
+}
+
+#view-meta .budget-row{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(160px, 1fr)) !important;
+  gap:16px !important;
+  align-items:end !important;
+  width:100% !important;
+}
+
+#view-meta .budget-row label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+  min-width:0 !important;
+  text-align:center !important;
+}
+
+#view-meta .budget-row .input{
+  width:100% !important;
+  min-width:0 !important;
+  height:44px !important;
+  min-height:44px !important;
+  padding:8px 12px !important;
+  text-align:center !important;
+  font-size:16px !important;
+  box-sizing:border-box !important;
+}
+
+#view-meta .budget-actions-row{
+  display:flex !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+@media (max-width: 720px){
+  #view-meta .budget-row{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    inset:24px auto auto 50% !important;
+    transform:translateX(-50%) !important;
+    width:min(760px, calc(100vw - 48px)) !important;
+    max-width:min(760px, calc(100vw - 48px)) !important;
+    height:calc(100dvh - 48px) !important;
+    max-height:calc(100dvh - 48px) !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:58px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:22px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:58px !important;
+    min-height:58px !important;
+    padding:0 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    min-height:0 !important;
+    padding:18px 26px !important;
+    overflow:auto !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content minmax(150px, 1fr) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content minmax(170px, 1fr) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+    line-height:1.25 !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:46px !important;
+    height:46px !important;
+    padding:10px 14px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    line-height:1.25 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    min-height:0 !important;
+    overflow:visible !important;
+    padding:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:130px !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:14px 16px !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    text-align:right !important;
+    cursor:text !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    justify-self:start !important;
+    align-self:start !important;
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    padding:8px 10px !important;
+    overflow:visible !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(220px, 1.45fr) minmax(150px, 1fr) minmax(104px, .55fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(150px, 1fr) minmax(130px, .9fr) minmax(210px, 1.35fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    padding:12px 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    padding:0 20px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:700 !important;
+  }
+}
+
+@media (max-width: 820px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open],
+  body.mobile-ui dialog#expenseModal[open],
+  body.mobile-ui dialog#journalModal[open]{
+    width:calc(100vw - 20px) !important;
+    max-width:calc(100vw - 20px) !important;
+    max-height:calc(100dvh - 20px) !important;
+    margin:auto !important;
+    overflow:hidden !important;
+    border-radius:20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body,
+  body.mobile-ui dialog#expenseModal > .body,
+  body.mobile-ui dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    padding:16px !important;
+    overflow:auto !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row,
+  body.mobile-ui #expenseModal .expense-main-row,
+  body.mobile-ui #expenseModal .expense-meta-row,
+  body.mobile-ui #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+
+  html body dialog#expenseModal label,
+  html body dialog#journalModal label,
+  body.mobile-ui dialog#expenseModal label,
+  body.mobile-ui dialog#journalModal label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  body.mobile-ui #expenseModal .input,
+  body.mobile-ui #journalModal .input{
+    width:100% !important;
+    min-height:46px !important;
+    height:auto !important;
+    font-size:16px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  body.mobile-ui #expText,
+  body.mobile-ui #jrText{
+    min-height:150px !important;
+    max-height:32vh !important;
+    overflow:auto !important;
+  }
+}
+
+/* === Form layout polish: trip data + add/edit dialogs === */
+#view-meta .card.meta-single{
+  overflow:visible !important;
+}
+
+#view-meta .budget-block{
+  display:grid !important;
+  gap:14px !important;
+}
+
+#view-meta .budget-row{
+  display:grid !important;
+  grid-template-columns:repeat(3, minmax(160px, 1fr)) !important;
+  gap:16px !important;
+  align-items:end !important;
+  width:100% !important;
+}
+
+#view-meta .budget-row label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:6px !important;
+  min-width:0 !important;
+  text-align:center !important;
+}
+
+#view-meta .budget-row .input{
+  width:100% !important;
+  min-width:0 !important;
+  height:44px !important;
+  min-height:44px !important;
+  padding:8px 12px !important;
+  text-align:center !important;
+  font-size:16px !important;
+}
+
+#view-meta .budget-actions-row{
+  display:flex !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+}
+
+@media (max-width: 720px){
+  #view-meta .budget-row{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    inset:24px auto auto 50% !important;
+    transform:translateX(-50%) !important;
+    width:min(760px, calc(100vw - 48px)) !important;
+    max-width:min(760px, calc(100vw - 48px)) !important;
+    height:calc(100dvh - 48px) !important;
+    max-height:calc(100dvh - 48px) !important;
+    margin:0 !important;
+    display:grid !important;
+    grid-template-rows:58px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:22px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:58px !important;
+    min-height:58px !important;
+    padding:0 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    min-height:0 !important;
+    padding:18px 26px !important;
+    overflow:auto !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content minmax(150px, 1fr) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content minmax(170px, 1fr) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+    line-height:1.25 !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:46px !important;
+    height:46px !important;
+    padding:10px 14px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    line-height:1.25 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    min-height:0 !important;
+    overflow:visible !important;
+    padding:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:130px !important;
+    max-height:none !important;
+    overflow:auto !important;
+    padding:14px 16px !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    text-align:right !important;
+    cursor:text !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    justify-self:start !important;
+    align-self:start !important;
+    display:flex !important;
+    flex-wrap:wrap !important;
+    gap:8px !important;
+    padding:8px 10px !important;
+    overflow:visible !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(220px, 1.45fr) minmax(150px, 1fr) minmax(104px, .55fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(150px, 1fr) minmax(130px, .9fr) minmax(210px, 1.35fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    min-width:0 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    padding:12px 26px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    padding:0 20px !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:700 !important;
+  }
+}
+
+@media (max-width: 820px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open],
+  body.mobile-ui dialog#expenseModal[open],
+  body.mobile-ui dialog#journalModal[open]{
+    width:calc(100vw - 20px) !important;
+    max-width:calc(100vw - 20px) !important;
+    max-height:calc(100dvh - 20px) !important;
+    margin:auto !important;
+    overflow:hidden !important;
+    border-radius:20px !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body,
+  body.mobile-ui dialog#expenseModal > .body,
+  body.mobile-ui dialog#journalModal > .body{
+    display:grid !important;
+    gap:14px !important;
+    padding:16px !important;
+    overflow:auto !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row,
+  body.mobile-ui #expenseModal .expense-main-row,
+  body.mobile-ui #expenseModal .expense-meta-row,
+  body.mobile-ui #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+
+  html body dialog#expenseModal label,
+  html body dialog#journalModal label,
+  body.mobile-ui dialog#expenseModal label,
+  body.mobile-ui dialog#journalModal label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:7px !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .input,
+  html body #journalModal .input,
+  body.mobile-ui #expenseModal .input,
+  body.mobile-ui #journalModal .input{
+    width:100% !important;
+    min-height:46px !important;
+    height:auto !important;
+    font-size:16px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expText,
+  html body #jrText,
+  body.mobile-ui #expText,
+  body.mobile-ui #jrText{
+    min-height:150px !important;
+    max-height:32vh !important;
+    overflow:auto !important;
+  }
+}
+
+/* === Final desktop editor: true 10-line content box === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    --editor-font-size: 16px !important;
+    --editor-line-height: 1.5 !important;
+    --editor-visible-lines: 10 !important;
+    --editor-vertical-padding: 14px !important;
+    --editor-row-height: calc((var(--editor-visible-lines) * var(--editor-font-size) * var(--editor-line-height)) + (var(--editor-vertical-padding) * 2)) !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    font-size: var(--editor-font-size) !important;
+    line-height: var(--editor-line-height) !important;
+    font-weight: 400 !important;
+    min-height: var(--editor-row-height) !important;
+    height: var(--editor-row-height) !important;
+    max-height: var(--editor-row-height) !important;
+    padding-top: var(--editor-vertical-padding) !important;
+    padding-bottom: var(--editor-vertical-padding) !important;
+  }
+
+  html body #expText > *,
+  html body #jrText > *{
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  html body #expText b,
+  html body #expText strong,
+  html body #jrText b,
+  html body #jrText strong{
+    font-weight: 700 !important;
+  }
+
+  html body #expText i,
+  html body #expText em,
+  html body #jrText i,
+  html body #jrText em{
+    font-style: italic !important;
+  }
+}
+
+/* === Final desktop editor cleanup === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    top:24px !important;
+    left:50% !important;
+    right:auto !important;
+    bottom:auto !important;
+    transform:translateX(-50%) !important;
+    width:min(760px, calc(100vw - 64px)) !important;
+    max-width:min(760px, calc(100vw - 64px)) !important;
+    height:calc(100dvh - 48px) !important;
+    max-height:calc(100dvh - 48px) !important;
+    min-height:calc(100dvh - 48px) !important;
+    margin:0 !important;
+    resize:none !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:64px minmax(0, 1fr) 96px !important;
+    border-radius:28px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    --editor-row-height:320px !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    height:64px !important;
+    min-height:64px !important;
+    max-height:64px !important;
+    padding:0 28px !important;
+    border-bottom:1px solid color-mix(in oklab, var(--border) 75%, white 25%) !important;
+  }
+
+  html body dialog#expenseModal > header strong,
+  html body dialog#journalModal > header strong{
+    font-size:22px !important;
+    font-weight:700 !important;
+    line-height:1 !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:24px 28px !important;
+    display:grid !important;
+    gap:8px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content minmax(0, var(--editor-row-height, 296px)) min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content minmax(0, var(--editor-row-height, 296px)) min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label,
+  html body #expenseModal .expense-main-row > label,
+  html body #expenseModal .expense-meta-row > label,
+  html body #journalModal .journal-meta-row > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    font-size:14px !important;
+    font-weight:500 !important;
+    color:var(--ink) !important;
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .input,
+  html body #expenseModal select,
+  html body #expenseModal input[type="date"],
+  html body #expenseModal input[type="time"],
+  html body #journalModal .input,
+  html body #journalModal select,
+  html body #journalModal input[type="date"],
+  html body #journalModal input[type="time"],
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:0 16px !important;
+    border-radius:20px !important;
+    font-size:16px !important;
+    font-weight:400 !important;
+    line-height:1.2 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding-bottom:20px !important;
+    margin-top:14px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText) > .field-label,
+  html body dialog#journalModal .body > label:has(#jrText) > .field-label{
+    margin-top:0 !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:320px !important;
+    height:320px !important;
+    max-height:320px !important;
+    padding:14px 16px !important;
+    padding-inline-start:34px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.5 !important;
+    font-size:16px !important;
+    font-weight:400 !important;
+    text-align:right !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #expText strong,
+  html body #jrText strong,
+  html body #expText b,
+  html body #jrText b{
+    font-weight:700 !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:start !important;
+    margin:0 !important;
+    padding:8px 12px !important;
+    width:max-content !important;
+    max-width:100% !important;
+    border-radius:20px !important;
+  }
+
+  html body #rtfBubbleExp .styles,
+  html body #rtfBubbleExp .colors,
+  html body #rtfBubble .styles,
+  html body #rtfBubble .colors{
+    gap:10px !important;
+    align-items:center !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1.2fr) minmax(0, 1fr) 112px !important;
+    gap:16px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.25fr) !important;
+    gap:16px !important;
+    align-items:end !important;
+  }
+
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr) !important;
+    gap:16px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:block !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    justify-content:flex-start !important;
+    gap:12px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    font-size:16px !important;
+    font-weight:400 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+
+  html body #expenseModal #expLocationPreview,
+  html body #journalModal #jrLocationPreview{
+    display:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    bottom:4px !important;
+    width:20px !important;
+    height:20px !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:6px !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    opacity:.72 !important;
+    z-index:4 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid #94a3b8 !important;
+    border-top:2px solid #94a3b8 !important;
+    transform:skew(-18deg) !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    display:grid !important;
+    grid-template-columns:repeat(3, minmax(0, 1fr)) !important;
+    align-items:center !important;
+    gap:14px !important;
+    min-height:96px !important;
+    max-height:96px !important;
+    padding:20px 28px !important;
+    border-top:1px solid color-mix(in oklab, var(--border) 75%, white 25%) !important;
+    background:var(--card) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    width:100% !important;
+    min-width:0 !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:0 18px !important;
+    margin:0 !important;
+    border-radius:20px !important;
+    font-size:18px !important;
+    font-weight:600 !important;
+  }
+}
+
+/* === Search results polish === */
+#tripList .trip-search-matches{
+  width:100%;
+  margin-top:12px;
+  padding:12px 14px;
+  border:1px solid color-mix(in oklab, var(--brand) 14%, var(--border) 86%);
+  border-radius:14px;
+  background:linear-gradient(180deg, color-mix(in oklab, var(--brand) 5%, white 95%), color-mix(in oklab, var(--card) 88%, var(--brand) 12%));
+  box-shadow:0 8px 20px rgba(15,23,42,.05);
+}
+
+#tripList .trip-search-matches-inline{
+  grid-column:1 / -1;
+}
+
+#tripList .trip-search-title{
+  margin:0 0 10px;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.02em;
+  color:color-mix(in oklab, var(--brand) 68%, var(--ink) 32%);
+}
+
+#tripList .trip-match-list{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:flex-start;
+}
+
+#tripList .trip-match-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:36px;
+  max-width:100%;
+  padding:7px 12px;
+  border:1px solid color-mix(in oklab, var(--brand) 18%, var(--border) 82%);
+  border-radius:999px;
+  background:#fff;
+  color:var(--ink);
+  font-size:13px;
+  font-weight:600;
+  line-height:1.25;
+  box-shadow:0 4px 10px rgba(15,23,42,.04);
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:normal;
+  vertical-align:top;
+}
+
+#tripList .trip-match-pill:hover{
+  transform:translateY(-1px);
+  border-color:color-mix(in oklab, var(--brand) 42%, var(--border) 58%);
+  box-shadow:0 8px 16px rgba(15,23,42,.08);
+  background:color-mix(in oklab, var(--brand) 6%, white 94%);
+}
+
+#tripList .trip-match-pill:active{
+  transform:translateY(0);
+}
+
+#tripList .trip-match-pill .match-source{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  border-radius:999px;
+  background:color-mix(in oklab, var(--brand) 12%, white 88%);
+  color:color-mix(in oklab, var(--brand) 72%, var(--ink) 28%);
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+#tripList .trip-match-pill mark{
+  padding:0 .18em;
+  border-radius:5px;
+  background:#fff1a8;
+  color:inherit;
+  font-weight:800;
+}
+
+body.mobile-ui #tripList .trip-search-matches{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:12px;
+}
+
+body.mobile-ui #tripList .trip-search-title{
+  margin-bottom:8px;
+  font-size:11px;
+}
+
+body.mobile-ui #tripList .trip-match-list{
+  gap:6px;
+}
+
+body.mobile-ui #tripList .trip-match-pill{
+  min-height:34px;
+  padding:6px 10px;
+  font-size:12px;
+}
+
+/* === FINAL desktop editor winner === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:20px !important;
+    bottom:20px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(720px, calc(100vw - 64px)) !important;
+    max-width:min(720px, calc(100vw - 64px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:56px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:24px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:14px 24px !important;
+    border-bottom:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header strong,
+  html body dialog#journalModal > header strong{
+    font-size:20px !important;
+    font-weight:700 !important;
+    line-height:1.1 !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:20px 24px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:14px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    align-content:start !important;
+    font-size:13px !important;
+    font-weight:600 !important;
+    color:var(--ink) !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    min-height:52px !important;
+    height:52px !important;
+    border-radius:18px !important;
+    font-size:16px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:124px !important;
+    height:124px !important;
+    max-height:124px !important;
+    padding:14px 16px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.45 !important;
+    text-align:right !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:end !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:-2px 0 2px !important;
+    overflow:hidden !important;
+    border-radius:18px !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.95fr) 110px !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(0,1.25fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:block !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    padding:0 14px !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    font-size:16px !important;
+    font-weight:500 !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview,
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    max-height:76px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    padding:14px 24px !important;
+    border-top:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:0 20px !important;
+    margin:0 !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:600 !important;
+  }
+}
+
+/* === FINAL desktop editor visual reset === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:20px !important;
+    bottom:20px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(720px, calc(100vw - 64px)) !important;
+    max-width:min(720px, calc(100vw - 64px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:56px minmax(0, 1fr) 76px !important;
+    overflow:hidden !important;
+    border-radius:24px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    height:56px !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    padding:14px 24px !important;
+    border-bottom:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header strong,
+  html body dialog#journalModal > header strong{
+    font-size:20px !important;
+    font-weight:700 !important;
+    line-height:1.1 !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:20px 24px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:14px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    align-content:start !important;
+    font-size:13px !important;
+    font-weight:600 !important;
+    color:var(--ink) !important;
+  }
+
+  html body dialog#expenseModal .input,
+  html body dialog#journalModal .input,
+  html body dialog#expenseModal select,
+  html body dialog#journalModal select,
+  html body dialog#expenseModal input,
+  html body dialog#journalModal input,
+  html body dialog#expenseModal .expense-location-trigger,
+  html body dialog#journalModal .journal-location-trigger{
+    min-height:52px !important;
+    height:52px !important;
+    border-radius:18px !important;
+    font-size:16px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    min-height:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:124px !important;
+    height:124px !important;
+    max-height:124px !important;
+    padding:14px 16px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.45 !important;
+    text-align:right !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:end !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:-2px 0 2px !important;
+    overflow:hidden !important;
+    border-radius:18px !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,1.2fr) minmax(0,.95fr) 110px !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,.95fr) minmax(0,.95fr) minmax(0,1.25fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:block !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    padding:0 14px !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label{
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    font-size:16px !important;
+    font-weight:500 !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview,
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:76px !important;
+    min-height:76px !important;
+    max-height:76px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:12px !important;
+    padding:14px 24px !important;
+    border-top:1px solid color-mix(in oklab, var(--border) 65%, white 35%) !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:132px !important;
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:0 20px !important;
+    margin:0 !important;
+    border-radius:16px !important;
+    font-size:16px !important;
+    font-weight:600 !important;
+  }
+}
+
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:12px !important;
+    bottom:12px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(680px, calc(100vw - 48px)) !important;
+    max-width:min(680px, calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:48px minmax(0, 1fr) 68px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:14px 20px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:12px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-content:start !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    min-height:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:92px !important;
+    height:92px !important;
+    max-height:92px !important;
+    padding:12px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.4 !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr) minmax(88px, .6fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-items:end !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    height:46px !important;
+    min-height:46px !important;
+    padding:0 12px !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label,
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    display:block !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    min-height:18px !important;
+    font-size:12px !important;
+    line-height:1.35 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:68px !important;
+    min-height:68px !important;
+    max-height:68px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:12px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:110px !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    padding:0 18px !important;
+    margin:0 !important;
+  }
+}
+
+/* === FINAL desktop modal cleanup === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    top:12px !important;
+    bottom:12px !important;
+    left:50% !important;
+    right:auto !important;
+    margin:0 !important;
+    transform:translateX(-50%) !important;
+    width:min(680px, calc(100vw - 48px)) !important;
+    max-width:min(680px, calc(100vw - 48px)) !important;
+    height:auto !important;
+    max-height:none !important;
+    display:grid !important;
+    grid-template-rows:48px minmax(0, 1fr) 68px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:14px 20px !important;
+    display:grid !important;
+    grid-auto-flow:row !important;
+    grid-auto-rows:min-content !important;
+    gap:12px !important;
+    align-content:start !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal .body > *,
+  html body dialog#journalModal .body > *{
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
+  html body dialog#expenseModal .body > label,
+  html body dialog#journalModal .body > label{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-content:start !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    min-height:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:92px !important;
+    height:92px !important;
+    max-height:92px !important;
+    padding:12px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    cursor:text !important;
+    white-space:pre-wrap !important;
+    overflow-wrap:anywhere !important;
+    line-height:1.4 !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    inset:auto !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:start !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    overflow:hidden !important;
+  }
+
+  html body #expenseModal .expense-main-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr) minmax(88px, .6fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.1fr) !important;
+    gap:12px !important;
+    align-items:end !important;
+  }
+
+  html body #expenseModal .expense-main-row > *,
+  html body #expenseModal .expense-meta-row > *,
+  html body #journalModal .journal-meta-row > *{
+    min-width:0 !important;
+  }
+
+  html body #expenseModal .exp-location-col.location-compact,
+  html body #journalModal .jr-location-col.location-compact{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    align-items:end !important;
+    padding-top:0 !important;
+  }
+
+  html body #expenseModal .expense-location-trigger,
+  html body #journalModal .journal-location-trigger{
+    width:100% !important;
+    min-width:0 !important;
+    height:46px !important;
+    min-height:46px !important;
+    padding:0 12px !important;
+    justify-content:flex-start !important;
+    gap:8px !important;
+  }
+
+  html body #expenseModal .expense-location-trigger .journal-location-trigger-label,
+  html body #journalModal .journal-location-trigger .journal-location-trigger-label,
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    display:block !important;
+  }
+
+  html body #expLocationPreview,
+  html body #jrLocationPreview{
+    min-height:18px !important;
+    font-size:12px !important;
+    line-height:1.35 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body dialog#expenseModal > .footer,
+  html body dialog#journalModal > .footer{
+    height:68px !important;
+    min-height:68px !important;
+    max-height:68px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:12px !important;
+    padding:10px 20px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .footer .btn,
+  html body dialog#journalModal > .footer .btn{
+    min-width:110px !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    padding:0 18px !important;
+    margin:0 !important;
+  }
+}
+
+/* === FINAL desktop editor size and drag handle - WINNER === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+    padding-bottom:18px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:268px !important;
+    height:268px !important;
+    max-height:268px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:3px !important;
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    min-height:18px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:2 !important;
+    opacity:.72 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    opacity:.75 !important;
+    transform:skew(-18deg) !important;
+  }
+}
+
+/* === FINAL desktop editor size and drag handle === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#journalModal[open]{
+    --editor-row-height:268px !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content min-content !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:min-content var(--editor-row-height) min-content min-content !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    position:relative !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+    padding-bottom:18px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    min-height:268px !important;
+    height:268px !important;
+    max-height:268px !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+  }
+
+  html body .editor-resize-handle{
+    display:block !important;
+    position:absolute !important;
+    left:10px !important;
+    right:auto !important;
+    bottom:3px !important;
+    width:18px !important;
+    height:18px !important;
+    min-width:18px !important;
+    min-height:18px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    cursor:ns-resize !important;
+    z-index:2 !important;
+    opacity:.72 !important;
+  }
+
+  html body .editor-resize-handle::before{
+    content:"" !important;
+    position:absolute !important;
+    inset:3px !important;
+    border-inline-start:2px solid currentColor !important;
+    border-top:2px solid currentColor !important;
+    opacity:.75 !important;
+    transform:skew(-18deg) !important;
+  }
+}
+
+html body a.link-icon-only{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:24px !important;
+  min-width:24px !important;
+  height:24px !important;
+  vertical-align:middle !important;
+  text-decoration:none !important;
+}
+
+html body a.link-icon-only::before{
+  content:"\1F517" !important;
+  font-size:18px !important;
+  line-height:1 !important;
+}
+
+/* === Stable desktop editor modal: no page/body scroll, text scroll only === */
+@media (min-width: 821px){
+  html body dialog#expenseModal[open],
+  html body dialog#journalModal[open]{
+    position:fixed !important;
+    top:50% !important;
+    left:50% !important;
+    right:auto !important;
+    bottom:auto !important;
+    transform:translate(-50%, -50%) !important;
+    width:min(650px, calc(100vw - 48px)) !important;
+    max-width:min(650px, calc(100vw - 48px)) !important;
+    height:min(760px, calc(100dvh - 32px)) !important;
+    max-height:calc(100dvh - 32px) !important;
+    min-height:0 !important;
+    display:grid !important;
+    grid-template-rows:44px minmax(0, 1fr) 58px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > header,
+  html body dialog#journalModal > header{
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    padding:8px 18px !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body,
+  html body dialog#journalModal > .body{
+    min-height:0 !important;
+    overflow:hidden !important;
+    padding:10px 18px !important;
+    display:grid !important;
+    gap:8px !important;
+    align-content:stretch !important;
+    box-sizing:border-box !important;
+  }
+
+  html body dialog#expenseModal > .body{
+    grid-template-rows:64px minmax(110px, 1fr) 38px 70px 70px !important;
+  }
+
+  html body dialog#journalModal > .body{
+    grid-template-rows:64px minmax(140px, 1fr) 38px 70px !important;
+  }
+
+  html body dialog#expenseModal .body > label:has(#expText),
+  html body dialog#journalModal .body > label:has(#jrText){
+    min-height:0 !important;
+    overflow:hidden !important;
+    display:grid !important;
+    grid-template-rows:auto minmax(0, 1fr) !important;
+    gap:4px !important;
+  }
+
+  html body #expText,
+  html body #jrText{
+    height:100% !important;
+    min-height:0 !important;
+    max-height:100% !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    resize:none !important;
+    padding:10px !important;
+    line-height:1.35 !important;
+    box-sizing:border-box !important;
+  }
+
+  html body #rtfBubbleExp,
+  html body #rtfBubble{
+    position:static !important;
+    transform:none !important;
+    justify-self:start !important;
+    align-self:center !important;
+    width:max-content !important;
+    max-width:100% !important;
+    margin:0 !important;
+    overflow:hidden !important;
+    z-index:1 !important;
+  }
+
+  html body .editor-resize-handle{
+    display:none !important;
+  }
+
+  html body #expenseModal .expense-main-row,
+  html body #expenseModal .expense-meta-row,
+  html body #journalModal .journal-meta-row{
+    align-items:end !important;
+    margin:0 !important;
+  }
+
+  html body #expenseModal > .footer,
+  html body #journalModal > .footer{
+    height:58px !important;
+    min-height:58px !important;
+    max-height:58px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:10px !important;
+    padding:8px 18px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+}
+
+@media (max-width: 820px) {
+  body{
+    overflow-x:hidden !important;
+  }
+
+  #currentUserEmail{
+    display:none !important;
+  }
+
+  #btnTheme,
+  #btnLogin{
+    min-width:42px !important;
+    width:42px !important;
+    height:42px !important;
+    padding:0 !important;
+    border-radius:14px !important;
+  }
+
+  #btnLogin,
+  #btnLogin:not(.is-authenticated){
+    font-size:0 !important;
+  }
+
+  #btnLogin span,
+  #btnTheme span{
+    font-size:18px !important;
+  }
+
+ #homeTripsHeader {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items: center !important;
+    gap: 10px !important;
+    min-height: 60px !important; /* זה מה שימנע את הדריסה */
+}
+
+  #homeTripsHeader .spacer{
+    display:none !important;
+  }
+
+  #homeTripsHeader h2{
+    font-size:2rem !important;
+    line-height:1.05 !important;
+  }
+
+  #btnNewTrip{
+    width:44px !important;
+    min-width:44px !important;
+    height:44px !important;
+    min-height:44px !important;
+    padding:0 !important;
+    font-size:1.8rem !important;
+    line-height:1 !important;
+    border-radius:14px !important;
+  }
+
+  #tripSearchActions{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) 48px !important;
+    gap:10px !important;
+    align-items:center !important;
+  }
+
+  #btnSortTrips{
+    min-width:48px !important;
+    width:48px !important;
+    height:48px !important;
+    padding:0 !important;
+    font-size:0 !important;
+    border-radius:14px !important;
+  }
+
+  #btnSortTrips::before{
+    content:"↕";
+    font-size:20px;
+    font-weight:700;
+  }
+
+  #tripViewActions,
+  #btnViewGrid,
+  #btnViewMap,
+  #overviewTabSelect,
+  #overviewHeaderBar,
+  #view-expenses .list-actions > :not(#mobileExpensesMenuBtn),
+  #view-journal .list-actions > :not(#mobileJournalMenuBtn){
+    display:none !important;
+  }
+
+  #view-overview{
+    position:relative !important;
+    padding-top:8px !important;
+  }
+
+  #mobileOverviewMenuBtn,
+  #mobileExpensesMenuBtn,
+  #mobileJournalMenuBtn{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:44px !important;
+    min-width:44px !important;
+    height:44px !important;
+    padding:0 !important;
+    border-radius:14px !important;
+    font-size:20px !important;
+    font-weight:700 !important;
+  }
+
+  #mobileOverviewMenuBtn{
+    position:static !important;
+    margin:0 0 10px auto !important;
+    z-index:3 !important;
+  }
+
+  #view-expenses .list-actions,
+  #view-journal .list-actions{
+    display:flex !important;
+    justify-content:flex-start !important;
+    padding:0 0 8px !important;
+  }
+
+  #expenseSummary.budget-bar{
+    display:grid !important;
+    grid-template-columns:repeat(2, minmax(0,1fr)) !important;
+    gap:8px !important;
+    padding:0 !important;
+    background:transparent !important;
+    border:none !important;
+    box-shadow:none !important;
+  }
+
+  #expenseSummary.budget-bar > *,
+  #expenseSummary.budget-bar .col,
+  #expenseSummary.budget-bar .kpi,
+  #expenseSummary.budget-bar .badge{
+    min-width:0 !important;
+    margin:0 !important;
+    padding:10px 12px !important;
+    background:var(--card) !important;
+    border:1px solid var(--border) !important;
+    border-radius:16px !important;
+    box-shadow:0 6px 18px rgba(15,23,42,.06) !important;
+  }
+
+  #expenseSummary.budget-bar .lbl{
+    display:block !important;
+    margin-bottom:4px !important;
+    font-size:.78rem !important;
+  }
+
+  #expenseSummary.budget-bar .val,
+  #expenseSummary.budget-bar strong{
+    display:block !important;
+    font-size:1.12rem !important;
+    font-weight:800 !important;
+  }
+
+  #tblAllTimeline tr.exp-item:not(.exp-details),
+  #tblExpenses tr.exp-item:not(.exp-details),
+  #tblJournal tr.exp-item:not(.exp-details){
+    grid-template-columns:minmax(0,1fr) 44px !important;
+    grid-template-areas:
+      "title menu"
+      "meta menu"
+      "aux menu" !important;
+    align-items:start !important;
+    gap:8px 12px !important;
+    margin:0 0 10px !important;
+    padding:14px !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+  }
+
+  #tblAllTimeline td.menu-cell,
+  #tblExpenses td.menu-cell,
+  #tblJournal td.menu-cell{
+    justify-content:flex-end !important;
+    align-items:flex-start !important;
+  }
+
+  #tblAllTimeline td.title,
+  #tblExpenses td.title,
+  #tblAllTimeline td.location,
+  #tblJournal td.location{
+    font-size:1rem !important;
+    line-height:1.35 !important;
+    text-align:right !important;
+  }
+
+  #tblAllTimeline td.date,
+  #tblExpenses td.date,
+  #tblJournal td.date,
+  #tblAllTimeline td.amount,
+  #tblExpenses td.amount,
+  #tblAllTimeline td.category,
+  #tblExpenses td.category{
+    text-align:right !important;
+    white-space:normal !important;
+  }
+
+  #tblAllTimeline tr.exp-item.exp-details,
+  #tblExpenses tr.exp-item.exp-details,
+  #tblJournal tr.exp-item.exp-details,
+  #tblAllTimeline tr.exp-item:has(td.notes),
+  #tblExpenses tr.exp-item:has(td.notes),
+  #tblJournal tr.exp-item:has(td.notes){
+    margin:-6px 0 12px !important;
+    border-top:1px solid var(--border) !important;
+    border-radius:0 0 18px 18px !important;
+  }
+
+  #tblAllTimeline tr.exp-item.exp-details td.notes,
+  #tblExpenses tr.exp-item.exp-details td.notes,
+  #tblJournal tr.exp-item.exp-details td.notes,
+  #tblAllTimeline tr.exp-item:has(td.notes) td.notes,
+  #tblExpenses tr.exp-item:has(td.notes) td.notes,
+  #tblJournal tr.exp-item:has(td.notes) td.notes{
+    padding:14px !important;
+    font-size:.95rem !important;
+    line-height:1.65 !important;
+    text-align:right !important;
+  }
+
+  dialog.modal[open]{
+    inset:0 !important;
+    margin:auto !important;
+    left:8px !important;
+    right:8px !important;
+    width:min(calc(100vw - 16px), 560px) !important;
+    max-width:min(calc(100vw - 16px), 560px) !important;
+    max-height:calc(100dvh - 16px) !important;
+  }
+
+  #tripModal[open],
+  #expenseModal[open],
+  #journalModal[open]{
+    width:calc(100vw - 16px) !important;
+    max-width:calc(100vw - 16px) !important;
+    border-radius:22px !important;
+  }
+
+  #tripModal .body,
+  #expenseModal .body,
+  #journalModal .body{
+    padding:14px !important;
+    max-height:calc(100dvh - 150px) !important;
+    overflow:auto !important;
+  }
+
+  #tripModal .body .row,
+  #expenseModal .body .row,
+  #journalModal .body .row:not(.journal-meta-row),
+  #tripModal .body .date-row,
+  #expenseModal .body .date-row,
+  #journalModal .body .date-row{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+
+  #journalModal .body .journal-meta-row{
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) minmax(0,.82fr) minmax(0,1.15fr) !important;
+    gap:8px !important;
+    align-items:end !important;
+  }
+
+  #journalModal .body .journal-meta-row .location-compact{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:6px !important;
+    margin-top:0 !important;
+  }
+
+  #tripModal label,
+  #expenseModal label,
+  #journalModal label{
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  #rowMenuModal[open],
+  #mobileSectionMenuDialog[open]{
+    inset:auto 8px 8px 8px !important;
+    margin:0 auto !important;
+    left:8px !important;
+    right:8px !important;
+    width:calc(100vw - 16px) !important;
+    max-width:calc(100vw - 16px) !important;
+    border-radius:22px !important;
+  }
+
+  #rowMenuModal .footer,
+  #mobileSectionMenuDialog .footer{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+
+  .mobile-section-menu-body{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+
+  .mobile-sheet-action{
+    min-height:48px !important;
+    justify-content:flex-start !important;
+    text-align:right !important;
+    border-radius:14px !important;
+  }
+
+  .mobile-sheet-action.primary{
+    background:var(--brand) !important;
+    color:#fff !important;
+    border-color:transparent !important;
+  }
+}
+
+@media (min-width: 821px) {
+  #tripModal{
+    width:min(680px, calc(100vw - 80px)) !important;
+    max-width:min(680px, calc(100vw - 80px)) !important;
+  }
+
+  #tripModal .body{
+    padding:22px 24px !important;
+  }
+
+  #tripModal .body > label{
+    display:block !important;
+    width:100% !important;
+    margin-bottom:16px !important;
+  }
+
+  #tripModal .body .row{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:16px !important;
+    align-items:end !important;
+  }
+
+  #tripModal .body .row label{
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  #tripModal .footer{
+    justify-content:flex-end !important;
+    gap:12px !important;
+    padding:16px 24px 22px !important;
+  }
+}
+[data-theme="light"]{
+  --bg:#f6f7fb; --card:#ffffff; --ink:#0e1116; --muted:#415266; --brand:#1a73ff; --accent:#faad14; --ok:#089e71; --danger:#d9363e; --border:#e6e9ef; --shadow:0 16px 30px rgba(16,24,40,.08);
+  --glass: color-mix(in oklab, #ffffff 70%, transparent);
+}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Rubik,system-ui,-apple-system,Segoe UI,Roboto,Arial;overflow:hidden;direction:rtl}
@@ -13019,47 +16039,1380 @@ html body .cell.notes a.mail-icon::before{
   }
 }
 
+/* === TRUE EOF OVERRIDE: expense map badge is visible and red === */
+.map-action-btn.map-action-expense .map-action-badge{
+  background:#e53935 !important;
+  color:#fff !important;
+  border:2px solid #b71c1c !important;
+}
 
-/* === MOBILE PERFORMANCE CLEANUP 2026-05-19 === */
-@media (max-width: 820px){
-  html, body{
-    max-width:100%;
+.map-action-btn.map-action-expense .map-action-icon{
+  color:#b71c1c !important;
+}
+
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details),
+body.mobile-ui #tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details),
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details),
+body.mobile-ui #view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details){
+  display:grid !important;
+  direction:ltr !important;
+  grid-template-columns:58px 130px 150px 128px minmax(0, 1fr) 150px !important;
+  grid-template-areas:"menu map amount category title date" !important;
+  column-gap:0 !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  justify-self:stretch !important;
+  grid-column:1 / -1 !important;
+}
+
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="expense"] td.map-cell,
+body.mobile-ui #tblExpenses tr.exp-item[data-kind="expense"] td.map-cell,
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="expense"] td.map-cell,
+body.mobile-ui #view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.map-cell{
+  grid-area:map !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  overflow:visible !important;
+}
+
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="expense"] td.map-cell .map-action-btn,
+body.mobile-ui #tblExpenses tr.exp-item[data-kind="expense"] td.map-cell .map-action-btn,
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="expense"] td.map-cell .map-action-btn,
+body.mobile-ui #view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.map-cell .map-action-btn{
+  min-width:96px !important;
+  max-width:none !important;
+  white-space:nowrap !important;
+}
+
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+body.mobile-ui #tblExpenses tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+body.mobile-ui #view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell){
+  grid-area:menu !important;
+  padding-inline:0 !important;
+  justify-content:center !important;
+}
+
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="expense"] td.map-cell,
+body.mobile-ui #tblExpenses tr.exp-item[data-kind="expense"] td.map-cell,
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="expense"] td.map-cell,
+body.mobile-ui #view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.map-cell{
+  padding-inline:0 6px !important;
+  justify-content:flex-start !important;
+}
+
+/* === TRUE EOF OVERRIDE: journal rows use the same full row width as expense rows === */
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details),
+body.mobile-ui #tblJournal tr.exp-item[data-kind="journal"]:not(.exp-details),
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="journal"]:not(.exp-details),
+body.mobile-ui #view-journal .expenses-table tr.exp-item[data-kind="journal"]:not(.exp-details){
+  display:grid !important;
+  direction:ltr !important;
+  grid-template-columns:58px 130px 150px 128px minmax(0, 1fr) 150px !important;
+  grid-template-areas:"menu map time category location date" !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  transform:none !important;
+  justify-self:stretch !important;
+  grid-column:1 / -1 !important;
+  box-sizing:border-box !important;
+}
+
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="journal"] td.location,
+body.mobile-ui #tblJournal tr.exp-item[data-kind="journal"] td.location,
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="journal"] td.location,
+body.mobile-ui #view-journal .expenses-table tr.exp-item[data-kind="journal"] td.location{
+  grid-area:location !important;
+}
+
+body.mobile-ui #tblAllTimeline tr.exp-item[data-kind="journal"] td.time,
+body.mobile-ui #tblJournal tr.exp-item[data-kind="journal"] td.time,
+body.mobile-ui #view-overview .expenses-table tr.exp-item[data-kind="journal"] td.time,
+body.mobile-ui #view-journal .expenses-table tr.exp-item[data-kind="journal"] td.time{
+  grid-area:time !important;
+}
+
+/* === TRUE EOF OVERRIDE: attach expense map to menu in the active table view === */
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details),
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details){
+  display:grid !important;
+  direction:ltr !important;
+  grid-template-columns:58px 130px 150px 128px minmax(0, 1fr) 150px !important;
+  grid-template-areas:"menu map amount category title date" !important;
+  column-gap:0 !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  justify-self:stretch !important;
+  grid-column:1 / -1 !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#tblExpenses tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell){
+  grid-area:menu !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  padding-inline:0 !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.map-cell,
+#tblExpenses tr.exp-item[data-kind="expense"] td.map-cell,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.map-cell,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.map-cell{
+  grid-area:map !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  padding-inline:0 6px !important;
+  overflow:visible !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.amount,
+#tblExpenses tr.exp-item[data-kind="expense"] td.amount,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.amount,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.amount{ grid-area:amount !important; }
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.category,
+#tblExpenses tr.exp-item[data-kind="expense"] td.category,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.category,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.category{ grid-area:category !important; }
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.title,
+#tblExpenses tr.exp-item[data-kind="expense"] td.title,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.title,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.title{ grid-area:title !important; }
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.date,
+#tblExpenses tr.exp-item[data-kind="expense"] td.date,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.date,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.date{ grid-area:date !important; }
+
+/* === TRUE EOF OVERRIDE: expense rows match journal row structure === */
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details),
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details){
+  display:grid !important;
+  direction:ltr !important;
+  grid-template-columns:58px 130px minmax(0, 1fr) 150px !important;
+  grid-template-areas:"menu map title date" !important;
+  column-gap:0 !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  transform:none !important;
+  justify-self:stretch !important;
+  grid-column:1 / -1 !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#tblExpenses tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell){
+  grid-area:menu !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding-inline:0 !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.map-cell,
+#tblExpenses tr.exp-item[data-kind="expense"] td.map-cell,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.map-cell,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.map-cell{
+  grid-area:map !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding-inline:8px !important;
+  overflow:visible !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.title,
+#tblExpenses tr.exp-item[data-kind="expense"] td.title,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.title,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.title{
+  grid-area:title !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:14px !important;
+  direction:rtl !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+  white-space:nowrap !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] .expense-title-text,
+#tblExpenses tr.exp-item[data-kind="expense"] .expense-title-text,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] .expense-title-text,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] .expense-title-text{
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] .expense-title-meta,
+#tblExpenses tr.exp-item[data-kind="expense"] .expense-title-meta,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] .expense-title-meta,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] .expense-title-meta{
+  flex:0 0 auto !important;
+  color:#111827 !important;
+  font-weight:700 !important;
+  white-space:nowrap !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.date,
+#tblExpenses tr.exp-item[data-kind="expense"] td.date,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.date,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.date{
+  grid-area:date !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  white-space:nowrap !important;
+}
+
+/* === FINAL: align titles toward the date column === */
+#tblAllTimeline tr.exp-item[data-kind="journal"] td.location,
+#tblJournal tr.exp-item[data-kind="journal"] td.location,
+#view-overview .expenses-table tr.exp-item[data-kind="journal"] td.location,
+#view-journal .expenses-table tr.exp-item[data-kind="journal"] td.location,
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.title,
+#tblExpenses tr.exp-item[data-kind="expense"] td.title,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.title,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.title{
+  display:block !important;
+  direction:rtl !important;
+  text-align:right !important;
+  justify-content:normal !important;
+  justify-items:normal !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.amount,
+#tblExpenses tr.exp-item[data-kind="expense"] td.amount,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.amount,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.amount,
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.category,
+#tblExpenses tr.exp-item[data-kind="expense"] td.category,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.category,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.category{
+  display:none !important;
+}
+
+/* === FINAL LOCK: expense rows must occupy the same full line as journal rows === */
+#view-overview .expenses-table,
+#view-expenses .expenses-table,
+#tblAllTimeline,
+#tblExpenses{
+  display:block !important;
+  direction:ltr !important;
+  width:100% !important;
+  inline-size:100% !important;
+  min-width:100% !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details),
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details){
+  display:grid !important;
+  direction:ltr !important;
+  grid-template-columns:58px 130px minmax(0, 1fr) 150px !important;
+  grid-template-areas:"menu map title date" !important;
+  width:100% !important;
+  inline-size:100% !important;
+  min-width:100% !important;
+  max-width:100% !important;
+  min-inline-size:100% !important;
+  max-inline-size:100% !important;
+  margin:0 !important;
+  margin-inline:0 !important;
+  padding:0 !important;
+  transform:none !important;
+  translate:none !important;
+  left:auto !important;
+  right:auto !important;
+  float:none !important;
+  clear:both !important;
+  justify-self:stretch !important;
+  align-self:stretch !important;
+  grid-column:1 / -1 !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td{
+  width:auto !important;
+  inline-size:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  min-inline-size:0 !important;
+  max-inline-size:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.title,
+#tblExpenses tr.exp-item[data-kind="expense"] td.title,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.title,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.title{
+  grid-area:title !important;
+  direction:rtl !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  padding-inline:12px !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.date,
+#tblExpenses tr.exp-item[data-kind="expense"] td.date,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.date,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.date{
+  grid-area:date !important;
+  direction:rtl !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding-inline:8px !important;
+}
+
+/* === FINAL: keep expense rows like the original wide rows, with map added after menu === */
+#view-overview .expenses-table,
+#view-expenses .expenses-table,
+#view-journal .expenses-table,
+#tblAllTimeline,
+#tblExpenses,
+#tblJournal{
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  inline-size:100% !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details),
+#tblJournal tr.exp-item[data-kind="journal"]:not(.exp-details),
+#view-overview .expenses-table tr.exp-item[data-kind="journal"]:not(.exp-details),
+#view-journal .expenses-table tr.exp-item[data-kind="journal"]:not(.exp-details){
+  display:grid !important;
+  direction:ltr !important;
+  grid-template-columns:58px 130px minmax(0, 1fr) 150px !important;
+  grid-template-areas:"menu map location date" !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  transform:none !important;
+  justify-self:stretch !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details),
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details),
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details){
+  display:grid !important;
+  direction:ltr !important;
+  grid-template-columns:58px 130px 200px 140px minmax(0, 1fr) 150px !important;
+  grid-template-areas:"menu map amount category title date" !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  transform:none !important;
+  justify-self:stretch !important;
+  box-sizing:border-box !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind]:not(.exp-details) > td,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td,
+#tblJournal tr.exp-item[data-kind="journal"]:not(.exp-details) > td,
+#view-overview .expenses-table tr.exp-item[data-kind]:not(.exp-details) > td,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td,
+#view-journal .expenses-table tr.exp-item[data-kind="journal"]:not(.exp-details) > td{
+  min-width:0 !important;
+  max-width:none !important;
+  width:auto !important;
+  margin:0 !important;
+  padding:10px 12px !important;
+  box-sizing:border-box !important;
+  direction:rtl !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind] td.menu-cell:not(.map-cell),
+#tblExpenses tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#tblJournal tr.exp-item[data-kind="journal"] td.menu-cell:not(.map-cell),
+#view-overview .expenses-table tr.exp-item[data-kind] td.menu-cell:not(.map-cell),
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell),
+#view-journal .expenses-table tr.exp-item[data-kind="journal"] td.menu-cell:not(.map-cell){
+  grid-area:menu !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind] td.map-cell,
+#tblExpenses tr.exp-item[data-kind="expense"] td.map-cell,
+#tblJournal tr.exp-item[data-kind="journal"] td.map-cell,
+#view-overview .expenses-table tr.exp-item[data-kind] td.map-cell,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.map-cell,
+#view-journal .expenses-table tr.exp-item[data-kind="journal"] td.map-cell{
+  grid-area:map !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  overflow:visible !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="journal"] td.location,
+#tblJournal tr.exp-item[data-kind="journal"] td.location,
+#view-overview .expenses-table tr.exp-item[data-kind="journal"] td.location,
+#view-journal .expenses-table tr.exp-item[data-kind="journal"] td.location{
+  grid-area:location !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.amount,
+#tblExpenses tr.exp-item[data-kind="expense"] td.amount,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.amount,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.amount{
+  grid-area:amount !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  white-space:nowrap !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.category,
+#tblExpenses tr.exp-item[data-kind="expense"] td.category,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.category,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.category{
+  grid-area:category !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  white-space:nowrap !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.title,
+#tblExpenses tr.exp-item[data-kind="expense"] td.title,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.title,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.title{
+  grid-area:title !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind] td.date,
+#tblExpenses tr.exp-item[data-kind="expense"] td.date,
+#tblJournal tr.exp-item[data-kind="journal"] td.date,
+#view-overview .expenses-table tr.exp-item[data-kind] td.date,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.date,
+#view-journal .expenses-table tr.exp-item[data-kind="journal"] td.date{
+  grid-area:date !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  white-space:nowrap !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind] td.time,
+#tblExpenses tr.exp-item[data-kind="expense"] td.time,
+#tblJournal tr.exp-item[data-kind="journal"] td.time,
+#view-overview .expenses-table tr.exp-item[data-kind] td.time,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.time,
+#view-journal .expenses-table tr.exp-item[data-kind="journal"] td.time,
+#tblAllTimeline tr.exp-item[data-kind="expense"] td.currency,
+#tblExpenses tr.exp-item[data-kind="expense"] td.currency,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"] td.currency,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"] td.currency{
+  display:none !important;
+}
+
+/* === FINAL FINAL: right-align every row title, after all earlier overrides === */
+#tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location,
+#tblJournal tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location,
+#view-overview .expenses-table tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location,
+#view-journal .expenses-table tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location,
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title{
+  display:flex !important;
+  direction:rtl !important;
+  text-align:right !important;
+  justify-content:flex-start !important;
+  align-items:center !important;
+  justify-items:start !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+
+/* === FINAL FINAL: right-align expense category and amount === */
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount{
+  display:block !important;
+  direction:rtl !important;
+  text-align:right !important;
+  justify-content:normal !important;
+  align-items:normal !important;
+  white-space:nowrap !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main{
+  width:100% !important;
+  display:flex !important;
+  justify-content:flex-end !important;
+  text-align:right !important;
+}
+
+/* === ABSOLUTE FINAL: physically right-align expense amount and category === */
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount,
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  direction:ltr !important;
+  text-align:right !important;
+  padding-inline:12px !important;
+}
+
+#tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main,
+#tblExpenses tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main,
+#view-overview .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main,
+#view-expenses .expenses-table tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount .amt-main{
+  display:inline-flex !important;
+  width:auto !important;
+  max-width:100% !important;
+  margin-left:auto !important;
+  margin-right:0 !important;
+  justify-content:flex-end !important;
+  text-align:right !important;
+  direction:ltr !important;
+}
+
+/* === DESKTOP ONLY: overview expense row matches header: תאריך | שעה | כותרת | קטגוריה | סכום | מפה | תפריט === */
+@media (min-width: 821px){
+  #view-overview .expenses-table{
+    width:100% !important;
+    table-layout:auto !important;
+    border-collapse:separate !important;
+    border-spacing:0 8px !important;
+    direction:rtl !important;
     overflow-x:hidden !important;
-    overscroll-behavior-x:none;
   }
-  *, *::before, *::after{
-    max-width:100%;
-  }
-  .app, .container, .content, .sidebar, .tabview, .card, .row, .trip-card, .trip-row, dialog, dialog *{
-    min-width:0 !important;
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    grid-template-columns:150px 92px minmax(180px,1.6fr) 180px 150px 92px 70px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    align-items:center !important;
+    width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    gap:0 !important;
+    border:1px solid var(--border) !important;
+    border-radius:18px 18px 0 0 !important;
+    overflow:hidden !important;
+    background:rgba(230, 161, 90, 0.15) !important;
+    box-shadow:none !important;
     box-sizing:border-box !important;
   }
-  .card, .trip-card, .trip-row, .exp-item, .jr-item{
-    overflow-wrap:anywhere;
-    contain:layout paint style;
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.cell{
+    display:flex !important;
+    align-items:center !important;
+    min-width:0 !important;
+    width:auto !important;
+    max-width:none !important;
+    height:64px !important;
+    padding:0 16px !important;
+    border:0 !important;
+    border-inline-start:1px solid var(--border) !important;
+    background:transparent !important;
+    box-sizing:border-box !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
   }
-  #mobileAuthOverlay{
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-    background:rgba(10,12,16,.82) !important;
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.cell:last-child{
+    border-inline-start:0 !important;
   }
-  .modal, dialog, #mobileAuthCard, .card{
-    box-shadow:0 8px 22px rgba(0,0,0,.22) !important;
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.header.date{
+    grid-area:date !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
   }
-  #tripList.grid, #tripList.list{
-    content-visibility:auto;
-    contain-intrinsic-size: 900px;
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.header.time{
+    grid-area:time !important;
+    display:flex !important;
+    justify-content:center !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    padding:0 16px !important;
+    font-size:inherit !important;
+    line-height:inherit !important;
+    color:var(--ink) !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
   }
-  .leaflet-container{
-    max-width:100vw !important;
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.header.title{
+    grid-area:title !important;
+    justify-content:flex-start !important;
+    font-weight:700 !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.header.category{
+    grid-area:category !important;
+    display:flex !important;
+    justify-content:center !important;
+    color:var(--ink) !important;
+    font-weight:500 !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.header.amount{
+    grid-area:amount !important;
+    justify-content:center !important;
+    font-weight:700 !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.header.amount .mobile-expense-amount{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:6px !important;
+    width:100% !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.map-cell{
+    grid-area:map !important;
+    justify-content:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.menu-cell:not(.map-cell){
+    grid-area:menu !important;
+    justify-content:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.menu-cell .menu-btn,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"] td.map-cell .map-action-btn{
+    margin:0 !important;
+  }
+
+  #view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-item.exp-details[data-item-type="expense"],
+  #view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-item[data-item-type="expense"]:has(td.notes),
+  #view-overview #tblAllTimeline tr.exp-item.exp-details[data-item-type="expense"].force-open,
+  #view-overview #tblAllTimeline tr.exp-item[data-item-type="expense"].force-open:has(td.notes){
+    display:block !important;
+    width:100% !important;
+    margin:0 0 8px !important;
+    padding:0 !important;
+    border:1px solid var(--border) !important;
+    border-top:0 !important;
+    border-radius:0 0 18px 18px !important;
+    overflow:hidden !important;
+    background:rgba(230, 161, 90, 0.15) !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item.exp-details[data-item-type="expense"] > td.notes,
+  #view-overview #tblAllTimeline tr.exp-item[data-item-type="expense"]:has(td.notes) > td.notes{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    padding:12px 16px !important;
+    border:0 !important;
+    background:transparent !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-item.exp-details[data-item-type="expense"]:not(.force-open),
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-item[data-item-type="expense"]:has(td.notes):not(.force-open){
+    display:none !important;
   }
 }
 
-@media (max-width: 820px), (prefers-reduced-motion: reduce){
-  *, *::before, *::after{
-    animation-duration:.001ms !important;
-    animation-iteration-count:1 !important;
-    transition-duration:.001ms !important;
-    scroll-behavior:auto !important;
+
+/* === DESKTOP ONLY FIX: Overview rows keep all data visible === */
+@media (min-width: 821px){
+  /* Undo the previous accidental time-column collapse in the overview table. */
+  #view-overview .expenses-table td.header.time{
+    width:84px !important;
+    min-width:84px !important;
+    max-width:84px !important;
+    padding:10px 12px !important;
+    font-size:inherit !important;
+    line-height:inherit !important;
+    text-align:center !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    white-space:nowrap !important;
   }
+
+  #view-overview .expenses-table td.header.date{
+    width:118px !important;
+    min-width:118px !important;
+    max-width:118px !important;
+    padding:10px 12px !important;
+    text-align:center !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    white-space:nowrap !important;
+  }
+
+  #view-overview .expenses-table td.header.title,
+  #view-overview .expenses-table td.header.location{
+    min-width:220px !important;
+    max-width:none !important;
+    padding:10px 14px !important;
+    text-align:right !important;
+  }
+
+  #view-overview .expenses-table td.header.category{
+    width:180px !important;
+    min-width:180px !important;
+    max-width:180px !important;
+    padding:10px 14px !important;
+    text-align:right !important;
+  }
+
+  #view-overview .expenses-table td.header.amount{
+    width:160px !important;
+    min-width:160px !important;
+    max-width:160px !important;
+    padding:10px 14px !important;
+    text-align:left !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    white-space:nowrap !important;
+  }
+
+  #view-overview .expenses-table td.map-cell{
+    width:92px !important;
+    min-width:92px !important;
+    max-width:92px !important;
+    text-align:center !important;
+  }
+
+  #view-overview .expenses-table td.menu-cell{
+    width:72px !important;
+    min-width:72px !important;
+    max-width:72px !important;
+    text-align:center !important;
+  }
+
+  #view-overview .expenses-table tr.exp-details td.notes{
+    padding:10px 14px 14px !important;
+  }
+}
+
+/* === FINAL FIXED RTL TIMELINE COLUMNS - TRUE EOF OVERRIDE === */
+@media (min-width: 821px){
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px 190px 220px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map location time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{ grid-area:category !important; }
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title{ grid-area:title !important; }
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{ grid-area:location !important; }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount{
+    grid-area:amount !important;
+    justify-content:flex-end !important;
+    direction:ltr !important;
+    text-align:left !important;
+    overflow:hidden !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.date{
+    grid-area:date !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.time{
+    grid-area:time !important;
+    display:flex !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.map-cell{
+    grid-area:map !important;
+    justify-content:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.menu-cell:not(.map-cell){
+    grid-area:menu !important;
+    justify-content:center !important;
+  }
+
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-details:not(.force-open){
+    display:none !important;
+  }
+}
+
+/* === FINAL RTL OVERVIEW ROW RESET - LAST RULE WINS === */
+@media (min-width: 821px){
+  #view-overview .expenses-table-container{
+    overflow-x:hidden !important;
+    max-width:100% !important;
+    direction:rtl !important;
+  }
+
+  #view-overview .expenses-table,
+  #view-overview #tblAllTimeline{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    border-collapse:separate !important;
+    border-spacing:0 8px !important;
+    direction:rtl !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(122px,.75fr) minmax(130px,.8fr) minmax(240px,2fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    align-items:stretch !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin:0 !important;
+    padding:0 !important;
+    gap:0 !important;
+    border:1px solid var(--border) !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+    background:rgba(230, 161, 90, 0.15) !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(0,1fr) 132px !important;
+    grid-template-areas:"menu map location date" !important;
+    align-items:stretch !important;
+    width:100% !important;
+    max-width:100% !important;
+    margin:0 !important;
+    padding:0 !important;
+    gap:0 !important;
+    border:1px solid var(--border) !important;
+    border-radius:18px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.cell{
+    min-width:0 !important;
+    max-width:none !important;
+    width:auto !important;
+    height:64px !important;
+    margin:0 !important;
+    padding:0 16px !important;
+    border:0 !important;
+    border-inline-start:1px solid var(--border) !important;
+    background:transparent !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.cell:last-child{
+    border-inline-start:0 !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.date{
+    grid-area:date !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.time{
+    grid-area:time !important;
+    display:flex !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.title{
+    grid-area:title !important;
+    justify-content:flex-start !important;
+    direction:rtl !important;
+    text-align:right !important;
+    font-weight:700 !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.category{
+    grid-area:category !important;
+    justify-content:flex-start !important;
+    direction:rtl !important;
+    text-align:right !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.amount{
+    grid-area:amount !important;
+    justify-content:flex-end !important;
+    direction:ltr !important;
+    unicode-bidi:isolate !important;
+    text-align:left !important;
+    font-weight:700 !important;
+  }
+
+  #view-overview #tblAllTimeline td.header.location{
+    grid-area:location !important;
+    justify-content:flex-start !important;
+    direction:rtl !important;
+    text-align:right !important;
+  }
+
+  #view-overview #tblAllTimeline td.map-cell{
+    grid-area:map !important;
+    justify-content:center !important;
+    overflow:visible !important;
+  }
+
+  #view-overview #tblAllTimeline td.menu-cell:not(.map-cell){
+    grid-area:menu !important;
+    justify-content:center !important;
+    overflow:visible !important;
+  }
+
+  #view-overview #tblAllTimeline td.map-cell .map-action-btn,
+  #view-overview #tblAllTimeline td.menu-cell .menu-btn{
+    margin:0 !important;
+  }
+
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-details:not(.force-open){
+    display:none !important;
+  }
+
+  #view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-details,
+  #view-overview #tblAllTimeline tr.exp-details.force-open{
+    display:block !important;
+    width:100% !important;
+    margin:0 0 8px !important;
+    padding:0 !important;
+    border:1px solid var(--border) !important;
+    border-top:0 !important;
+    border-radius:0 0 18px 18px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-details > td.notes{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    padding:12px 16px !important;
+    border:0 !important;
+    background:transparent !important;
+    direction:rtl !important;
+    text-align:right !important;
+    box-sizing:border-box !important;
+  }
+}
+
+/* === FINAL FIXED RTL TIMELINE COLUMNS - AFTER LAST RESET === */
+@media (min-width: 821px){
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px 190px 220px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map location time date" !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title,
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{ grid-area:category !important; }
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title{ grid-area:title !important; }
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="journal"]:not(.exp-details) > td.location{ grid-area:location !important; }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.amount{
+    grid-area:amount !important;
+    justify-content:flex-end !important;
+    direction:ltr !important;
+    text-align:left !important;
+    overflow:hidden !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.date{
+    grid-area:date !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.time{
+    grid-area:time !important;
+    display:flex !important;
+    justify-content:center !important;
+    direction:ltr !important;
+    text-align:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.map-cell{
+    grid-area:map !important;
+    justify-content:center !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item:not(.exp-details) > td.menu-cell:not(.map-cell){
+    grid-area:menu !important;
+    justify-content:center !important;
+  }
+
+  #view-overview.all-collapsed #tblAllTimeline tr.exp-details:not(.force-open){
+    display:none !important;
+  }
+}
+
+/* === TRUE EOF: LOCK EXPENSE CATEGORY COLUMN TO ONE FIXED GRID SLOT === */
+@media (min-width: 821px){
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    grid-template-columns:64px 132px 190px 260px minmax(0, 1fr) 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{
+    grid-area:category !important;
+    width:260px !important;
+    min-width:260px !important;
+    max-width:260px !important;
+    flex:0 0 260px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    contain:paint !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category *{
+    max-width:100% !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+  }
+}
+
+/* === TRUE EOF MOBILE/TABLET: KEEP EXPENSE COLUMNS FIXED, DO NOT REFLOW CATEGORY === */
+@media (max-width: 820px){
+  #view-overview .expenses-wrap,
+  #view-overview .table-wrap,
+  #view-overview #tblAllTimeline{
+    overflow-x:auto !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details){
+    display:grid !important;
+    direction:ltr !important;
+    grid-template-columns:64px 132px 190px 260px 420px 82px 132px !important;
+    grid-template-areas:"menu map amount category title time date" !important;
+    width:1280px !important;
+    min-width:1280px !important;
+    max-width:none !important;
+    align-items:stretch !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.category{
+    grid-area:category !important;
+    width:260px !important;
+    min-width:260px !important;
+    max-width:260px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    contain:paint !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+  }
+
+  #view-overview #tblAllTimeline tr.exp-item[data-kind="expense"]:not(.exp-details) > td.title{
+    grid-area:title !important;
+    width:420px !important;
+    min-width:420px !important;
+    max-width:420px !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+    direction:rtl !important;
+    text-align:right !important;
+    justify-content:flex-start !important;
+  }
+}
+
+/* === TRUE EOF: OPEN TIMELINE ITEMS RENDER AS ONE CONTINUOUS CARD === */
+#view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-item:not(.exp-details):has(+ tr.exp-details),
+#view-overview #tblAllTimeline tr.exp-item:not(.exp-details):has(+ tr.exp-details.force-open){
+  border-bottom:0 !important;
+  border-radius:18px 18px 0 0 !important;
+  margin-bottom:0 !important;
+}
+
+#view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-details,
+#view-overview #tblAllTimeline tr.exp-details.force-open{
+  margin-top:0 !important;
+  margin-bottom:10px !important;
+  border-top:0 !important;
+  border-radius:0 0 18px 18px !important;
+  box-shadow:none !important;
+}
+
+#view-overview #tblAllTimeline tr.exp-details > td.notes{
+  border-top:1px solid var(--border) !important;
+}
+
+@media (min-width: 821px){
+  #view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-details,
+  #view-overview #tblAllTimeline tr.exp-details.force-open{
+    width:100% !important;
+    min-width:100% !important;
+    max-width:100% !important;
+  }
+}
+
+@media (max-width: 820px){
+  #view-overview:not(.all-collapsed) #tblAllTimeline tr.exp-details,
+  #view-overview #tblAllTimeline tr.exp-details.force-open{
+    width:1280px !important;
+    min-width:1280px !important;
+    max-width:none !important;
+  }
+}
+
+/* === TRUE EOF: DO NOT DRAW EMPTY DETAIL PANELS === */
+#view-overview #tblAllTimeline tr.exp-item:not(.exp-details):has(+ tr.exp-details:has(> td.notes:empty)){
+  border-bottom:1px solid var(--border) !important;
+  border-radius:18px !important;
+}
+
+#view-overview #tblAllTimeline tr.exp-details:has(> td.notes:empty){
+  display:none !important;
+}
+
+#view-overview #tblAllTimeline tr.exp-details[data-item-type="expense"]{
+  background:rgba(230, 161, 90, 0.15) !important;
+}
+
+#view-overview #tblAllTimeline tr.exp-details[data-item-type="journal"]{
+  background:var(--day-bg) !important;
+}
+
+/* === TRUE EOF: EXPENSE DETAIL PANEL MATCHES JOURNAL CONTENT PANEL === */
+#view-overview #tblAllTimeline tr.exp-details[data-item-type="expense"]{
+  background:#fff !important;
+  border:1px solid var(--border) !important;
+  border-top:0 !important;
+  border-radius:0 0 18px 18px !important;
+  overflow:hidden !important;
+}
+
+#view-overview #tblAllTimeline tr.exp-details[data-item-type="expense"] > td.notes{
+  background:#fff !important;
+  border-top:1px solid var(--border) !important;
+  color:var(--ink) !important;
+}
+
+/* === TRUE EOF: ANY EXPENSE DETAIL ROW IS WHITE, INCLUDING ROWS WITHOUT DATA ATTRIBUTES === */
+html body tr.exp-item[data-kind="expense"] + tr.exp-details,
+html body tr.exp-item[data-kind="expense"] + tr.exp-details[data-item-type="expense"],
+html body #tblExpenses tr.exp-item[data-kind="expense"] + tr.exp-details,
+html body #tblAllTimeline tr.exp-item[data-kind="expense"] + tr.exp-details,
+html body #view-expenses .expenses-table tr.exp-item[data-kind="expense"] + tr.exp-details,
+html body #view-overview .expenses-table tr.exp-item[data-kind="expense"] + tr.exp-details{
+  background:#fff !important;
+  border:1px solid var(--border) !important;
+  border-top:0 !important;
+  border-radius:0 0 18px 18px !important;
+  overflow:hidden !important;
+}
+
+html body tr.exp-item[data-kind="expense"] + tr.exp-details > td.notes,
+html body #tblExpenses tr.exp-item[data-kind="expense"] + tr.exp-details > td.notes,
+html body #tblAllTimeline tr.exp-item[data-kind="expense"] + tr.exp-details > td.notes,
+html body #view-expenses .expenses-table tr.exp-item[data-kind="expense"] + tr.exp-details > td.notes,
+html body #view-overview .expenses-table tr.exp-item[data-kind="expense"] + tr.exp-details > td.notes{
+  display:block !important;
+  width:100% !important;
+  background:#fff !important;
+  border-top:1px solid var(--border) !important;
+  color:var(--ink) !important;
+  box-sizing:border-box !important;
+}
+
+html body tr.exp-item[data-kind="expense"]:has(+ tr.exp-details){
+  border-bottom:0 !important;
+  border-radius:18px 18px 0 0 !important;
+}
+
+/* === TRUE EOF: EXPENSE DETAIL CONTENT SURFACE MUST MATCH JOURNAL WHITE PANEL === */
+html body tr.exp-details[data-item-type="expense"],
+html body tr.exp-item[data-kind="expense"] + tr.exp-details{
+  background:#fff !important;
+  border:1px solid var(--border) !important;
+  border-top:0 !important;
+  border-radius:0 0 18px 18px !important;
+  overflow:hidden !important;
+}
+
+html body tr.exp-details[data-item-type="expense"] > td.notes,
+html body tr.exp-item[data-kind="expense"] + tr.exp-details > td.notes,
+html body td.expense-detail-notes{
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-height:0 !important;
+  padding:0 !important;
+  background:#fff !important;
+  border-top:1px solid var(--border) !important;
+  color:var(--ink) !important;
+  box-sizing:border-box !important;
+}
+
+html body .expense-detail-surface{
+  display:block !important;
+  width:100% !important;
+  min-height:88px !important;
+  padding:22px 28px !important;
+  background:#fff !important;
+  color:var(--ink) !important;
+  direction:rtl !important;
+  text-align:right !important;
+  line-height:1.45 !important;
+  box-sizing:border-box !important;
+}
+
+html body .expense-detail-surface:empty{
+  display:none !important;
+}
+
+html body tr.exp-details[data-item-type="expense"]:has(.expense-detail-surface:empty),
+html body tr.exp-item[data-kind="expense"] + tr.exp-details:has(.expense-detail-surface:empty){
+  display:none !important;
 }

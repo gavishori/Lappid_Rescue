@@ -51,14 +51,6 @@ function legacyWireAuthPrimaryButton(){
     }
   };
 }
-function debounceFrame(fn){
-  let raf = 0;
-  return function(...args){
-    if(raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(()=>{ raf = 0; fn.apply(this,args); });
-  };
-}
-
 function isCompactMobileHeader(){
   return window.matchMedia('(max-width: 820px)').matches;
 }
@@ -567,8 +559,8 @@ document.addEventListener('DOMContentLoaded', wireHeaderControls);
 document.addEventListener('DOMContentLoaded', wireReliableMobileActions);
 document.addEventListener('DOMContentLoaded', syncViewportModeClasses);
 document.addEventListener('DOMContentLoaded', normalizeMobileOverviewHeader);
-window.addEventListener('resize', debounceFrame(syncViewportModeClasses));
-window.addEventListener('resize', debounceFrame(normalizeMobileOverviewHeader));
+window.addEventListener('resize', syncViewportModeClasses);
+window.addEventListener('resize', normalizeMobileOverviewHeader);
 window.addEventListener('pageshow', syncViewportModeClasses);
 window.addEventListener('pageshow', normalizeMobileOverviewHeader);
 
@@ -1443,7 +1435,7 @@ try{
       else { rootEls.forEach(el=>el.classList.remove('share-open')); }
     }catch(_e){}
 
-    if(tab==='overview') { setTimeout(()=> { try{ initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }catch(_){} }, 80);}
+    if(tab==='overview') { setTimeout(()=> { try{ initBigMap(); }catch(_){} initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }, 80);}
   }catch(e){}
 }
 
@@ -1782,10 +1774,13 @@ function initMiniMap(t){
     const mapNumbers = buildTripMapNumberLookup(t);
     // Expenses markers
     Object.entries(t.expenses||{}).forEach(([id,e])=>{
-      if(typeof e.lat==='number' && typeof e.lng==='number'){
-        pts.push([e.lat, e.lng]);
-        _numberedMarker(e.lat, e.lng, mapNumbers.expense.get(String(id)), 'expense').addTo(group);
-      }
+      const point = getExpenseMapPoint(e, id, t);
+      pts.push([point.lat, point.lng]);
+      const marker = _numberedMarker(point.lat, point.lng, mapNumbers.expense.get(String(id)), 'expense');
+      marker.__itemType = 'expense';
+      marker.__itemId = id;
+      attachMapPopup(marker, 'expense', id, e);
+      marker.addTo(group);
     });
    // Journal markers (and paths)
     Object.entries(t.journal||{}).forEach(([id,j])=>{
@@ -1841,12 +1836,17 @@ function initBigMap() {
     const pts = [];
     if(state._lastTripObj){
       const expEntries = _sortByCreated(Object.entries(state._lastTripObj.expenses||{}));
-      let expIndex = 1;
+      const mapNumbers = buildTripMapNumberLookup(state._lastTripObj);
       expEntries.forEach(([id,e])=>{
-        if(typeof e.lat==='number' && typeof e.lng==='number'){
-          pts.push([e.lat,e.lng]);
-          ((m=>{attachMapPopup(m,'expense', id, e); m.addTo(expensesLG);})(_numberedMarker(e.lat, e.lng, expIndex++, 'expense')));
-        }
+        const point = getExpenseMapPoint(e, id, state._lastTripObj);
+        pts.push([point.lat, point.lng]);
+        ((m=>{
+          m.__itemType = 'expense';
+          m.__itemId = id;
+          m.__syntheticPoint = point.synthetic;
+          attachMapPopup(m,'expense', id, e);
+          m.addTo(expensesLG);
+        })(_numberedMarker(point.lat, point.lng, mapNumbers.expense.get(String(id)), 'expense')));
       });
 
 const jourEntries = _sortByCreated(Object.entries(state._lastTripObj.journal||{}));
@@ -1912,9 +1912,7 @@ function buildTripMapNumberLookup(trip){
   let journalIndex = 1;
 
   _sortByCreated(Object.entries(trip?.expenses || {})).forEach(([id, e])=>{
-    if(Number.isFinite(+e?.lat) && Number.isFinite(+e?.lng)){
-      lookup.expense.set(String(id), expenseIndex++);
-    }
+    lookup.expense.set(String(id), expenseIndex++);
   });
   _sortByCreated(Object.entries(trip?.journal || {})).forEach(([id, j])=>{
     if(Number.isFinite(+j?.lat) && Number.isFinite(+j?.lng)){
@@ -1925,9 +1923,55 @@ function buildTripMapNumberLookup(trip){
   return lookup;
 }
 
+function deterministicMapOffset(seed){
+  let hash = 0;
+  const text = String(seed || '');
+  for(let i = 0; i < text.length; i += 1){
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  }
+  const angle = Math.abs(hash % 360) * Math.PI / 180;
+  const ring = 0.018 + (Math.abs(hash) % 9) * 0.004;
+  return {
+    lat: Math.sin(angle) * ring,
+    lng: Math.cos(angle) * ring
+  };
+}
+
+function getTripMapFallbackCenter(trip){
+  const pts = [];
+  Object.values(trip?.expenses || {}).forEach((item)=>{
+    if(Number.isFinite(+item?.lat) && Number.isFinite(+item?.lng)) pts.push([+item.lat, +item.lng]);
+  });
+  Object.values(trip?.journal || {}).forEach((item)=>{
+    if(Number.isFinite(+item?.lat) && Number.isFinite(+item?.lng)) pts.push([+item.lat, +item.lng]);
+  });
+  if(pts.length){
+    const total = pts.reduce((acc, p)=> {
+      acc.lat += p[0];
+      acc.lng += p[1];
+      return acc;
+    }, { lat:0, lng:0 });
+    return { lat: total.lat / pts.length, lng: total.lng / pts.length };
+  }
+  return { lat:32.0853, lng:34.7818 };
+}
+
+function getExpenseMapPoint(expense, id, trip){
+  if(Number.isFinite(+expense?.lat) && Number.isFinite(+expense?.lng)){
+    return { lat:+expense.lat, lng:+expense.lng, synthetic:false };
+  }
+  const center = getTripMapFallbackCenter(trip || state?._lastTripObj || state?.current || {});
+  const offset = deterministicMapOffset(id || expense?.createdAt || expense?.dateIso || expense?.desc || 'expense');
+  return {
+    lat:center.lat + offset.lat,
+    lng:center.lng + offset.lng,
+    synthetic:true
+  };
+}
+
 function buildMapActionButton(type, id, index){
   const badge = Number.isFinite(+index) ? `<span class="map-action-badge">${esc(String(index))}</span>` : '';
-  return `<button class="btn small journal-map-btn map-action-btn" type="button" data-map-item="${esc(type)}" data-id="${esc(id)}" aria-label="מפה ${Number.isFinite(+index) ? esc(String(index)) : ''}">
+  return `<button class="btn small journal-map-btn map-action-btn map-action-${esc(type)}" type="button" data-map-item="${esc(type)}" data-id="${esc(id)}" aria-label="מפה ${Number.isFinite(+index) ? esc(String(index)) : ''}">
     <span class="map-action-icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
         <path d="M12 21s6-5.33 6-11a6 6 0 1 0-12 0c0 5.67 6 11 6 11Zm0-8.25A2.75 2.75 0 1 1 12 7.25a2.75 2.75 0 0 1 0 5.5Z"/>
@@ -2127,7 +2171,7 @@ document.querySelectorAll('#tabs [data-tab]').forEach(el => el.addEventListener(
   setActiveTab(el);
   showView(nextTab);
   if(nextTab==='map') setTimeout(initBigMap, 50);
-  if(nextTab==='overview') { setTimeout(()=> { try{ initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }catch(_){} }, 80);}
+  if(nextTab==='overview') { setTimeout(()=> { try{ initBigMap(); }catch(_){} initMiniMap(state.current||{}); invalidateMap(state.maps?.mini); }, 80);}
 }));
 
 // Overview tab dropdown (All / Expenses / Journal)
@@ -2185,6 +2229,17 @@ function expenseSortKey(e){ const candidates = [e.dateIso, e.createdAt, e.date, 
     if(!isNaN(n)) return n;
   }
   return 0; // fallback
+}
+
+function getRowTimeString(item){
+  try{
+    if(item && typeof item.time === 'string' && /^\d{1,2}:\d{2}/.test(item.time.trim())){
+      const parts = item.time.trim().split(':');
+      return `${String(parts[0]).padStart(2,'0')}:${parts[1]}`;
+    }
+    const d = dayjs(item?.dateIso || item?.createdAt || item?.ts || item?.timestamp || item?.date);
+    return d.isValid() ? d.format('HH:mm') : '';
+  }catch(_){ return ''; }
 }
 function num(n){
   if (typeof n !== 'number') return '';
@@ -2409,7 +2464,7 @@ async function hydrateTripsForSearch(expectedSearch){
     state._tripSearchHydrating = false;
     const currentSearch = ($('#searchTrips')?.value || '').trim().toLowerCase();
     if(expectedSearch && currentSearch === expectedSearch){
-      scheduleRenderTripList();
+      renderTripList();
     }
   }
 }
@@ -2438,33 +2493,8 @@ function applyTripsSnapshotPerf(snapAt, snapSize){
       docs: snapSize,
       subscribeToSnapshotMs: Math.round(snapAt - __subscribeTripsStartedAt)
     };
+    console.info('[perf] tripsSnapshot', window.__lastTripsSnapshotPerf);
   }catch(_){}
-}
-
-let __renderTripListQueued = false;
-function scheduleRenderTripList(){
-  if(__renderTripListQueued) return;
-  __renderTripListQueued = true;
-  const run = ()=>{
-    __renderTripListQueued = false;
-    try{ renderTripList(); }catch(e){ console.error(e); }
-  };
-  if(typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
-  else setTimeout(run, 0);
-}
-
-function scheduleIdleWork(fn, delay=0){
-  const runner = ()=>{ try{ fn(); }catch(_){} };
-  if(typeof requestIdleCallback === 'function') requestIdleCallback(runner, { timeout: 2000 });
-  else setTimeout(runner, delay);
-}
-
-function markTripSummaryUpserted(id){
-  if(!id) return false;
-  state._summaryUpsertedIds = state._summaryUpsertedIds || new Set();
-  if(state._summaryUpsertedIds.has(id)) return true;
-  state._summaryUpsertedIds.add(id);
-  return false;
 }
 
 function subscribeTripsFull(reason='fallback'){
@@ -2475,12 +2505,12 @@ function subscribeTripsFull(reason='fallback'){
     state.trips = snap.docs
       .map(d=> normalizeTripShape({ id:d.id, ...d.data() }))
       .sort((a,b)=> (b.start||'').localeCompare(a.start||''));
-    scheduleRenderTripList();
+    renderTripList();
     setTimeout(()=>{ try{ maybeShowTodayPromptFromTrips(state.trips); }catch(_){ } }, 0);
     saveTripSummariesCache(state.user?.uid, state.trips);
     applyTripsSnapshotPerf(snapAt, snap.size);
     scheduleTripListBackfill(state.trips);
-    scheduleIdleWork(()=>{ state.trips.forEach(trip => { try{ if(!markTripSummaryUpserted(trip.id)) upsertTripSummary(trip); }catch(_){} }); }, 1500);
+    state.trips.forEach(trip => { try{ upsertTripSummary(trip); }catch(_){} });
     markTripSummariesHydrated(state.user?.uid);
   }, (err)=>{
     try{ state._unsubTripsFallback && state._unsubTripsFallback(); }catch(_){}
@@ -2504,7 +2534,7 @@ function subscribeTrips(){
     .sort((a,b)=> (b.start||'').localeCompare(a.start||''));
   if(cachedTrips.length){
     state.trips = cachedTrips;
-    scheduleRenderTripList();
+    renderTripList();
     setTimeout(()=>{ try{ maybeShowTodayPromptFromTrips(state.trips); }catch(_){ } }, 0);
   }
   try { state._unsubTrips && state._unsubTrips(); } catch(_) {}
@@ -2514,7 +2544,7 @@ function subscribeTrips(){
     const snapAt = (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
     if(snap.size === 0){
       state.trips = [];
-      scheduleRenderTripList();
+      renderTripList();
       applyTripsSnapshotPerf(snapAt, snap.size);
       if(!__tripSummaryFallbackStarted){
         __tripSummaryFallbackStarted = true;
@@ -2526,7 +2556,7 @@ function subscribeTrips(){
     state.trips = snap.docs
       .map(d=> normalizeTripSummaryDoc(d))
       .sort((a,b)=> (b.start||'').localeCompare(a.start||''));
-    scheduleRenderTripList();
+    renderTripList();
     setTimeout(()=>{ try{ maybeShowTodayPromptFromTrips(state.trips); }catch(_){ } }, 0);
     saveTripSummariesCache(state.user?.uid, state.trips);
     applyTripsSnapshotPerf(snapAt, snap.size);
@@ -2622,6 +2652,7 @@ async function renderTripList(){
       mode: state.viewMode,
       ms: Math.round(perfNow() - renderStart)
     };
+    console.info('[perf] renderTripList', window.__lastRenderTripListPerf);
   }catch(_){}
 }
 function cardHTML(t, s){
@@ -3231,6 +3262,7 @@ function renderExpenses(t, order){
   order = (order || state.expenseSort || 'desc');
   const dir = (order === 'asc') ? 1 : -1;
   const body = $('#tblExpenses'); if (body) body.innerHTML = '';
+  const mapNumbers = buildTripMapNumberLookup(t);
   let arr = Object.entries(t.expenses||{}).map(([id,e])=>({id, ...e}))
     .sort((a,b)=> dir * (expenseSortKey(a) - expenseSortKey(b)));
   
@@ -3249,6 +3281,7 @@ function renderExpenses(t, order){
     const displayTitle = deriveExpenseTitle(e);
     const cat = esc(e.category||'');
     const desc = (e.descHtml && /(<a|link-icon)/i.test(e.descHtml)) ? e.descHtml : linkifyToIcons(e.descHtml || e.desc || '');
+    const mapIndex = mapNumbers.expense.get(String(e.id));
     
     const tr1 = document.createElement('tr');
     tr1.className = 'exp-item';
@@ -3257,16 +3290,19 @@ function renderExpenses(t, order){
     tr1.dataset.mobileLayout = 'expense-two-line';
     tr1.innerHTML = `
       <td class="cell header date">${bidiWrap(dateStr)}</td>
-      <td class="cell header time"></td>
+      <td class="cell header time">${bidiWrap(getRowTimeString(e))}</td>
       <td class="cell header title">${esc(displayTitle)}</td>
       <td class="cell header category">${cat}</td>
       <td class="cell header amount">${buildExpenseAmountMarkup(amount, curr)}</td>
-      <td class="cell header currency"></td>
+      <td class="cell header menu-cell map-cell">${buildMapActionButton('expense', e.id, mapIndex)}</td>
       <td class="cell header menu-cell"><button class="menu-btn">...</button></td>
     `;
     const tr4 = document.createElement('tr');
     tr4.className = 'exp-item exp-details';
-    tr4.innerHTML = `<td class="cell notes" colspan="7">${desc}</td>`;
+    tr4.dataset.itemType = 'expense';
+    tr4.dataset.itemId = String(e.id || '');
+    tr4.dataset.itemRole = 'detail';
+    tr4.innerHTML = `<td class="cell notes expense-detail-notes" colspan="7"><div class="expense-detail-surface">${desc}</div></td>`;
     if(isMobileViewport?.()) tr4.hidden = true;
     body.appendChild(tr1); body.appendChild(tr4);
 
@@ -3274,6 +3310,11 @@ function renderExpenses(t, order){
         _rowActionExpense = e; 
         document.getElementById('rowMenuModal').showModal(); 
     };
+    tr1.querySelector('.journal-map-btn')?.addEventListener('click', (ev)=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      focusItemOnMap('expense', e.id);
+    });
   });
 }
 function renderJournal(t, order){
@@ -3308,13 +3349,16 @@ function renderJournal(t, order){
     tr1.innerHTML = `
       ${selectCell}
       <td class="cell header date">${bidiWrap(dateStr)}</td>
-      <td class="cell header time"></td>
+      <td class="cell header time">${bidiWrap(getRowTimeString(j))}</td>
       <td class="cell header location" colspan="${hasMapPoint ? 3 : 4}">${esc(displayTitle)}</td>
       ${mapActionCell}
       <td class="cell header menu-cell"><button class="menu-btn">...</button></td>
     `;
     const tr2 = document.createElement('tr');
     tr2.className = 'exp-item exp-details';
+    tr2.dataset.itemType = 'journal';
+    tr2.dataset.itemId = String(j.id || '');
+    tr2.dataset.itemRole = 'detail';
     tr2.innerHTML = `<td class="cell notes" colspan="${selectionOn ? 8 : 7}">${text}</td>`;
     if(isMobileViewport?.()) tr2.hidden = true;
     body.appendChild(tr1); body.appendChild(tr2);
@@ -3336,7 +3380,7 @@ function renderJournal(t, order){
     }
   }catch(_){}
 }
-function appendExpenseRowToTimeline(body, e){
+function appendExpenseRowToTimeline(body, e, mapIndex){
   const d = dayjs(e.dateIso || e.createdAt);
   const amount = Number(e.amount||0).toLocaleString('he-IL', { minimumFractionDigits: 2 });
   const displayTitle = deriveExpenseTitle(e);
@@ -3352,10 +3396,11 @@ function appendExpenseRowToTimeline(body, e){
   tr1.dataset.itemRole = 'main';
   tr1.innerHTML = `
     <td class="cell header date">${bidiWrap(d.format('DD/MM/YYYY'))}</td>
-    <td class="cell header time"></td>
+    <td class="cell header time">${bidiWrap(getRowTimeString(e))}</td>
     <td class="cell header title">${esc(displayTitle)}</td>
     <td class="cell header category">${esc(e.category||'')}</td>
     <td class="cell header amount">${buildExpenseAmountMarkup(amount, e.currency || '')}</td>
+    <td class="cell header menu-cell map-cell">${buildMapActionButton('expense', e.id, mapIndex)}</td>
     <td class="cell header menu-cell"><button class="menu-btn">...</button></td>
   `;
   const tr2 = document.createElement('tr');
@@ -3363,13 +3408,18 @@ function appendExpenseRowToTimeline(body, e){
   tr2.dataset.itemType = 'expense';
   tr2.dataset.itemId = String(e.id || '');
   tr2.dataset.itemRole = 'detail';
-  tr2.innerHTML = `<td class="cell notes" colspan="6">${desc}</td>`;
+  tr2.innerHTML = `<td class="cell notes expense-detail-notes" colspan="7"><div class="expense-detail-surface">${desc}</div></td>`;
   if(isMobileViewport?.()) tr2.hidden = true;
   body.appendChild(tr1); body.appendChild(tr2);
   tr1.querySelector('.menu-btn').onclick = () => {
     _rowActionExpense = e;
     document.getElementById('rowMenuModal').showModal();
   };
+  tr1.querySelector('.journal-map-btn')?.addEventListener('click', (ev)=>{
+    ev.preventDefault();
+    ev.stopPropagation();
+    focusItemOnMap('expense', e.id);
+  });
 }
 function appendJournalRowToTimeline(body, j, mapIndex){
   const d = dayjs(j.dateIso || j.createdAt);
@@ -3390,7 +3440,7 @@ function appendJournalRowToTimeline(body, j, mapIndex){
   tr1.innerHTML = `
     ${selectionOn ? `<td class="cell select-cell"><input type="checkbox" class="jr-select" data-id="${esc(j.id)}" ${checkedAttr}></td>` : ''}
     <td class="cell header date">${bidiWrap(d.format('DD/MM/YYYY'))}</td>
-    <td class="cell header time"></td>
+    <td class="cell header time">${bidiWrap(getRowTimeString(j))}</td>
     <td class="cell header location" colspan="${hasMapPoint ? 2 : 3}">${esc(displayTitle)}</td>
     ${hasMapPoint ? `<td class="cell header menu-cell map-cell">${buildMapActionButton('journal', j.id, mapIndex)}</td>` : ''}
     <td class="cell header menu-cell"><button class="menu-btn">...</button></td>
@@ -3455,7 +3505,7 @@ function renderAllTimeline(t, order){
 
   const frag = document.createDocumentFragment();
   for (const item of items) {
-    if (item.kind === 'expense') appendExpenseRowToTimeline(frag, item.payload);
+    if (item.kind === 'expense') appendExpenseRowToTimeline(frag, item.payload, mapNumbers.expense.get(String(item.id)));
     else appendJournalRowToTimeline(frag, item.payload, mapNumbers.journal.get(String(item.id)));
   }
 
@@ -3612,7 +3662,7 @@ $('#tripSave').addEventListener('click', async ()=>{
 });
 
 // Sidebar actions
-$('#searchTrips').addEventListener('input', scheduleRenderTripList);
+$('#searchTrips').addEventListener('input', renderTripList);
 let sortAsc = false; $('#btnSortTrips').addEventListener('click', ()=>{
   sortAsc = !sortAsc; state.trips.sort((a,b)=> sortAsc ? (a.start||'').localeCompare(b.start||'') : (b.start||'').localeCompare(a.start||'')); renderTripList();
 });
@@ -7165,10 +7215,13 @@ window.initMiniMap = function(t){
     const pts = [];
     const mapNumbers = buildTripMapNumberLookup(t);
     (Object.entries(t.expenses||{})).forEach(([id,e])=>{
-      if(typeof e.lat==='number' && typeof e.lng==='number'){
-        pts.push([e.lat,e.lng]);
-        _numberedMarker(e.lat, e.lng, mapNumbers.expense.get(String(id)), 'expense').addTo(group);
-      }
+      const point = getExpenseMapPoint(e, id, t);
+      pts.push([point.lat, point.lng]);
+      const marker = _numberedMarker(point.lat, point.lng, mapNumbers.expense.get(String(id)), 'expense');
+      marker.__itemType = 'expense';
+      marker.__itemId = id;
+      attachMapPopup(marker, 'expense', id, e);
+      marker.addTo(group);
     });
     (Object.entries(t.journal||{})).forEach(([id,j])=>{
       if(typeof j.lat==='number' && typeof j.lng==='number'){
@@ -7218,14 +7271,14 @@ window.initBigMap = function(){
     const pts = [];
 
     Object.entries(t.expenses||{}).forEach(([id,e])=>{
-      if(typeof e.lat==='number' && typeof e.lng==='number'){
-        pts.push([e.lat,e.lng]);
-        const marker = _numberedMarker(e.lat, e.lng, mapNumbers.expense.get(String(id)), 'expense');
-        marker.__itemType = 'expense';
-        marker.__itemId = id;
-        attachMapPopup(marker, 'expense', id, e);
-        marker.addTo(expensesLG);
-      }
+      const point = getExpenseMapPoint(e, id, t);
+      pts.push([point.lat, point.lng]);
+      const marker = _numberedMarker(point.lat, point.lng, mapNumbers.expense.get(String(id)), 'expense');
+      marker.__itemType = 'expense';
+      marker.__itemId = id;
+      marker.__syntheticPoint = point.synthetic;
+      attachMapPopup(marker, 'expense', id, e);
+      marker.addTo(expensesLG);
     });
     Object.entries(t.journal||{}).forEach(([id,j])=>{
       if(typeof j.lat==='number' && typeof j.lng==='number'){
