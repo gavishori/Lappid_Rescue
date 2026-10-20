@@ -3316,13 +3316,18 @@ const fmtDateTime = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getM
 
 function formQuestionsForLink(qs) {
   return qs.filter(q => !q.hidden || q.builtin)
-    .map(({id, label, type, builtin, required, hidden, options}) => ({id, label, type, builtin, required, hidden, options}));
+    .map(({id, label, type, builtin, required, hidden, options}) =>
+      // Firestore rejects undefined values, so leave out fields a question doesn't have
+      Object.fromEntries(Object.entries({id, label, type, builtin, required, hidden, options}).filter(([, v]) => v !== undefined)));
 }
 
 async function saveResidentForm() {
   const form = { id: `f_${Date.now()}`, createdAt: Date.now(), questions: formQuestionsForLink(reportQuestions) };
   residentForms = [form, ...residentForms];
-  if (db) await setDoc(getConfigDoc(), { residentForms }, { merge: true }).catch(e => console.error('Failed to save resident form:', e));
+  if (db) {
+    try { await setDoc(getConfigDoc(), { residentForms }, { merge: true }); }
+    catch (e) { console.error('Failed to save resident form:', e); }
+  }
   return form;
 }
 
