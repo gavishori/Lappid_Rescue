@@ -3158,7 +3158,7 @@ async function loadReportQuestions() {
     const data = snap.exists() ? snap.data() : {};
     if (Array.isArray(data.reportQuestions) && data.reportQuestions.length) {
       reportQuestions = data.reportQuestions;
-      // v2: built-in questions start as suggestions instead of being on the form
+      // v2: built-in questions are off the form
       if (data.reportQuestionsVersion !== 2) reportQuestions.forEach(q => { if (q.builtin) q.hidden = true; });
     } else {
       reportQuestions = DEFAULT_REPORT_QUESTIONS.map(q => ({...q}));
@@ -3190,8 +3190,7 @@ async function saveReportQuestions() {
 
 function renderRqmList() {
   const wrap = safe('rqm-questions-list'); if (!wrap) return;
-  renderRqmSuggestions();
-  if (!reportQuestions.some(q => !q.hidden)) { wrap.innerHTML = '<div style="color:#8da8c5;text-align:center;padding:12px">אין שאלות נוספות. בחר מההצעות או הוסף למטה.</div>'; return; }
+  if (!reportQuestions.some(q => !q.hidden)) { wrap.innerHTML = '<div style="color:#8da8c5;text-align:center;padding:12px">אין שאלות נוספות. הוסף למטה.</div>'; return; }
 
   wrap.innerHTML = reportQuestions.map((q, idx) => {
     if (q.hidden) return '';
@@ -3258,7 +3257,7 @@ function renderRqmList() {
   });
   wrap.querySelectorAll('.rqm-del').forEach(b => b.onclick = async () => {
     const i = +b.dataset.idx;
-    // Built-in questions go back to the suggestions; custom ones are removed
+    // Built-in questions are hidden; custom ones are removed
     if (reportQuestions[i].builtin) reportQuestions[i].hidden = true;
     else reportQuestions.splice(i, 1);
     await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
@@ -3293,18 +3292,6 @@ function renderRqmList() {
     await saveReportQuestions();
     renderRqmList();
     applyReportQuestionsToForm();
-  });
-}
-
-function renderRqmSuggestions() {
-  const wrap = safe('rqm-suggestions'); if (!wrap) return;
-  const suggestions = reportQuestions.map((q, idx) => ({q, idx})).filter(({q}) => q.hidden);
-  wrap.closest('.rqm-suggestions-block')?.classList.toggle('hidden', !suggestions.length);
-  wrap.innerHTML = suggestions.map(({q, idx}) =>
-    `<button class="rqm-suggestion" data-idx="${idx}" type="button">+ ${q.label}</button>`).join('');
-  wrap.querySelectorAll('.rqm-suggestion').forEach(b => b.onclick = async () => {
-    reportQuestions[+b.dataset.idx].hidden = false;
-    await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
   });
 }
 
