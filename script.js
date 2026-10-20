@@ -3353,23 +3353,33 @@ async function saveResidentForm() {
     try { await setDoc(getConfigDoc(), { residentForms }, { merge: true }); }
     catch (e) { console.error('Failed to save resident form:', e); }
   }
+  await publishResidentForm(form);
   return form;
 }
 
-function buildResidentLink(form) {
-  // Residents are not signed in and cannot read the config, so the street list and questions travel in the link
-  const pack = obj => encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(obj)))));
+// Each form gets its own doc that residents may read (rule: resident_forms get), so the link stays short
+const getResidentFormDoc = id => doc(db, `${publicDataRoot}/resident_forms`, id);
+
+function housesByStreet() {
   const byStreet = {};
   managedHouses.forEach(h => {
     const st = (h.street || '').trim(); if (!st) return;
     (byStreet[st] ||= []).push(String(h.house ?? '').trim());
   });
-  let url = `${getResidentReportUrl()}&form=${form.id}`;
-  if (Object.keys(byStreet).length) url += `&houses=${pack(byStreet)}`;
-  return url + `&q=${pack(form.questions)}`;
+  return byStreet;
 }
 
-const RESIDENT_LINK_TITLE = 'דיווח לחפ"ק צח"י לפיד';
+async function publishResidentForm(form) {
+  if (!db) return;
+  try { await setDoc(getResidentFormDoc(form.id), { createdAt: form.createdAt, questions: form.questions, houses: housesByStreet() }); }
+  catch (e) { console.error('Failed to publish resident form:', e); }
+}
+
+function buildResidentLink(form) {
+  return `${getResidentReportUrl()}&form=${form.id}`;
+}
+
+const RESIDENT_LINK_TITLE = 'דיווח לחפ"ק';
 const residentLinkWhatsapp = url => `https://wa.me/?text=${encodeURIComponent(`${RESIDENT_LINK_TITLE}\n${url}`)}`;
 
 // Copies the link as a titled hyperlink (where pasting supports it) with the plain URL as fallback
@@ -3408,6 +3418,7 @@ function renderRqmForms() {
     const form = residentForms.find(f => f.id === row.dataset.fid);
     row.querySelector('.rqm-form-copy').onclick = async e => {
       const btn = e.currentTarget;
+      await publishResidentForm(form); // forms saved before short links had no doc of their own
       await copyResidentLink(buildResidentLink(form));
       const t = btn.textContent;
       btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
@@ -3754,6 +3765,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (MODE==='report'||REPORT_KEY) {
       await ensureConfigLoaded();
       await loadReportQuestions();
+      // A form link (?form=ID) brings its own questions and street list
+      const formId = params.get('form');
+      if (formId) {
+        try {
+          const fs = await getDoc(getResidentFormDoc(formId));
+          if (fs.exists()) {
+            const f = fs.data();
+            if (Array.isArray(f.questions) && f.questions.length) {
+              reportQuestions = f.questions;
+              window._reportQuestionsConfig = reportQuestions;
+            }
+            if (f.houses && (!managedHouses.length || managedHouses.every(h => h.lat == null))) {
+              managedHouses = Object.entries(f.houses).flatMap(([street, nums]) => (nums || []).map(n => ({ street, house: String(n) })));
+            }
+          }
+        } catch (e) { console.warn('Could not load resident form:', e); }
+      }
       applyReportQuestionsToForm();
       safe('screen-report')?.classList.add('active');
       safe('screen-admin')?.classList.remove('active');
