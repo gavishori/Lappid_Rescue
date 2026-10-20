@@ -732,7 +732,7 @@ async function renderResidentMarkers() {
       } else {
         residentMarkers[r.id].setLatLng([lat,lng]).setIcon(makeMarkerIcon(color));
       }
-      residentMarkers[r.id].bindPopup(popupHtml(`${r.city||''}, ${r.street||''} ${r.house||''}`,`${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,r.note||''));
+      residentMarkers[r.id].bindPopup(popupHtml(`${r.city||''}, ${r.street||''} ${r.house||''}`,`${[r.firstName,r.lastName].filter(Boolean).join(' ')}${r.firstName||r.lastName?' · ':''}${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,r.note||''));
     }
     const ids=new Set(reps.map(r=>r.id));
     Object.keys(residentMarkers).forEach(id=>{ if(!ids.has(id)&&!id.startsWith('noreport_')){map.removeLayer(residentMarkers[id]);delete residentMarkers[id];} });
@@ -1145,14 +1145,14 @@ function setupModals() {
     const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
     // Build header
-    const headers = ['רחוב', 'מספר', 'יישוב', 'מצב', 'נפשות בבית', 'הערות', 'תאריך ושעת דיווח', ...customLabels];
+    const headers = ['שם', 'משפחה', 'רחוב', 'מספר', 'יישוב', 'מצב', 'נפשות בבית', 'הערות', 'תאריך ושעת דיווח', ...customLabels];
 
     const rows = reports.map(r => {
       const statuses = (r.statuses || []).map(s => s === 'ok' ? 'תקין' : s === 'injury' ? 'פגיעה בנפש' : s === 'property' ? 'נזק לרכוש' : s).join(' + ') || 'לא צוין';
       const ts = r.updatedAt?.toDate ? r.updatedAt.toDate() : (r.createdAt?.toDate ? r.createdAt.toDate() : null);
       const tsStr = ts ? `${String(ts.getDate()).padStart(2,'0')}/${String(ts.getMonth()+1).padStart(2,'0')}/${ts.getFullYear()} ${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '';
       const customVals = customLabels.map(lbl => r.customAnswers?.[lbl] ?? '');
-      return [r.street || '', r.house || '', r.city || '', statuses, r.souls ?? 0, r.note || '', tsStr, ...customVals];
+      return [r.firstName || '', r.lastName || '', r.street || '', r.house || '', r.city || '', statuses, r.souls ?? 0, r.note || '', tsStr, ...customVals];
     });
 
     // Build CSV with BOM
@@ -2806,13 +2806,17 @@ function setupReportForm() {
 
   safe('submitBtn')?.addEventListener('click',async()=>{
     const err=safe('formError'); err.classList.add('hidden');
+    const firstName=safe('firstName')?.value.trim()||''; const lastName=safe('lastName')?.value.trim()||'';
     const city=safe('city').value.trim()||'לפיד';
     const street=safe('street').value.trim(); const house=safe('house').value.trim();
     const souls2=+safe('soulsCount').value||0; const note=safe('freeText').value.trim();
     const qs = window._reportQuestionsConfig || DEFAULT_REPORT_QUESTIONS;
     const qStatus = qs.find(q => q.id === 'builtin_status');
     const statusRequired = qStatus ? (qStatus.required !== false && !qStatus.hidden) : true;
+    if(!firstName){ err.textContent='נא להזין שם'; err.classList.remove('hidden'); return; }
+    if(!lastName){ err.textContent='נא להזין שם משפחה'; err.classList.remove('hidden'); return; }
     if(!street){ err.textContent='נא להזין רחוב'; err.classList.remove('hidden'); return; }
+    if(locationType==='address' && !house){ err.textContent='נא לבחור מספר בית'; err.classList.remove('hidden'); return; }
     if(statusRequired && !currentStatus.length){ err.textContent='נא לבחור מצב'; err.classList.remove('hidden'); return; }
     // Validate required custom questions
     const customQs = qs.filter(q => !q.builtin && !q.hidden && q.required);
@@ -2829,7 +2833,7 @@ function setupReportForm() {
       }
       const customAnswers = collectCustomAnswers();
       const statuses = currentStatus.length ? currentStatus : (qStatus?.hidden ? [] : currentStatus);
-      await submitVillageReport({city,street,house,souls:souls2,note,statuses,lat:coords?.lat||null,lng:coords?.lng||null,customAnswers});
+      await submitVillageReport({firstName,lastName,city,street,house,souls:souls2,note,statuses,lat:coords?.lat||null,lng:coords?.lng||null,customAnswers});
       safe('successBox').classList.remove('hidden');
     } catch(e){ err.textContent=e?.message||'שגיאה בשליחה'; err.classList.remove('hidden'); }
   });
@@ -3307,6 +3311,31 @@ function setupReportQuestionsManager() {
     showCustomAlert('השאלות נשמרו');
   });
 
+  // Create resident link
+  safe('rqmCreateLinkBtn')?.addEventListener('click', () => {
+    // Residents are not signed in and cannot read the config, so the street list travels in the link
+    const byStreet = {};
+    managedHouses.forEach(h => {
+      const st = (h.street || '').trim(); if (!st) return;
+      (byStreet[st] ||= []).push(String(h.house ?? '').trim());
+    });
+    let url = getResidentReportUrl();
+    if (Object.keys(byStreet).length) {
+      url += `&houses=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(byStreet)))))}`;
+    }
+    safe('rqmLinkDisplay').textContent = url;
+    const wa = safe('rqmWhatsappLinkBtn');
+    if (wa) wa.href = `https://wa.me/?text=${encodeURIComponent(`דיווח חירום לחפ"ק לפיד — נא למלא את הטופס: ${url}`)}`;
+    safe('rqmLinkRow')?.classList.remove('hidden');
+  });
+  safe('rqmCopyLinkBtn')?.addEventListener('click', async () => {
+    const url = safe('rqmLinkDisplay')?.textContent?.trim();
+    if (!url) return;
+    await navigator.clipboard.writeText(url);
+    const btn = safe('rqmCopyLinkBtn'); const t = btn.textContent;
+    btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
+  });
+
   // Add question
   safe('rqmAddQuestionBtn')?.addEventListener('click', async () => {
     const label = safe('rqmNewLabel')?.value.trim();
@@ -3567,6 +3596,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           const packed = JSON.parse(decodeURIComponent(escape(atob(housesParam))));
           if (Array.isArray(packed) && packed.length) {
             managedHouses = packed.map(h => ({ street: h.s || '', house: h.n || '' }));
+          } else if (packed && typeof packed === 'object' && (!managedHouses.length || managedHouses.every(h => h.lat == null))) {
+            // Compact form: { street: [house, ...] } — only used when Firestore config was not readable
+            managedHouses = Object.entries(packed).flatMap(([street, nums]) => (nums || []).map(n => ({ street, house: String(n) })));
           }
         } catch(e) { console.warn('Could not decode houses from URL:', e); }
       }
@@ -3576,6 +3608,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(snap.exists()) {
           const d=snap.data();
           safe('city').value=d.city||'לפיד';
+          if (safe('firstName')) safe('firstName').value=d.firstName||'';
+          if (safe('lastName')) safe('lastName').value=d.lastName||'';
           if (d.street) {
             const sel = safe('street');
             if(sel) { sel.value=d.street; window.updateHouseOptions(); }
@@ -3654,13 +3688,13 @@ function exportSnapshotToExcel(snapshot) {
   const configLabels = qs.filter(q => !q.builtin).map(q => q.label);
   const customKeys = [...configLabels.filter(l => customKeysSet.has(l)), ...[...customKeysSet].filter(l => !configLabels.includes(l))];
 
-  const headers = ['רחוב', 'מספר', 'יישוב', 'מצב', 'נפשות בבית', 'הערות', 'תאריך ושעת דיווח', ...customKeys];
+  const headers = ['שם', 'משפחה', 'רחוב', 'מספר', 'יישוב', 'מצב', 'נפשות בבית', 'הערות', 'תאריך ושעת דיווח', ...customKeys];
   const rows = reports.map(r => {
     const statuses = (r.statuses || []).map(s => s === 'ok' ? 'תקין' : s === 'injury' ? 'פגיעה בנפש' : s === 'property' ? 'נזק לרכוש' : s).join(' + ') || 'לא צוין';
     const ts = r.updatedAt?.toDate ? r.updatedAt.toDate() : (r.createdAt?.toDate ? r.createdAt.toDate() : null);
     const tsStr = ts ? `${String(ts.getDate()).padStart(2,'0')}/${String(ts.getMonth()+1).padStart(2,'0')}/${ts.getFullYear()} ${String(ts.getHours()).padStart(2,'0')}:${String(ts.getMinutes()).padStart(2,'0')}` : '';
     const customVals = customKeys.map(k => r.customAnswers?.[k] ?? '');
-    return [r.street || '', r.house || '', r.city || '', statuses, r.souls ?? 0, r.note || '', tsStr, ...customVals];
+    return [r.firstName || '', r.lastName || '', r.street || '', r.house || '', r.city || '', statuses, r.souls ?? 0, r.note || '', tsStr, ...customVals];
   });
 
   const escape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -3745,7 +3779,7 @@ function renderRrmSnapshots() {
             .join('');
           if (answerLines) extraHtml += `<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${answerLines}</div>`;
         }
-        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong><div>${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות</div>${extraHtml}</div>`);
+        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong>${r.firstName||r.lastName?`<div>${[r.firstName,r.lastName].filter(Boolean).join(' ')}</div>`:''}<div>${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות</div>${extraHtml}</div>`);
       });
       setTimeout(()=>map?.invalidateSize(),80);
     });

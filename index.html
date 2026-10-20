@@ -41,6 +41,20 @@
     <main class="rc-main">
 
         <div class="rc-section">
+            <span class="rc-label">פרטי המדווח</span>
+            <div class="rc-addr">
+                <label class="rc-field">
+                    <span>שם *</span>
+                    <input id="firstName" type="text" autocomplete="given-name" style="cursor:text" />
+                </label>
+                <label class="rc-field">
+                    <span>משפחה *</span>
+                    <input id="lastName" type="text" autocomplete="family-name" style="cursor:text" />
+                </label>
+            </div>
+        </div>
+
+        <div class="rc-section">
             <span class="rc-label">מיקום</span>
             <div class="rc-toggle-group">
                 <button class="rc-pill active" id="locAddressBtn" type="button">כתובת ידנית</button>
@@ -52,13 +66,13 @@
                     <input id="city" type="text" value="לפיד" readonly class="rc-readonly" />
                 </label>
                 <label class="rc-field rc-field-grow">
-                    <span>רחוב</span>
+                    <span>רחוב *</span>
                     <select id="street" class="rc-select" onchange="updateHouseOptions()">
                         <option value="">בחר רחוב...</option>
                     </select>
                 </label>
                 <label class="rc-field rc-field-sm">
-                    <span>מספר</span>
+                    <span>מספר *</span>
                     <select id="house" class="rc-select">
                         <option value="">מס׳</option>
                     </select>
@@ -635,6 +649,14 @@
         <button class="modal-close" data-close="#reportQuestionsManagerPanel" type="button">×</button>
         <h2>שאלות טופס דיווח תושב</h2>
         <p style="color:#8da8c5;font-size:13px;margin-bottom:16px">ערוך את שדות ושאלות שמוצגות לתושב בעת הדיווח. שינויים ייכנסו לתוקף מיד עבור דיווחים חדשים.</p>
+        <div style="font-weight:700;color:#7ec8ff;margin-bottom:8px;font-size:14px">שדות חובה קבועים</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:16px">
+            <div class="rqm-fixed-field"><span>שם</span><small>קבוע · חובה</small></div>
+            <div class="rqm-fixed-field"><span>משפחה</span><small>קבוע · חובה</small></div>
+            <div class="rqm-fixed-field"><span>רחוב</span><small>מרשימת הרחובות · חובה</small></div>
+            <div class="rqm-fixed-field"><span>מספר</span><small>קבוע · חובה</small></div>
+        </div>
+        <div style="font-weight:700;color:#7ec8ff;margin-bottom:8px;font-size:14px">שאלות נוספות</div>
         <div id="rqm-questions-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
         <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px">
             <div style="font-weight:700;color:#7ec8ff;margin-bottom:10px;font-size:14px">הוסף שאלה / שדה חדש</div>
@@ -659,6 +681,17 @@
             </div>
         </div>
         <p id="rqmError" style="color:#ff9aaa;font-size:13px;margin-top:8px"></p>
+        <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:14px;margin-top:6px">
+            <div style="font-weight:700;color:#7ec8ff;margin-bottom:10px;font-size:14px">שליחה לתושב</div>
+            <button id="rqmCreateLinkBtn" class="primary-btn" type="button" style="width:100%">🔗 צור לינק לשליחה לתושב</button>
+            <div id="rqmLinkRow" class="share-inline-row hidden" style="margin-top:10px">
+                <div class="share-url-display-wrap share-inline-url">
+                    <div id="rqmLinkDisplay" class="share-url-truncated"></div>
+                </div>
+                <button id="rqmCopyLinkBtn" class="share-copy-btn-btn share-inline-btn" type="button">📋 העתק</button>
+                <a id="rqmWhatsappLinkBtn" class="share-copy-btn-btn share-inline-btn" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">WhatsApp</a>
+            </div>
+        </div>
     </div>
 </div>
 
