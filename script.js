@@ -1715,6 +1715,29 @@ function getReportDateKey(report) {
   return dt ? localDateKey(dt) : String(report?.date || '').trim();
 }
 
+// Resident reports share the journal's collection; turn them into journal lines with their answers
+function asJournalEntry(r) {
+  if (r.description != null || !(r.street || r.firstName || r.formId)) return r;
+  const dt = r.createdAt?.toDate?.() || r.updatedAt?.toDate?.() || null;
+  const parts = [];
+  const name = [r.firstName, r.lastName].filter(Boolean).join(' ');
+  const address = `${r.street || ''} ${r.house || ''}`.trim();
+  if (address) parts.push(address);
+  if ((r.statuses || []).length) parts.push(`מצב: ${statusLabel(r.statuses)}`);
+  if (r.souls) parts.push(`נפשות: ${r.souls}`);
+  Object.entries(r.customAnswers || {}).forEach(([q, a]) => { if (a !== '' && a != null) parts.push(`${q}: ${a}`); });
+  if (r.note) parts.push(r.note);
+  return {
+    ...r,
+    residentReport: true,
+    description: `דיווח תושב — ${parts.join(' · ')}`,
+    reporter: name || 'תושב',
+    logType: 'דיווח תושב',
+    date: dt ? localDateKey(dt) : '',
+    time: dt ? `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}` : '',
+  };
+}
+
 const sortChronologically = arr => [...arr].sort((a,b)=>{
   const da=getReportDateObject(a) || new Date(0), db=getReportDateObject(b) || new Date(0);
   if(da>db) return -1; if(da<db) return 1;
@@ -1922,7 +1945,7 @@ function renderTable(searchTerm='') {
       if(report.reporter) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.reporter,searchTerm)}</span>`);
       if(report.logType) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.logType,searchTerm)}</span>`);
       const actionsHtml = canEdit
-        ? `<span class="journal-meta-actions"><button class="edit-btn" data-id="${report.id}">ערוך</button><button class="delete-btn-sm" data-id="${report.id}">מחק</button></span>`
+        ? `<span class="journal-meta-actions">${report.residentReport ? '' : `<button class="edit-btn" data-id="${report.id}">ערוך</button>`}<button class="delete-btn-sm" data-id="${report.id}">מחק</button></span>`
         : '';
       if(isMobile) {
         // Mobile: render as div card
@@ -2634,7 +2657,7 @@ const handleAuthState = async (user) => {
 
     if(!unsubJournalReports) {
       unsubJournalReports=onSnapshot(reportsColRef,snap=>{
-        journalReports=sortChronologically(snap.docs.map(d=>({id:d.id,...d.data()})));
+        journalReports=sortChronologically(snap.docs.map(d=>asJournalEntry({id:d.id,...d.data()})));
         renderTable(); updateTasksButtonStates();
       },err=>{ console.error(err); if(safe('inputErrorMessage')) safe('inputErrorMessage').textContent='שגיאה בטעינה: '+err.message; });
     }
@@ -3726,7 +3749,7 @@ async function bootAdmin(sharedOnly=false) {
         ? query(getReportsCol(), where('eventId', '==', activeEventId))
         : getReportsCol();
       unsubJournalReports = onSnapshot(sharedReportsQuery, snap => {
-        journalReports = filterToToday(sortChronologically(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+        journalReports = filterToToday(sortChronologically(snap.docs.map(d => asJournalEntry({id: d.id, ...d.data()}))));
         renderTable();
       });
     }
