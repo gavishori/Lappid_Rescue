@@ -30,12 +30,12 @@ import {
 
 // --- Firebase Config ---
 const firebaseConfig = {
-    apiKey: "AIzaSyC2o9IuXKBuYsbf_tSWdAPRhZMyvOwG4rc",
-    authDomain: "hapak-lappid.firebaseapp.com",
-    projectId: "hapak-lappid",
-    storageBucket: "hapak-lappid.firebasestorage.app",
-    messagingSenderId: "518813876504",
-    appId: "1:518813876504:web:eff4b8547f4c3094549e6d"
+    apiKey: "AIzaSyD7QIctvNSqTS6Tc4otRPbmd8FqxQ8zqrs",
+    authDomain: "shoam-81008.firebaseapp.com",
+    projectId: "shoam-81008",
+    storageBucket: "shoam-81008.firebasestorage.app",
+    messagingSenderId: "49946043090",
+    appId: "1:49946043090:web:138702e26ffc663f42030b"
 };
 
 // Canvas / local fallback
