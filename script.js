@@ -3188,7 +3188,45 @@ async function saveReportQuestions() {
   await setDoc(getConfigDoc(), { reportQuestions, reportQuestionsVersion: 2 }, { merge: true }).catch(e => console.error('Failed to save report questions:', e));
 }
 
+// Live preview of the resident form, in the same order the real form shows the questions
+function renderRqmPreview() {
+  const wrap = safe('rqmPreview'); if (!wrap) return;
+  const shown = reportQuestions.filter(q => !q.hidden);
+  const byId = id => shown.find(q => q.id === id);
+  const label = q => `<span class="rc-label">${escHtml(q.label)}${q.required ? ' *' : ''}</span>`;
+  const custom = q => {
+    if (q.type === 'number') return `<input type="number" class="rc-textarea" placeholder="0" style="max-width:120px;min-height:0" />`;
+    if (q.type === 'yesno') return `<div style="display:flex;gap:10px"><button type="button" class="rc-pill">כן</button><button type="button" class="rc-pill">לא</button></div>`;
+    if (q.type === 'select') return `<select class="rc-select"><option>בחר...</option>${(q.options || []).map(o => `<option>${escHtml(o)}</option>`).join('')}</select>`;
+    return `<textarea class="rc-textarea" rows="2" placeholder="${escHtml(q.label)}"></textarea>`;
+  };
+  const status = byId('builtin_status'), souls = byId('builtin_souls'), note = byId('builtin_note');
+  wrap.innerHTML = `
+    <div class="rc-section"><span class="rc-label">פרטי המדווח</span>
+      <div class="rc-addr">
+        <label class="rc-field"><span>שם *</span><input type="text" /></label>
+        <label class="rc-field"><span>משפחה *</span><input type="text" /></label>
+      </div></div>
+    <div class="rc-section"><span class="rc-label">מיקום</span>
+      <div class="rc-toggle-group"><button type="button" class="rc-pill active">כתובת ידנית</button><button type="button" class="rc-pill">GPS נוכחי</button></div>
+      <div class="rc-addr">
+        <label class="rc-field"><span>יישוב</span><input type="text" value="לפיד" class="rc-readonly" /></label>
+        <label class="rc-field rc-field-grow"><span>רחוב *</span><select class="rc-select"><option>בחר רחוב...</option></select></label>
+        <label class="rc-field rc-field-sm"><span>מספר *</span><select class="rc-select"><option>מס׳</option></select></label>
+      </div></div>
+    ${status || souls ? `<div class="rc-row2">
+      ${status ? `<div class="rc-section rc-section-status">${label(status)}<div class="rc-status-btns">
+        <button type="button" class="status-btn ok">תקין</button><button type="button" class="status-btn warn">נזק לרכוש</button><button type="button" class="status-btn danger">פגיעה בנפש</button></div></div>` : ''}
+      ${souls ? `<div class="rc-section rc-section-souls">${label(souls)}<div class="rc-counter">
+        <button type="button" class="rc-cnt-btn">−</button><input type="number" value="0" style="width:44px" /><button type="button" class="rc-cnt-btn">+</button></div></div>` : ''}
+    </div>` : ''}
+    ${note ? `<div class="rc-section">${label(note)}<textarea class="rc-textarea" rows="2" placeholder="תיאור קצר של המצב"></textarea></div>` : ''}
+    ${shown.filter(q => !q.builtin).map(q => `<div class="rc-section">${label(q)}${custom(q)}</div>`).join('')}
+    <button type="button" class="rc-submit">שלח דיווח</button>`;
+}
+
 function renderRqmList() {
+  renderRqmPreview();
   const wrap = safe('rqm-questions-list'); if (!wrap) return;
   if (!reportQuestions.some(q => !q.hidden)) { wrap.innerHTML = '<div style="color:#8da8c5;text-align:center;padding:12px">אין שאלות נוספות. הוסף למטה.</div>'; return; }
 

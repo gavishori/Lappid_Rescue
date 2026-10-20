@@ -1734,3 +1734,16 @@ body.shared-map-only .mobile-journal-drawer {
 .rqm-results-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #eef5ff; }
 .rqm-results-table th, .rqm-results-table td { padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: right; white-space: nowrap; }
 .rqm-results-table th { color: #8da8c5; font-weight: 700; }
+
+/* Resident questions panel: editor + live preview side by side */
+.modal-box.rqm-box { width: min(1120px, 96vw); }
+.rqm-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; align-items: start; }
+.rqm-preview-col { position: sticky; top: 0; }
+.rqm-preview-title { font-weight: 700; color: #7ec8ff; font-size: 14px; margin: 6px 0 8px; }
+.rqm-phone { border: 1px solid var(--line); border-radius: 22px; overflow: hidden; background: #071b30; }
+.rqm-phone .rc-header { padding: 10px 14px; }
+.rqm-preview-body { padding: 8px; display: flex; flex-direction: column; gap: 5px; max-height: 72vh; overflow-y: auto; pointer-events: none; }
+@media (max-width: 900px) {
+  .rqm-layout { grid-template-columns: 1fr; }
+  .rqm-preview-col { position: static; }
+}
