@@ -349,6 +349,21 @@ function makeMarkerIcon(color) {
     iconSize:[16,16], iconAnchor:[8,8]
   });
 }
+// Popup for a resident report: name, then only what the resident actually answered
+function residentPopupHtml(r) {
+  const lines = [];
+  const name = [r.firstName, r.lastName].filter(Boolean).join(' ');
+  if (name) lines.push(`<div>${escHtml(name)}</div>`);
+  const facts = [];
+  if ((r.statuses || []).length) facts.push(statusLabel(r.statuses));
+  if (r.souls) facts.push(`${r.souls} נפשות`);
+  if (facts.length) lines.push(`<div>${escHtml(facts.join(' · '))}</div>`);
+  Object.entries(r.customAnswers || {}).filter(([, v]) => v !== '' && v != null).forEach(([q, a]) =>
+    lines.push(`<div style="font-size:12px;margin-top:2px"><span style="color:#8da8c5">${escHtml(q)}:</span> ${escHtml(a)}</div>`));
+  if (r.note) lines.push(`<div style="color:#8da8c5;margin-top:4px">${escHtml(r.note)}</div>`);
+  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${escHtml(`${r.city || ''}, ${r.street || ''} ${r.house || ''}`)}</strong>${lines.join('')}</div>`;
+}
+
 function popupHtml(title, sub='', extra='') {
   return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${title}</strong><div>${sub}</div>${extra?`<div style='color:#8da8c5;margin-top:4px'>${extra}</div>`:''}</div>`;
 }
@@ -734,7 +749,7 @@ async function renderResidentMarkers() {
       } else {
         residentMarkers[r.id].setLatLng([lat,lng]).setIcon(makeMarkerIcon(color));
       }
-      residentMarkers[r.id].bindPopup(popupHtml(`${r.city||''}, ${r.street||''} ${r.house||''}`,`${[r.firstName,r.lastName].filter(Boolean).join(' ')}${r.firstName||r.lastName?' · ':''}${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות`,r.note||''));
+      residentMarkers[r.id].bindPopup(residentPopupHtml(r));
     }
     const ids=new Set(reps.map(r=>r.id));
     Object.keys(residentMarkers).forEach(id=>{ if(!ids.has(id)&&!id.startsWith('noreport_')){map.removeLayer(residentMarkers[id]);delete residentMarkers[id];} });
@@ -4114,16 +4129,7 @@ function renderRrmSnapshots() {
         const color=reportOptionColor(r)||iconColor(dotClass(r.statuses||[]));
         const markerId='snap_'+r.id;
         residentMarkers[markerId]=L.marker([lat,lng],{icon:makeMarkerIcon(color)}).addTo(map);
-        // Build popup with original question answers from snapshot
-        let extraHtml = r.note ? `<div style='color:#8da8c5;margin-top:4px'>${r.note}</div>` : '';
-        if (r.customAnswers && typeof r.customAnswers === 'object') {
-          const answerLines = Object.entries(r.customAnswers)
-            .filter(([,v]) => v !== '' && v != null)
-            .map(([label, val]) => `<div style='color:#b0d4f7;font-size:12px;margin-top:2px'><span style='color:#8da8c5'>${label}:</span> ${val}</div>`)
-            .join('');
-          if (answerLines) extraHtml += `<div style='margin-top:6px;border-top:1px solid rgba(255,255,255,.1);padding-top:6px'>${answerLines}</div>`;
-        }
-        residentMarkers[markerId].bindPopup(`<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${r.city||''}, ${r.street||''} ${r.house||''}</strong>${r.firstName||r.lastName?`<div>${[r.firstName,r.lastName].filter(Boolean).join(' ')}</div>`:''}<div>${statusLabel(r.statuses||[])} · ${r.souls||0} נפשות</div>${extraHtml}</div>`);
+        residentMarkers[markerId].bindPopup(residentPopupHtml(r));
       });
       setTimeout(()=>map?.invalidateSize(),80);
     });
