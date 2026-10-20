@@ -3344,7 +3344,22 @@ function buildResidentLink(form) {
   return url + `&q=${pack(form.questions)}`;
 }
 
-const residentLinkWhatsapp = url => `https://wa.me/?text=${encodeURIComponent(`דיווח חירום לחפ"ק לפיד — נא למלא את הטופס: ${url}`)}`;
+const RESIDENT_LINK_TITLE = 'דיווח לחפ"ק צח"י לפיד';
+const residentLinkWhatsapp = url => `https://wa.me/?text=${encodeURIComponent(`${RESIDENT_LINK_TITLE}\n${url}`)}`;
+
+// Copies the link as a titled hyperlink (where pasting supports it) with the plain URL as fallback
+async function copyResidentLink(url) {
+  const html = `<a href="${url}">${RESIDENT_LINK_TITLE}</a>`;
+  const text = `${RESIDENT_LINK_TITLE}\n${url}`;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([text], { type: 'text/plain' })
+    })]);
+  } catch (e) {
+    await navigator.clipboard.writeText(text);
+  }
+}
 
 function renderRqmForms() {
   const wrap = safe('rqmFormsList'); if (!wrap) return;
@@ -3368,7 +3383,7 @@ function renderRqmForms() {
     const form = residentForms.find(f => f.id === row.dataset.fid);
     row.querySelector('.rqm-form-copy').onclick = async e => {
       const btn = e.currentTarget;
-      await navigator.clipboard.writeText(buildResidentLink(form));
+      await copyResidentLink(buildResidentLink(form));
       const t = btn.textContent;
       btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
     };
@@ -3447,16 +3462,17 @@ function setupReportQuestionsManager() {
     applyReportQuestionsToForm();
     const form = await saveResidentForm();
     const url = buildResidentLink(form);
-    safe('rqmLinkDisplay').textContent = url;
+    const linkEl = safe('rqmLinkDisplay');
+    linkEl.href = url; linkEl.textContent = `🔗 ${RESIDENT_LINK_TITLE}`;
     const wa = safe('rqmWhatsappLinkBtn');
     if (wa) wa.href = residentLinkWhatsapp(url);
     safe('rqmLinkRow')?.classList.remove('hidden');
     renderRqmForms();
   });
   safe('rqmCopyLinkBtn')?.addEventListener('click', async () => {
-    const url = safe('rqmLinkDisplay')?.textContent?.trim();
+    const url = safe('rqmLinkDisplay')?.href;
     if (!url) return;
-    await navigator.clipboard.writeText(url);
+    await copyResidentLink(url);
     const btn = safe('rqmCopyLinkBtn'); const t = btn.textContent;
     btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
   });
