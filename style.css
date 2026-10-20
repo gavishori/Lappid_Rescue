@@ -1728,3 +1728,9 @@ body.shared-map-only .mobile-journal-drawer {
 .rqm-fixed-field small { color: #f4c246; font-size: 11px; }
 .rqm-suggestion { background: rgba(40,147,255,.12); border: 1px dashed rgba(40,147,255,.55); color: #7ec8ff; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
 .rqm-suggestion:hover { background: rgba(40,147,255,.25); }
+
+/* Saved resident forms */
+.rqm-form { padding: 10px 12px; background: #15304f; border: 1px solid rgba(255,255,255,.08); border-radius: 12px; }
+.rqm-results-table { width: 100%; border-collapse: collapse; font-size: 12px; color: #eef5ff; }
+.rqm-results-table th, .rqm-results-table td { padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,.08); text-align: right; white-space: nowrap; }
+.rqm-results-table th { color: #8da8c5; font-weight: 700; }

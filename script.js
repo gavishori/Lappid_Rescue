@@ -476,6 +476,8 @@ function getResidentReportUrl() {
 async function submitVillageReport(data) {
   if (!activeEventId) await getOrCreateActiveEvent();
   const payload = {...data, eventId:activeEventId, updatedAt:serverTimestamp()};
+  const formId = params.get('form');
+  if (formId) payload.formId = formId;
   if (existingReportId) {
     const snap = await getDoc(getReportDoc(existingReportId));
     if (snap.exists() && snap.data().createdAt) payload.createdAt = snap.data().createdAt;
@@ -3161,6 +3163,7 @@ async function loadReportQuestions() {
     } else {
       reportQuestions = DEFAULT_REPORT_QUESTIONS.map(q => ({...q}));
     }
+    residentForms = Array.isArray(data.residentForms) ? data.residentForms : [];
     window._reportQuestionsConfig = reportQuestions;
     _rqLoaded = true;
   } catch(e) {
@@ -3305,13 +3308,114 @@ function renderRqmSuggestions() {
   });
 }
 
+// ── Saved resident forms (stored in the config doc) ──
+let residentForms = [];
+
+const escHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDateTime = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+function formQuestionsForLink(qs) {
+  return qs.filter(q => !q.hidden || q.builtin)
+    .map(({id, label, type, builtin, required, hidden, options}) => ({id, label, type, builtin, required, hidden, options}));
+}
+
+async function saveResidentForm() {
+  const form = { id: `f_${Date.now()}`, createdAt: Date.now(), questions: formQuestionsForLink(reportQuestions) };
+  residentForms = [form, ...residentForms];
+  if (db) await setDoc(getConfigDoc(), { residentForms }, { merge: true }).catch(e => console.error('Failed to save resident form:', e));
+  return form;
+}
+
+function buildResidentLink(form) {
+  // Residents are not signed in and cannot read the config, so the street list and questions travel in the link
+  const pack = obj => encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(obj)))));
+  const byStreet = {};
+  managedHouses.forEach(h => {
+    const st = (h.street || '').trim(); if (!st) return;
+    (byStreet[st] ||= []).push(String(h.house ?? '').trim());
+  });
+  let url = `${getResidentReportUrl()}&form=${form.id}`;
+  if (Object.keys(byStreet).length) url += `&houses=${pack(byStreet)}`;
+  return url + `&q=${pack(form.questions)}`;
+}
+
+const residentLinkWhatsapp = url => `https://wa.me/?text=${encodeURIComponent(`דיווח חירום לחפ"ק לפיד — נא למלא את הטופס: ${url}`)}`;
+
+function renderRqmForms() {
+  const wrap = safe('rqmFormsList'); if (!wrap) return;
+  if (!residentForms.length) { wrap.innerHTML = '<div style="color:#8da8c5;font-size:13px">עדיין לא נוצרו טפסים.</div>'; return; }
+  wrap.innerHTML = residentForms.map(f => {
+    const labels = (f.questions || []).filter(q => !q.hidden).map(q => q.label);
+    return `<div class="rqm-form" data-fid="${f.id}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px">
+          <div style="font-weight:700;color:#eef5ff;font-size:14px">נוצר ${fmtDateTime(new Date(f.createdAt))}</div>
+          <div style="color:#8da8c5;font-size:12px">שם, משפחה, רחוב, מספר${labels.length ? ' · ' + escHtml(labels.join(', ')) : ''}</div>
+        </div>
+        <button class="icon-btn rqm-form-results" type="button" style="font-size:12px;padding:4px 10px">תוצאות</button>
+        <button class="icon-btn rqm-form-copy" type="button" style="font-size:12px;padding:4px 10px">📋 לינק</button>
+      </div>
+      <div class="rqm-form-results-box hidden"></div>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('.rqm-form').forEach(row => {
+    const form = residentForms.find(f => f.id === row.dataset.fid);
+    row.querySelector('.rqm-form-copy').onclick = async e => {
+      const btn = e.currentTarget;
+      await navigator.clipboard.writeText(buildResidentLink(form));
+      const t = btn.textContent;
+      btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
+    };
+    row.querySelector('.rqm-form-results').onclick = async () => {
+      const box = row.querySelector('.rqm-form-results-box');
+      if (!box.classList.contains('hidden')) { box.classList.add('hidden'); return; }
+      box.classList.remove('hidden');
+      box.innerHTML = '<div style="color:#8da8c5;font-size:13px;padding:6px 0">טוען...</div>';
+      try {
+        const snap = await getDocs(query(getReportsCol(), where('formId', '==', form.id)));
+        box.innerHTML = renderFormResults(form, snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (e) {
+        box.innerHTML = `<div style="color:#ff9aaa;font-size:13px">שגיאה בטעינת התוצאות: ${escHtml(e?.message)}</div>`;
+      }
+    };
+  });
+}
+
+function renderFormResults(form, reports) {
+  if (!reports.length) return '<div style="color:#8da8c5;font-size:13px;padding:6px 0">עדיין אין תשובות לטופס זה.</div>';
+  const ts = r => r.updatedAt?.toDate?.() || r.createdAt?.toDate?.() || null;
+  reports.sort((a, b) => (ts(b)?.getTime() || 0) - (ts(a)?.getTime() || 0));
+  const qs = (form.questions || []).filter(q => !q.hidden);
+  const answer = (r, q) => {
+    if (q.id === 'builtin_status') return statusLabel(r.statuses || []);
+    if (q.id === 'builtin_souls') return r.souls ?? '';
+    if (q.id === 'builtin_note') return r.note || '';
+    return r.customAnswers?.[q.label] ?? '';
+  };
+  const head = ['שם', 'כתובת', 'תאריך ושעה', ...qs.map(q => q.label)];
+  const rows = reports.map(r => [
+    [r.firstName, r.lastName].filter(Boolean).join(' '),
+    `${r.street || ''} ${r.house || ''}`.trim(),
+    ts(r) ? fmtDateTime(ts(r)) : '',
+    ...qs.map(q => answer(r, q))
+  ]);
+  return `<div style="color:#7ec8ff;font-size:13px;margin:8px 0 6px">${reports.length} תשובות</div>
+    <div style="overflow-x:auto"><table class="rqm-results-table">
+      <thead><tr>${head.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(row => `<tr>${row.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
 function setupReportQuestionsManager() {
   // Load questions and bind open button
-  loadReportQuestions().then(() => { renderRqmList(); applyReportQuestionsToForm(); });
+  loadReportQuestions().then(() => { renderRqmList(); renderRqmForms(); applyReportQuestionsToForm(); });
 
   safe('openReportQuestionsManagerBtn')?.addEventListener('click', async () => {
     await loadReportQuestions();
     renderRqmList();
+    renderRqmForms();
+    safe('rqmLinkRow')?.classList.add('hidden');
     openModal('#reportQuestionsManagerPanel');
   });
 
@@ -3329,36 +3433,20 @@ function setupReportQuestionsManager() {
     if (row) row.style.display = t === 'select' ? 'block' : 'none';
   });
 
+  // Save the form as it is now and create a link to it
   safe('rqmSaveBtn')?.addEventListener('click', async () => {
     const errEl = safe('rqmError');
     if (errEl) errEl.textContent = '';
     window._reportQuestionsConfig = [...reportQuestions];
     await saveReportQuestions();
-    renderRqmList();
     applyReportQuestionsToForm();
-    showCustomAlert('השאלות נשמרו');
-  });
-
-  // Create resident link
-  safe('rqmCreateLinkBtn')?.addEventListener('click', () => {
-    // Residents are not signed in and cannot read the config, so the street list travels in the link
-    const byStreet = {};
-    managedHouses.forEach(h => {
-      const st = (h.street || '').trim(); if (!st) return;
-      (byStreet[st] ||= []).push(String(h.house ?? '').trim());
-    });
-    let url = getResidentReportUrl();
-    if (Object.keys(byStreet).length) {
-      url += `&houses=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(byStreet)))))}`;
-    }
-    // ...and so do the questions
-    const shownQs = reportQuestions.filter(q => !q.hidden);
-    url += `&q=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(
-      [...shownQs, ...reportQuestions.filter(q => q.builtin && q.hidden)].map(({id, label, type, builtin, required, hidden, options}) => ({id, label, type, builtin, required, hidden, options})))))))}`;
+    const form = await saveResidentForm();
+    const url = buildResidentLink(form);
     safe('rqmLinkDisplay').textContent = url;
     const wa = safe('rqmWhatsappLinkBtn');
-    if (wa) wa.href = `https://wa.me/?text=${encodeURIComponent(`דיווח חירום לחפ"ק לפיד — נא למלא את הטופס: ${url}`)}`;
+    if (wa) wa.href = residentLinkWhatsapp(url);
     safe('rqmLinkRow')?.classList.remove('hidden');
+    renderRqmForms();
   });
   safe('rqmCopyLinkBtn')?.addEventListener('click', async () => {
     const url = safe('rqmLinkDisplay')?.textContent?.trim();
