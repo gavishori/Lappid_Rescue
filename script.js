@@ -345,7 +345,7 @@ function syncCurrentLocationOnMap() {
 function makeMarkerIcon(color) {
   return L.divIcon({
     className:'',
-    html:`<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 10px ${color}99"></div>`,
+    html:`<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid ${color.toLowerCase()==='#ffffff'?'#5b6f87':'#fff'};box-shadow:0 0 10px ${color}99"></div>`,
     iconSize:[16,16], iconAnchor:[8,8]
   });
 }
@@ -728,7 +728,7 @@ async function renderResidentMarkers() {
         }
       }
       if (!lat||!lng) continue;
-      const color = iconColor(dotClass(r.statuses||[]));
+      const color = reportOptionColor(r) || iconColor(dotClass(r.statuses||[]));
       if (!residentMarkers[r.id]) {
         residentMarkers[r.id]=L.marker([lat,lng],{icon:makeMarkerIcon(color)}).addTo(map);
       } else {
@@ -2687,8 +2687,8 @@ const OPTION_COLORS = {
   white:  { label: 'לבן',  hex: '#ffffff' },
 };
 const hasOptionColors = q => q.type === 'select' && q.optionColors && Object.keys(q.optionColors).length > 0;
-// Questions answered by tapping one button (yes/no, or a colored list)
-const isButtonChoice = q => q.type === 'yesno' || hasOptionColors(q);
+// Questions answered by tapping one button
+const isButtonChoice = q => q.type === 'yesno';
 const parseOptions = v => (v || '').split(',').map(s => s.trim()).filter(Boolean);
 const optionColorHex = (q, o) => OPTION_COLORS[q.optionColors?.[o]]?.hex || '';
 
@@ -2708,9 +2708,17 @@ function renderOptionColorRows(container, options, colors) {
 const colorsForOptions = (options, colors) =>
   Object.fromEntries(Object.entries(colors).filter(([o]) => options.includes(o)));
 
-const colorOptionButtons = (q, extraClass = '') => `<div class="cq-color-options">${
-  q.options.map(o => `<button type="button" class="rc-pill cq-color-opt ${extraClass}" data-qid="${q.id}" data-val="${escHtml(o)}" style="--opt:${optionColorHex(q, o) || '#8da8c5'}">${escHtml(o)}</button>`).join('')
-}</div>`;
+// The editor's color for the option a resident picked — shown on the map (first colored question wins)
+function reportOptionColor(r) {
+  const form = r.formId && residentForms.find(f => f.id === r.formId);
+  const qs = form?.questions || reportQuestions;
+  for (const q of qs) {
+    if (!hasOptionColors(q)) continue;
+    const hex = optionColorHex(q, r.customAnswers?.[q.label]);
+    if (hex) return hex;
+  }
+  return '';
+}
 
 function applyReportQuestionsToForm() {
   const qs = Array.isArray(window._reportQuestionsConfig) && window._reportQuestionsConfig.length
@@ -2772,8 +2780,6 @@ function applyReportQuestionsToForm() {
         <button type="button" class="rc-pill cq-yesno cq-input" data-qid="${q.id}" data-val="כן">כן</button>
         <button type="button" class="rc-pill cq-yesno cq-input" data-qid="${q.id}" data-val="לא">לא</button>
       </div>`;
-    } else if (hasOptionColors(q) && q.options) {
-      inputHtml = colorOptionButtons(q, 'cq-yesno cq-input');
     } else if (q.type === 'select' && q.options) {
       inputHtml = `<select class="rc-select cq-input" data-qid="${q.id}" style="width:100%;max-width:300px">
         <option value="">בחר...</option>
@@ -3232,7 +3238,6 @@ function renderRqmPreview() {
   const custom = q => {
     if (q.type === 'number') return `<input type="number" class="rc-textarea" placeholder="0" style="max-width:120px;min-height:0" />`;
     if (q.type === 'yesno') return `<div style="display:flex;gap:10px"><button type="button" class="rc-pill">כן</button><button type="button" class="rc-pill">לא</button></div>`;
-    if (hasOptionColors(q) && q.options) return colorOptionButtons(q);
     if (q.type === 'select') return `<select class="rc-select"><option>בחר...</option>${(q.options || []).map(o => `<option>${escHtml(o)}</option>`).join('')}</select>`;
     return `<textarea class="rc-textarea" rows="2" placeholder="${escHtml(q.label)}"></textarea>`;
   };
@@ -3521,7 +3526,7 @@ function renderFormResults(form, reports) {
 
 function setupReportQuestionsManager() {
   // Load questions and bind open button
-  loadReportQuestions().then(() => { renderRqmList(); renderRqmForms(); applyReportQuestionsToForm(); });
+  loadReportQuestions().then(() => { renderRqmList(); renderRqmForms(); applyReportQuestionsToForm(); renderResidentMarkers(); });
 
   safe('openReportQuestionsManagerBtn')?.addEventListener('click', async () => {
     await loadReportQuestions();
@@ -4026,7 +4031,7 @@ function renderRrmSnapshots() {
         let lat=r.lat, lng=r.lng;
         if(r.street||r.house){ const local=lookupHouseCoords(r.street||'',r.house||''); if(local){lat=local.lat;lng=local.lng;} }
         if(!lat||!lng) return;
-        const color=iconColor(dotClass(r.statuses||[]));
+        const color=reportOptionColor(r)||iconColor(dotClass(r.statuses||[]));
         const markerId='snap_'+r.id;
         residentMarkers[markerId]=L.marker([lat,lng],{icon:makeMarkerIcon(color)}).addTo(map);
         // Build popup with original question answers from snapshot
