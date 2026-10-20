@@ -1726,3 +1726,5 @@ body.shared-map-only .mobile-journal-drawer {
 .rqm-fixed-field { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; background: #15304f; border: 1px solid rgba(40,147,255,.35); border-radius: 12px; }
 .rqm-fixed-field span { font-weight: 700; color: #eef5ff; font-size: 14px; }
 .rqm-fixed-field small { color: #f4c246; font-size: 11px; }
+.rqm-suggestion { background: rgba(40,147,255,.12); border: 1px dashed rgba(40,147,255,.55); color: #7ec8ff; border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+.rqm-suggestion:hover { background: rgba(40,147,255,.25); }

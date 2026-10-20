@@ -3137,9 +3137,9 @@ function setupMobileAdminDrawer() {
 // ════════════════════════════════════════════════════════
 // Default built-in questions (always shown, cannot be deleted, but label is editable)
 const DEFAULT_REPORT_QUESTIONS = [
-  { id: 'builtin_status',  label: 'מצב',           type: 'status',  builtin: true,  required: true,  hidden: false },
-  { id: 'builtin_souls',   label: 'נפשות בבית',     type: 'counter', builtin: true,  required: false, hidden: false },
-  { id: 'builtin_note',    label: 'פרטים נוספים',   type: 'text',    builtin: true,  required: false, hidden: false },
+  { id: 'builtin_status',  label: 'מצב',           type: 'status',  builtin: true,  required: true,  hidden: true },
+  { id: 'builtin_souls',   label: 'נפשות בבית',     type: 'counter', builtin: true,  required: false, hidden: true },
+  { id: 'builtin_note',    label: 'פרטים נוספים',   type: 'text',    builtin: true,  required: false, hidden: true },
 ];
 
 let reportQuestions = [];  // loaded from Firestore config
@@ -3156,28 +3156,42 @@ async function loadReportQuestions() {
     const data = snap.exists() ? snap.data() : {};
     if (Array.isArray(data.reportQuestions) && data.reportQuestions.length) {
       reportQuestions = data.reportQuestions;
+      // v2: built-in questions start as suggestions instead of being on the form
+      if (data.reportQuestionsVersion !== 2) reportQuestions.forEach(q => { if (q.builtin) q.hidden = true; });
     } else {
-      reportQuestions = [...DEFAULT_REPORT_QUESTIONS];
+      reportQuestions = DEFAULT_REPORT_QUESTIONS.map(q => ({...q}));
     }
     window._reportQuestionsConfig = reportQuestions;
     _rqLoaded = true;
   } catch(e) {
-    reportQuestions = [...DEFAULT_REPORT_QUESTIONS];
+    // Residents are not signed in and cannot read the config — use the questions carried in the link
+    reportQuestions = getReportQuestionsFromUrl() || DEFAULT_REPORT_QUESTIONS.map(q => ({...q}));
     window._reportQuestionsConfig = reportQuestions;
   }
+}
+
+function getReportQuestionsFromUrl() {
+  const raw = new URLSearchParams(location.search).get('q');
+  if (!raw) return null;
+  try {
+    const qs = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    return Array.isArray(qs) ? qs : null;
+  } catch(e) { console.warn('Could not decode questions from URL:', e); return null; }
 }
 
 async function saveReportQuestions() {
   window._reportQuestionsConfig = reportQuestions;
   if (!db) return;
-  await setDoc(getConfigDoc(), { reportQuestions }, { merge: true }).catch(e => console.error('Failed to save report questions:', e));
+  await setDoc(getConfigDoc(), { reportQuestions, reportQuestionsVersion: 2 }, { merge: true }).catch(e => console.error('Failed to save report questions:', e));
 }
 
 function renderRqmList() {
   const wrap = safe('rqm-questions-list'); if (!wrap) return;
-  if (!reportQuestions.length) { wrap.innerHTML = '<div style="color:#8da8c5;text-align:center;padding:12px">אין שאלות. הוסף למטה.</div>'; return; }
+  renderRqmSuggestions();
+  if (!reportQuestions.some(q => !q.hidden)) { wrap.innerHTML = '<div style="color:#8da8c5;text-align:center;padding:12px">אין שאלות נוספות. בחר מההצעות או הוסף למטה.</div>'; return; }
 
   wrap.innerHTML = reportQuestions.map((q, idx) => {
+    if (q.hidden) return '';
     const typeLabel = { status: 'מצב (מובנה)', counter: 'מונה (מובנה)', text: 'טקסט חופשי', select: 'בחירה', yesno: 'כן/לא', number: 'מספר' }[q.type] || q.type;
     const optStr = q.options ? ` · ${q.options.join(', ')}` : '';
     const isHidden = q.hidden === true;
@@ -3194,9 +3208,8 @@ function renderRqmList() {
       <div style="display:flex;gap:6px;flex-shrink:0">
         ${!q.builtin && idx > 0 && !isHidden ? `<button class="icon-btn rqm-up" data-idx="${idx}" type="button" title="הזז למעלה">↑</button>` : ''}
         ${!q.builtin && idx < reportQuestions.length - 1 && !isHidden ? `<button class="icon-btn rqm-down" data-idx="${idx}" type="button" title="הזז למטה">↓</button>` : ''}
-        <button class="icon-btn rqm-toggle-hidden" data-idx="${idx}" type="button" style="font-size:12px;padding:4px 8px;background:${isHidden?'rgba(40,147,255,.2)':'rgba(255,255,255,.06)'};border:1px solid ${isHidden?'rgba(40,147,255,.5)':'rgba(255,255,255,.1)'};color:${isHidden?'#7ec8ff':'#8da8c5'}" title="${isHidden?'הצג בטופס':'הסתר מהטופס'}">${isHidden ? '👁 הצג' : '🙈 הסתר'}</button>
         <button class="icon-btn rqm-edit" data-idx="${idx}" type="button" style="font-size:12px;padding:4px 8px">ערוך</button>
-        ${!q.builtin ? `<button class="delete-btn rqm-del" data-idx="${idx}" type="button" style="font-size:12px;padding:4px 8px">מחק</button>` : ''}
+        <button class="delete-btn rqm-del" data-idx="${idx}" type="button" style="font-size:12px;padding:4px 8px">מחק</button>
       </div>
     </div>
     <div class="rqm-edit-row" data-edit-idx="${idx}" style="display:none;padding:10px 12px;background:#0d2440;border:1px solid rgba(40,147,255,.4);border-radius:12px;flex-direction:column;gap:8px">
@@ -3241,7 +3254,10 @@ function renderRqmList() {
     await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
   });
   wrap.querySelectorAll('.rqm-del').forEach(b => b.onclick = async () => {
-    reportQuestions.splice(+b.dataset.idx, 1);
+    const i = +b.dataset.idx;
+    // Built-in questions go back to the suggestions; custom ones are removed
+    if (reportQuestions[i].builtin) reportQuestions[i].hidden = true;
+    else reportQuestions.splice(i, 1);
     await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
   });
   wrap.querySelectorAll('.rqm-edit').forEach(b => b.onclick = () => {
@@ -3277,9 +3293,21 @@ function renderRqmList() {
   });
 }
 
+function renderRqmSuggestions() {
+  const wrap = safe('rqm-suggestions'); if (!wrap) return;
+  const suggestions = reportQuestions.map((q, idx) => ({q, idx})).filter(({q}) => q.hidden);
+  wrap.closest('.rqm-suggestions-block')?.classList.toggle('hidden', !suggestions.length);
+  wrap.innerHTML = suggestions.map(({q, idx}) =>
+    `<button class="rqm-suggestion" data-idx="${idx}" type="button">+ ${q.label}</button>`).join('');
+  wrap.querySelectorAll('.rqm-suggestion').forEach(b => b.onclick = async () => {
+    reportQuestions[+b.dataset.idx].hidden = false;
+    await saveReportQuestions(); renderRqmList(); applyReportQuestionsToForm();
+  });
+}
+
 function setupReportQuestionsManager() {
   // Load questions and bind open button
-  loadReportQuestions().then(() => renderRqmList());
+  loadReportQuestions().then(() => { renderRqmList(); applyReportQuestionsToForm(); });
 
   safe('openReportQuestionsManagerBtn')?.addEventListener('click', async () => {
     await loadReportQuestions();
@@ -3323,6 +3351,10 @@ function setupReportQuestionsManager() {
     if (Object.keys(byStreet).length) {
       url += `&houses=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(byStreet)))))}`;
     }
+    // ...and so do the questions
+    const shownQs = reportQuestions.filter(q => !q.hidden);
+    url += `&q=${encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(
+      [...shownQs, ...reportQuestions.filter(q => q.builtin && q.hidden)].map(({id, label, type, builtin, required, hidden, options}) => ({id, label, type, builtin, required, hidden, options})))))))}`;
     safe('rqmLinkDisplay').textContent = url;
     const wa = safe('rqmWhatsappLinkBtn');
     if (wa) wa.href = `https://wa.me/?text=${encodeURIComponent(`דיווח חירום לחפ"ק לפיד — נא למלא את הטופס: ${url}`)}`;
@@ -3587,6 +3619,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (MODE==='report'||REPORT_KEY) {
       await ensureConfigLoaded();
+      await loadReportQuestions();
+      applyReportQuestionsToForm();
       safe('screen-report')?.classList.add('active');
       safe('screen-admin')?.classList.remove('active');
 
