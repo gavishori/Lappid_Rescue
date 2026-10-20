@@ -1747,3 +1747,15 @@ body.shared-map-only .mobile-journal-drawer {
   .rqm-layout { grid-template-columns: 1fr; }
   .rqm-preview-col { position: static; }
 }
+
+/* Resident form on phones: scroll down, never sideways */
+#screen-report.active { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+#screen-report .rc-main { flex: none; min-height: auto; overflow: visible; width: 100%; max-width: 480px; padding: 6px 10px 24px; }
+#screen-report .rc-header h1 { white-space: normal; }
+#screen-report .rc-addr > *, #screen-report .rc-row2 > *, #screen-report .rc-status-btns > * { min-width: 0; }
+#screen-report input, #screen-report select, #screen-report textarea { min-width: 0; max-width: 100%; }
+@media (max-width: 600px) {
+  /* 16px stops iOS from zooming in on focus, which pushed the form off the side of the screen */
+  #screen-report input, #screen-report select, #screen-report textarea { font-size: 16px; }
+  #screen-report .rc-row2 { flex-direction: column; }
+}

@@ -3763,24 +3763,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (MODE==='report'||REPORT_KEY) {
-      await ensureConfigLoaded();
-      await loadReportQuestions();
-      // A form link (?form=ID) brings its own questions and street list
+      // A form link (?form=ID) brings its own questions and street list. Residents are not signed in and
+      // cannot read the config anyway, so with a form link skip those reads — each failed read costs a round trip.
       const formId = params.get('form');
-      if (formId) {
-        try {
-          const fs = await getDoc(getResidentFormDoc(formId));
-          if (fs.exists()) {
-            const f = fs.data();
-            if (Array.isArray(f.questions) && f.questions.length) {
-              reportQuestions = f.questions;
-              window._reportQuestionsConfig = reportQuestions;
-            }
-            if (f.houses && (!managedHouses.length || managedHouses.every(h => h.lat == null))) {
-              managedHouses = Object.entries(f.houses).flatMap(([street, nums]) => (nums || []).map(n => ({ street, house: String(n) })));
-            }
-          }
-        } catch (e) { console.warn('Could not load resident form:', e); }
+      const formSnap = formId
+        ? await getDoc(getResidentFormDoc(formId)).catch(e => { console.warn('Could not load resident form:', e); return null; })
+        : null;
+      const form = formSnap?.exists() ? formSnap.data() : null;
+      if (!form || auth.currentUser) await Promise.all([ensureConfigLoaded(), loadReportQuestions()]);
+      if (form) {
+        if (Array.isArray(form.questions) && form.questions.length) {
+          reportQuestions = form.questions;
+          window._reportQuestionsConfig = reportQuestions;
+        }
+        if (form.houses && (!managedHouses.length || managedHouses.every(h => h.lat == null))) {
+          managedHouses = Object.entries(form.houses).flatMap(([street, nums]) => (nums || []).map(n => ({ street, house: String(n) })));
+        }
       }
       applyReportQuestionsToForm();
       safe('screen-report')?.classList.add('active');
