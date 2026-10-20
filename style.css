@@ -1775,3 +1775,14 @@ body.shared-map-only .mobile-journal-drawer {
 .rqm-phone .rc-pill.active { background: #dcecff; border-color: #2893ff; color: #1769c7; }
 .rqm-phone .status-btn { flex: 1; border-radius: 8px; padding: 8px 6px; font: inherit; font-size: 13px; font-weight: 800; }
 .rqm-phone .rc-cnt-btn { background: #dcecff; color: #1769c7; }
+
+/* List questions: a color per option */
+.rqm-opt-colors { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.rqm-opt-colors:empty { display: none; }
+.rqm-opt-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 10px; background: #0d2440; border: 1px solid rgba(40,147,255,.25); border-radius: 8px; color: #eef5ff; font-size: 13px; }
+.rqm-swatches { display: flex; gap: 6px; }
+.rqm-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); cursor: pointer; padding: 0; }
+.rqm-swatch.active { border-color: #2893ff; box-shadow: 0 0 0 2px #0d2440, 0 0 0 4px #2893ff; }
+.cq-color-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.cq-color-opt { flex: 1 1 auto; border: 2px solid var(--opt) !important; }
+.cq-color-opt.active { background: var(--opt) !important; color: #0b1d33 !important; }

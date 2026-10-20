@@ -2679,6 +2679,39 @@ const handleAuthState = async (user) => {
 // ════════════════════════════════════════════════════════
 //  RESIDENT REPORT FORM SETUP
 // ════════════════════════════════════════════════════════
+// Colors a list ("select") question's options can carry
+const OPTION_COLORS = {
+  red:    { label: 'אדום', hex: '#e5484d' },
+  yellow: { label: 'צהוב', hex: '#f4c246' },
+  green:  { label: 'ירוק', hex: '#45bf64' },
+  white:  { label: 'לבן',  hex: '#ffffff' },
+};
+const hasOptionColors = q => q.type === 'select' && q.optionColors && Object.keys(q.optionColors).length > 0;
+// Questions answered by tapping one button (yes/no, or a colored list)
+const isButtonChoice = q => q.type === 'yesno' || hasOptionColors(q);
+const parseOptions = v => (v || '').split(',').map(s => s.trim()).filter(Boolean);
+const optionColorHex = (q, o) => OPTION_COLORS[q.optionColors?.[o]]?.hex || '';
+
+// Rows of "option + color swatches"; colors is { option: colorKey } and is changed in place
+function renderOptionColorRows(container, options, colors) {
+  if (!container) return;
+  container.innerHTML = options.map((o, i) => `<div class="rqm-opt-row"><span>${escHtml(o)}</span><div class="rqm-swatches">${
+    Object.entries(OPTION_COLORS).map(([k, c]) =>
+      `<button type="button" class="rqm-swatch${colors[o] === k ? ' active' : ''}" data-i="${i}" data-c="${k}" title="${c.label}" style="background:${c.hex}"></button>`).join('')
+  }</div></div>`).join('');
+  container.querySelectorAll('.rqm-swatch').forEach(b => b.onclick = () => {
+    const o = options[+b.dataset.i];
+    if (colors[o] === b.dataset.c) delete colors[o]; else colors[o] = b.dataset.c;
+    renderOptionColorRows(container, options, colors);
+  });
+}
+const colorsForOptions = (options, colors) =>
+  Object.fromEntries(Object.entries(colors).filter(([o]) => options.includes(o)));
+
+const colorOptionButtons = (q, extraClass = '') => `<div class="cq-color-options">${
+  q.options.map(o => `<button type="button" class="rc-pill cq-color-opt ${extraClass}" data-qid="${q.id}" data-val="${escHtml(o)}" style="--opt:${optionColorHex(q, o) || '#8da8c5'}">${escHtml(o)}</button>`).join('')
+}</div>`;
+
 function applyReportQuestionsToForm() {
   const qs = Array.isArray(window._reportQuestionsConfig) && window._reportQuestionsConfig.length
     ? window._reportQuestionsConfig
@@ -2739,6 +2772,8 @@ function applyReportQuestionsToForm() {
         <button type="button" class="rc-pill cq-yesno cq-input" data-qid="${q.id}" data-val="כן">כן</button>
         <button type="button" class="rc-pill cq-yesno cq-input" data-qid="${q.id}" data-val="לא">לא</button>
       </div>`;
+    } else if (hasOptionColors(q) && q.options) {
+      inputHtml = colorOptionButtons(q, 'cq-yesno cq-input');
     } else if (q.type === 'select' && q.options) {
       inputHtml = `<select class="rc-select cq-input" data-qid="${q.id}" style="width:100%;max-width:300px">
         <option value="">בחר...</option>
@@ -2764,7 +2799,7 @@ function collectCustomAnswers() {
   const answers = {};
   const qs = window._reportQuestionsConfig || [];
   qs.filter(q => !q.builtin && !q.hidden).forEach(q => {
-    if (q.type === 'yesno') {
+    if (isButtonChoice(q)) {
       const active = document.querySelector(`.cq-yesno.active[data-qid="${q.id}"]`);
       answers[q.label] = active ? active.dataset.val : '';
     } else {
@@ -2825,7 +2860,7 @@ function setupReportForm() {
     for (const q of customQs) {
       const el = document.querySelector(`.cq-input[data-qid="${q.id}"]`);
       const yesnoActive = document.querySelector(`.cq-yesno.active[data-qid="${q.id}"]`);
-      const val = q.type === 'yesno' ? (yesnoActive ? yesnoActive.dataset.val : '') : (el ? el.value.trim() : '');
+      const val = isButtonChoice(q) ? (yesnoActive ? yesnoActive.dataset.val : '') : (el ? el.value.trim() : '');
       if (!val) { err.textContent = `נא למלא: ${q.label}`; err.classList.remove('hidden'); return; }
     }
     try {
@@ -3197,6 +3232,7 @@ function renderRqmPreview() {
   const custom = q => {
     if (q.type === 'number') return `<input type="number" class="rc-textarea" placeholder="0" style="max-width:120px;min-height:0" />`;
     if (q.type === 'yesno') return `<div style="display:flex;gap:10px"><button type="button" class="rc-pill">כן</button><button type="button" class="rc-pill">לא</button></div>`;
+    if (hasOptionColors(q) && q.options) return colorOptionButtons(q);
     if (q.type === 'select') return `<select class="rc-select"><option>בחר...</option>${(q.options || []).map(o => `<option>${escHtml(o)}</option>`).join('')}</select>`;
     return `<textarea class="rc-textarea" rows="2" placeholder="${escHtml(q.label)}"></textarea>`;
   };
@@ -3233,7 +3269,10 @@ function renderRqmList() {
   wrap.innerHTML = reportQuestions.map((q, idx) => {
     if (q.hidden) return '';
     const typeLabel = { status: 'מצב (מובנה)', counter: 'מונה (מובנה)', text: 'טקסט חופשי', select: 'בחירה', yesno: 'כן/לא', number: 'מספר' }[q.type] || q.type;
-    const optStr = q.options ? ` · ${q.options.join(', ')}` : '';
+    const optStr = q.options ? ` · ${q.options.map(o => {
+      const hex = optionColorHex(q, o);
+      return hex ? `<span style="color:${hex}">●</span> ${escHtml(o)}` : escHtml(o);
+    }).join(', ')}` : '';
     const isHidden = q.hidden === true;
     return `<div class="rqm-item" data-idx="${idx}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:${isHidden?'#0d1e30':'#15304f'};border:1px solid ${isHidden?'rgba(255,255,255,.04)':'rgba(255,255,255,.08)'};border-radius:12px;opacity:${isHidden?'0.55':'1'}">
       <div style="flex:1">
@@ -3265,7 +3304,7 @@ function renderRqmList() {
           <input type="checkbox" class="rqm-edit-required" ${q.required ? 'checked' : ''} ${q.builtin && q.type === 'status' ? 'disabled' : ''} /> חובה
         </label>
       </div>
-      ${!q.builtin ? `<input class="rqm-edit-options" value="${(q.options||[]).join(', ')}" placeholder="אפשרויות מופרדות בפסיק (רק לסוג 'בחירה')" style="background:#15304f;border:1px solid rgba(40,147,255,.3);border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box" />` : ''}
+      ${!q.builtin ? `<input class="rqm-edit-options" value="${(q.options||[]).join(', ')}" placeholder="אפשרויות מופרדות בפסיק (רק לסוג 'בחירה')" style="background:#15304f;border:1px solid rgba(40,147,255,.3);border-radius:8px;color:#fff;padding:6px 10px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box" /><div class="rqm-edit-colors rqm-opt-colors"></div>` : ''}
       <div style="display:flex;gap:8px">
         <button class="primary-btn rqm-edit-save" data-idx="${idx}" type="button" style="padding:6px 16px;font-size:13px">שמור</button>
         <button class="ghost-btn rqm-edit-cancel" data-idx="${idx}" type="button" style="padding:6px 14px;font-size:13px">ביטול</button>
@@ -3304,7 +3343,17 @@ function renderRqmList() {
     const idx = +b.dataset.idx;
     wrap.querySelectorAll('.rqm-edit-row').forEach(r => r.style.display = 'none');
     const editRow = wrap.querySelector(`.rqm-edit-row[data-edit-idx="${idx}"]`);
-    if (editRow) editRow.style.display = 'flex';
+    if (!editRow) return;
+    editRow.style.display = 'flex';
+    const q = reportQuestions[idx];
+    const optEl = editRow.querySelector('.rqm-edit-options');
+    const colorsEl = editRow.querySelector('.rqm-edit-colors');
+    if (optEl && colorsEl) {
+      editRow._colors = { ...(q.optionColors || {}) };
+      const draw = () => renderOptionColorRows(colorsEl, parseOptions(optEl.value), editRow._colors);
+      optEl.oninput = draw;
+      draw();
+    }
   });
   wrap.querySelectorAll('.rqm-edit-cancel').forEach(b => b.onclick = () => {
     wrap.querySelectorAll('.rqm-edit-row').forEach(r => r.style.display = 'none');
@@ -3323,9 +3372,12 @@ function renderRqmList() {
     if (reqEl) q.required = reqEl.checked;
     const optEl = editRow.querySelector('.rqm-edit-options');
     if (optEl && q.type === 'select') {
-      q.options = optEl.value.split(',').map(s => s.trim()).filter(Boolean);
+      q.options = parseOptions(optEl.value);
+      const colors = colorsForOptions(q.options, editRow._colors || q.optionColors || {});
+      if (Object.keys(colors).length) q.optionColors = colors; else delete q.optionColors;
     } else if (q.type !== 'select') {
       delete q.options;
+      delete q.optionColors;
     }
     await saveReportQuestions();
     renderRqmList();
@@ -3341,9 +3393,9 @@ const fmtDateTime = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getM
 
 function formQuestionsForLink(qs) {
   return qs.filter(q => !q.hidden || q.builtin)
-    .map(({id, label, type, builtin, required, hidden, options}) =>
+    .map(({id, label, type, builtin, required, hidden, options, optionColors}) =>
       // Firestore rejects undefined values, so leave out fields a question doesn't have
-      Object.fromEntries(Object.entries({id, label, type, builtin, required, hidden, options}).filter(([, v]) => v !== undefined)));
+      Object.fromEntries(Object.entries({id, label, type, builtin, required, hidden, options, optionColors}).filter(([, v]) => v !== undefined)));
 }
 
 async function saveResidentForm() {
@@ -3450,16 +3502,20 @@ function renderFormResults(form, reports) {
     return r.customAnswers?.[q.label] ?? '';
   };
   const head = ['שם', 'כתובת', 'תאריך ושעה', ...qs.map(q => q.label)];
+  const cell = (q, v) => {
+    const hex = q && hasOptionColors(q) ? optionColorHex(q, v) : '';
+    return hex ? `<span style="color:${hex}">●</span> ${escHtml(v)}` : escHtml(v);
+  };
   const rows = reports.map(r => [
-    [r.firstName, r.lastName].filter(Boolean).join(' '),
-    `${r.street || ''} ${r.house || ''}`.trim(),
-    ts(r) ? fmtDateTime(ts(r)) : '',
-    ...qs.map(q => answer(r, q))
+    escHtml([r.firstName, r.lastName].filter(Boolean).join(' ')),
+    escHtml(`${r.street || ''} ${r.house || ''}`.trim()),
+    escHtml(ts(r) ? fmtDateTime(ts(r)) : ''),
+    ...qs.map(q => cell(q, answer(r, q)))
   ]);
   return `<div style="color:#7ec8ff;font-size:13px;margin:8px 0 6px">${reports.length} תשובות</div>
     <div style="overflow-x:auto"><table class="rqm-results-table">
       <thead><tr>${head.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map(row => `<tr>${row.map(c => `<td>${escHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+      <tbody>${rows.map(row => `<tr>${row.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
     </table></div>`;
 }
 
@@ -3513,6 +3569,11 @@ function setupReportQuestionsManager() {
     btn.textContent = 'הועתק ✓'; setTimeout(() => btn.textContent = t, 1500);
   });
 
+  // Colors for the options of a new list question
+  const newOptionColors = {};
+  safe('rqmOptionsInput')?.addEventListener('input', () =>
+    renderOptionColorRows(safe('rqmOptionColors'), parseOptions(safe('rqmOptionsInput').value), newOptionColors));
+
   // Add question
   safe('rqmAddQuestionBtn')?.addEventListener('click', async () => {
     const label = safe('rqmNewLabel')?.value.trim();
@@ -3526,6 +3587,8 @@ function setupReportQuestionsManager() {
       const opts = safe('rqmOptionsInput')?.value.split(',').map(s => s.trim()).filter(Boolean);
       if (!opts || !opts.length) { if (errEl) errEl.textContent = 'נא להזין אפשרויות לבחירה'; return; }
       newQ.options = opts;
+      const colors = colorsForOptions(opts, newOptionColors);
+      if (Object.keys(colors).length) newQ.optionColors = colors;
     }
     reportQuestions.push(newQ);
     window._reportQuestionsConfig = [...reportQuestions];
@@ -3535,6 +3598,8 @@ function setupReportQuestionsManager() {
     applyReportQuestionsToForm();
     if (safe('rqmNewLabel')) safe('rqmNewLabel').value = '';
     if (safe('rqmOptionsInput')) safe('rqmOptionsInput').value = '';
+    Object.keys(newOptionColors).forEach(k => delete newOptionColors[k]);
+    renderOptionColorRows(safe('rqmOptionColors'), [], newOptionColors);
     if (safe('rqmNewRequired')) safe('rqmNewRequired').checked = false;
     const optRow = safe('rqmOptionsRow'); if (optRow) optRow.style.display = 'none';
     const typeEl = safe('rqmNewType'); if (typeEl) typeEl.value = 'text';
