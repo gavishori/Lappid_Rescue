@@ -3301,7 +3301,7 @@ function renderRqmList() {
         <input class="rqm-edit-label" value="${q.label}" style="flex:1;min-width:140px;background:#15304f;border:1px solid rgba(40,147,255,.5);border-radius:8px;color:#fff;padding:6px 10px;font-size:14px;font-family:inherit" />
         ${!q.builtin ? `<select class="rqm-edit-type" style="background:#15304f;border:1px solid rgba(40,147,255,.4);border-radius:8px;color:#fff;padding:6px 8px;font-size:13px;font-family:inherit">
           <option value="text" ${q.type==='text'?'selected':''}>טקסט חופשי</option>
-          <option value="select" ${q.type==='select'?'selected':''}>בחירה מרשימה</option>
+          <option value="select" ${q.type==='select'?'selected':''}>בחירה מרשימה (הפרד בפסיקים את התשובות)</option>
           <option value="yesno" ${q.type==='yesno'?'selected':''}>כן / לא</option>
           <option value="number" ${q.type==='number'?'selected':''}>מספר</option>
         </select>` : ''}
