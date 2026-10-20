@@ -1791,3 +1791,6 @@ body.shared-map-only .mobile-journal-drawer {
 .rf-group .rqm-results-table { color: #2b2b2b; background: rgba(255,255,255,.6); border-radius: 8px; }
 .rf-group .rqm-results-table th { color: #6b5e50; }
 .rf-group .rqm-results-table th, .rf-group .rqm-results-table td { border-bottom-color: rgba(0,0,0,.08); }
+
+.rf-group-questions { color: #6b5e50; font-size: 13px; }
+.rf-group summary { color: #2c6aa8; font-weight: 700; font-size: 13px; }

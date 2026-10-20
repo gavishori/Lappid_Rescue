@@ -1896,12 +1896,20 @@ function residentGroupHtml(g) {
       ...[...new Set(g.items.flatMap(r => Object.keys(r.customAnswers || {})))].map((label, i) => ({ id: `c${i}`, label })),
     ]
   };
-  const labels = (form.questions || []).filter(q => !q.hidden).map(q => q.label);
+  const labels = ['שם', 'משפחה', 'רחוב', 'מספר', ...(form.questions || []).filter(q => !q.hidden).map(q => q.label)];
   const created = g.form?.createdAt ? ` · נוצר ${fmtDateTime(new Date(g.form.createdAt))}` : '';
-  return `<details class="rf-group" data-fid="${escHtml(g.formId)}"${openResidentGroups.has(g.formId) ? ' open' : ''}>
-    <summary><strong>טופס תושבים</strong>${created} · <strong>${g.items.length} תשובות</strong>${labels.length ? ` · שאלות: ${escHtml(labels.join(', '))}` : ''}</summary>
+  return `<div class="rf-group-head"><strong>טופס תושבים</strong>${created} · <strong>${g.items.length} תשובות</strong></div>
+  <div class="rf-group-questions">שאלות: ${escHtml(labels.join(', '))}</div>
+  <details class="rf-group" data-fid="${escHtml(g.formId)}"${openResidentGroups.has(g.formId) ? ' open' : ''}>
+    <summary>הצג תשובות (${g.items.length})</summary>
     ${renderFormResults(form, [...g.items])}
   </details>`;
+}
+
+// A broken resident line must not stop the rest of the journal from showing
+function safeResidentGroupHtml(g) {
+  try { return residentGroupHtml(g); }
+  catch (e) { console.error('Resident group render failed:', e); return escHtml(g.description); }
 }
 
 function renderTable(searchTerm='') {
@@ -1997,7 +2005,7 @@ function renderTable(searchTerm='') {
         card.className = 'jm-card';
         card.innerHTML = `
           <div class="jm-card-meta"><span class="jm-card-meta-inner">${metaParts.join(' ')}</span>${actionsHtml}</div>
-          <div class="jm-card-text">${report.residentGroup ? residentGroupHtml(report) : hl(report.description,searchTerm)}</div>`;
+          <div class="jm-card-text">${report.residentGroup ? safeResidentGroupHtml(report) : hl(report.description,searchTerm)}</div>`;
         innerB.appendChild(card);
       } else {
         const techRow=document.createElement('tr');
@@ -2007,7 +2015,7 @@ function renderTable(searchTerm='') {
         </td>`;
         const reportRow=document.createElement('tr');
         reportRow.className='journal-report-row';
-        reportRow.innerHTML=`<td class="journal-table-td journal-report-cell" colspan="5">${report.residentGroup ? residentGroupHtml(report) : hl(report.description,searchTerm)}</td>`;
+        reportRow.innerHTML=`<td class="journal-table-td journal-report-cell" colspan="5">${report.residentGroup ? safeResidentGroupHtml(report) : hl(report.description,searchTerm)}</td>`;
         innerB.appendChild(techRow);
         innerB.appendChild(reportRow);
       }
@@ -3598,7 +3606,7 @@ function renderFormResults(form, reports) {
 
 function setupReportQuestionsManager() {
   // Load questions and bind open button
-  loadReportQuestions().then(() => { renderRqmList(); renderRqmForms(); applyReportQuestionsToForm(); renderResidentMarkers(); });
+  loadReportQuestions().then(() => { renderRqmList(); renderRqmForms(); applyReportQuestionsToForm(); renderResidentMarkers(); renderTable(safe('searchInput')?.value.trim() || ''); });
 
   safe('openReportQuestionsManagerBtn')?.addEventListener('click', async () => {
     await loadReportQuestions();
