@@ -1860,6 +1860,50 @@ function updatePaneToggleButtons() {
 }
 
 // ── render journal table ──────────────────────────────
+// All answers to one resident form become a single journal line that opens into a list
+const openResidentGroups = new Set();
+
+function groupResidentReports(list) {
+  const groups = new Map();
+  const out = [];
+  list.forEach(r => {
+    if (!r.residentReport) { out.push(r); return; }
+    const key = r.formId || 'no_form';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  });
+  const ts = r => r.createdAt?.toDate?.() || r.updatedAt?.toDate?.() || null;
+  groups.forEach((items, key) => {
+    items.sort((a, b) => (ts(b)?.getTime() || 0) - (ts(a)?.getTime() || 0));
+    const latest = items[0];
+    out.push({
+      id: `form_${key}`, residentGroup: true, formId: key, items,
+      form: residentForms.find(f => f.id === key) || null,
+      date: latest.date, time: latest.time, createdAt: latest.createdAt,
+      reporter: 'תושבים', logType: 'טופס תושב',
+      // Plain text so the journal search still finds names and answers
+      description: `טופס תושב · ${items.length} תשובות · ${items.map(i => `${i.reporter} ${i.description}`).join(' · ')}`,
+    });
+  });
+  return out;
+}
+
+function residentGroupHtml(g) {
+  // Forms from before the saved-forms list have no definition: build the columns from the answers
+  const form = g.form || {
+    questions: [
+      ...(g.items.some(r => (r.statuses || []).length) ? [{ id: 'builtin_status', label: 'מצב' }] : []),
+      ...[...new Set(g.items.flatMap(r => Object.keys(r.customAnswers || {})))].map((label, i) => ({ id: `c${i}`, label })),
+    ]
+  };
+  const labels = (form.questions || []).filter(q => !q.hidden).map(q => q.label);
+  const created = g.form?.createdAt ? ` · נוצר ${fmtDateTime(new Date(g.form.createdAt))}` : '';
+  return `<details class="rf-group" data-fid="${escHtml(g.formId)}"${openResidentGroups.has(g.formId) ? ' open' : ''}>
+    <summary><strong>טופס תושבים</strong>${created} · <strong>${g.items.length} תשובות</strong>${labels.length ? ` · שאלות: ${escHtml(labels.join(', '))}` : ''}</summary>
+    ${renderFormResults(form, [...g.items])}
+  </details>`;
+}
+
 function renderTable(searchTerm='') {
   const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
   const tableBody=safe('reportTableBody'); if(!tableBody) return;
@@ -1868,7 +1912,7 @@ function renderTable(searchTerm='') {
   const loadRow =safe('loading-state');
   if(loadRow) loadRow.classList.add('hidden');
 
-  let data=[...journalReports];
+  let data=groupResidentReports([...journalReports]);
 
   // בתצוגה משותפת מציגים רק את היומן של היום הנוכחי
   if (isSharedLinkView) {
@@ -1944,7 +1988,7 @@ function renderTable(searchTerm='') {
       if(report.time) metaParts.push(`<strong>${report.time}</strong>`);
       if(report.reporter) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.reporter,searchTerm)}</span>`);
       if(report.logType) metaParts.push(`<span class="journal-meta-sep">·</span><span>${hl(report.logType,searchTerm)}</span>`);
-      const actionsHtml = canEdit
+      const actionsHtml = report.residentGroup ? '' : canEdit
         ? `<span class="journal-meta-actions">${report.residentReport ? '' : `<button class="edit-btn" data-id="${report.id}">ערוך</button>`}<button class="delete-btn-sm" data-id="${report.id}">מחק</button></span>`
         : '';
       if(isMobile) {
@@ -1953,7 +1997,7 @@ function renderTable(searchTerm='') {
         card.className = 'jm-card';
         card.innerHTML = `
           <div class="jm-card-meta"><span class="jm-card-meta-inner">${metaParts.join(' ')}</span>${actionsHtml}</div>
-          <div class="jm-card-text">${hl(report.description,searchTerm)}</div>`;
+          <div class="jm-card-text">${report.residentGroup ? residentGroupHtml(report) : hl(report.description,searchTerm)}</div>`;
         innerB.appendChild(card);
       } else {
         const techRow=document.createElement('tr');
@@ -1963,7 +2007,7 @@ function renderTable(searchTerm='') {
         </td>`;
         const reportRow=document.createElement('tr');
         reportRow.className='journal-report-row';
-        reportRow.innerHTML=`<td class="journal-table-td journal-report-cell" colspan="5">${hl(report.description,searchTerm)}</td>`;
+        reportRow.innerHTML=`<td class="journal-table-td journal-report-cell" colspan="5">${report.residentGroup ? residentGroupHtml(report) : hl(report.description,searchTerm)}</td>`;
         innerB.appendChild(techRow);
         innerB.appendChild(reportRow);
       }
@@ -1981,6 +2025,11 @@ function renderTable(searchTerm='') {
       const sp=hRow.querySelector('.daily-summary'); if(sp) sp.classList.remove('hidden');
     }
   });
+
+  // Keep resident form lists open across live updates
+  tableBody.querySelectorAll('details.rf-group').forEach(d => d.addEventListener('toggle', () => {
+    if (d.open) openResidentGroups.add(d.dataset.fid); else openResidentGroups.delete(d.dataset.fid);
+  }));
 
   // toggle handlers - Click specific row
   tableBody.querySelectorAll('.date-group-header').forEach(row=>{
@@ -3540,7 +3589,7 @@ function renderFormResults(form, reports) {
     escHtml(ts(r) ? fmtDateTime(ts(r)) : ''),
     ...qs.map(q => cell(q, answer(r, q)))
   ]);
-  return `<div style="color:#7ec8ff;font-size:13px;margin:8px 0 6px">${reports.length} תשובות</div>
+  return `<div class="rqm-results-count" style="color:#7ec8ff;font-size:13px;margin:8px 0 6px">${reports.length} תשובות</div>
     <div style="overflow-x:auto"><table class="rqm-results-table">
       <thead><tr>${head.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead>
       <tbody>${rows.map(row => `<tr>${row.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>
