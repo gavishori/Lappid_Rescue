@@ -1794,3 +1794,6 @@ body.shared-map-only .mobile-journal-drawer {
 
 .rf-group-questions { color: #6b5e50; font-size: 13px; }
 .rf-group summary { color: #2c6aa8; font-weight: 700; font-size: 13px; }
+
+/* מקום קבוע לכפתור 💎 (חזרה לדף גביש) בפינה השמאלית העליונה */
+.app-header { padding-left: 64px; }
