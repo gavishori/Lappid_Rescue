@@ -1,0 +1,66 @@
+rules_version = '2';
+
+// Lappid command post (project shoam-81008). All app data lives under
+// artifacts/default-vs-code-app-id/public/data.
+// - Staff sign in with email + password (accounts are created in the Firebase console)
+//   and may read and write everything.
+// - Without signing in, only what the public screens need:
+//     residents' report form: read the open event and its form, send / correct their report;
+//     share links (?token=...): read the share, the config, the event and its reports.
+// - Nothing else in the project is reachable.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function staff() {
+      return request.auth != null
+          && request.auth.token.email is string
+          && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // The fields a resident's report may contain (the same list the form sends).
+    function residentReport() {
+      return request.resource.data.keys().hasOnly([
+        'firstName', 'lastName', 'city', 'street', 'house', 'souls', 'note',
+        'statuses', 'lat', 'lng', 'customAnswers', 'eventId', 'formId',
+        'createdAt', 'updatedAt'
+      ]);
+    }
+
+    // Staff: everything in the app.
+    match /artifacts/default-vs-code-app-id/{rest=**} {
+      allow read, write: if staff();
+    }
+
+    // Config document (layers, houses, info buttons): read by the public map and share links.
+    match /artifacts/default-vs-code-app-id/public/data {
+      allow get: if true;
+    }
+
+    match /artifacts/default-vs-code-app-id/public/data/events/{eventId} {
+      allow read: if true;
+      // The report form opens an event when none is open.
+      allow create: if request.resource.data.keys().hasOnly(['createdAt', 'locked', 'category'])
+                    && request.resource.data.locked == false;
+    }
+
+    match /artifacts/default-vs-code-app-id/public/data/reports/{reportId} {
+      allow get: if true;
+      // Public lists only by event (share links and the village map), never the whole journal.
+      allow list: if resource.data.eventId is string;
+      // A resident sends or corrects a report; the map fixes its coordinates.
+      allow create, update: if residentReport();
+    }
+
+    match /artifacts/default-vs-code-app-id/public/data/resident_forms/{formId} {
+      allow get: if true;
+    }
+
+    match /artifacts/default-vs-code-app-id/public/data/shares/{token} {
+      allow get: if true;
+    }
+
+    match /artifacts/default-vs-code-app-id/public/data/log_types/{id} {
+      allow read: if true;
+    }
+  }
+}

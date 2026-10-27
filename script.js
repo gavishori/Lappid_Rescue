@@ -31,6 +31,8 @@ const escapeHtml = (value = '') => String(value)
   .replace(/</g, '&lt;')
   .replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+  .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 const SHARE_LAYER_COLOR_PALETTE = ['#57c76f', '#9e7cff', '#61b7ff', '#ff7f57', '#f4c246', '#20b3c9', '#ff5d66', '#ff9ad5'];
 
@@ -365,7 +367,7 @@ function residentPopupHtml(r) {
 }
 
 function popupHtml(title, sub='', extra='') {
-  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${title}</strong><div>${sub}</div>${extra?`<div style='color:#8da8c5;margin-top:4px'>${extra}</div>`:''}</div>`;
+  return `<div style="direction:rtl;font-family:Heebo,sans-serif"><strong>${escapeHtml(title)}</strong><div>${escapeHtml(sub)}</div>${extra?`<div style='color:#8da8c5;margin-top:4px'>${extra}</div>`:''}</div>`;
 }
 
 function defaultMapCenter() {
@@ -617,7 +619,7 @@ function renderGpxMarkers() {
         const m = L.marker([Number(h.lat), Number(h.lng)], {icon: makeHouseNumberIcon(h.house || '')})
           .addTo(map);
         const popupContent = `<div style="direction:rtl;font-family:Heebo,sans-serif;min-width:160px">
-          <strong>${(h.street||'')+' '+(h.house||'')}</strong>
+          <strong>${escapeHtml((h.street||'')+' '+(h.house||''))}</strong>
           <div style="color:#666;font-size:12px;margin:4px 0">מספר בית</div>
           <div style="color:#8da8c5;font-size:11px;margin-bottom:8px">${Number(h.lat).toFixed(6)}, ${Number(h.lng).toFixed(6)}</div>
           <div style="display:flex;gap:6px">
@@ -646,7 +648,7 @@ let editingHouseMarker = null; // {idx, marker, originalLatLng}
 function makeHouseEditPopupHtml(idx) {
   return `<div style="direction:rtl;font-family:Heebo,sans-serif">
     <strong>מצב עריכה — גרור למיקום חדש</strong>
-    <div style="color:#666;font-size:12px;margin:4px 0">${(managedHouses[idx]?.street||'')} ${(managedHouses[idx]?.house||'')}</div>
+    <div style="color:#666;font-size:12px;margin:4px 0">${escapeHtml(managedHouses[idx]?.street||'')} ${escapeHtml(managedHouses[idx]?.house||'')}</div>
     <div style="display:flex;gap:6px;margin-top:8px">
       <button onclick="saveHouseMarkerEdit(${idx})" style="background:#45bf64;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">שמור</button>
       <button onclick="cancelHouseMarkerEdit()" style="background:#888;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px">ביטול</button>
@@ -798,7 +800,7 @@ function renderInfoView() {
 
 function renderLayersModal() {
   const wrap=safe('layersOptions'); if(!wrap) return;
-  wrap.innerHTML=managedLayers.map(name=>`<div class="layer-item live-layer-item"><label><span>${name}</span><input type="checkbox" data-layer="${name}" ${activeLayers.has(name)?'checked':''}></label></div>`).join('');
+  wrap.innerHTML=managedLayers.map(name=>`<div class="layer-item live-layer-item"><label><span>${escapeHtml(name)}</span><input type="checkbox" data-layer="${escapeHtml(name)}" ${activeLayers.has(name)?'checked':''}></label></div>`).join('');
   $$('#layersOptions input').forEach(cb=>cb.onchange=()=>{
     const l=cb.dataset.layer;
     if(cb.checked) activeLayers.add(l); else activeLayers.delete(l);
@@ -812,7 +814,7 @@ function renderLayersModal() {
 }
 function renderManagedLayers() {
   const wrap=safe('managedLayersList'); if(!wrap) return;
-  wrap.innerHTML=managedLayers.map((name,idx)=>`<div class="simple-item"><div class="item-main"><span>${name}</span><span class="item-sub">מיקום ${idx+1}</span></div><div class="item-actions"><button class="icon-btn move-up" data-idx="${idx}" type="button">↑</button><button class="icon-btn move-down" data-idx="${idx}" type="button">↓</button><button class="delete-btn remove-layer" data-name="${name}" type="button">הסר</button></div></div>`).join('');
+  wrap.innerHTML=managedLayers.map((name,idx)=>`<div class="simple-item"><div class="item-main"><span>${escapeHtml(name)}</span><span class="item-sub">מיקום ${idx+1}</span></div><div class="item-actions"><button class="icon-btn move-up" data-idx="${idx}" type="button">↑</button><button class="icon-btn move-down" data-idx="${idx}" type="button">↓</button><button class="delete-btn remove-layer" data-name="${name}" type="button">הסר</button></div></div>`).join('');
   $$('#managedLayersList .move-up').forEach(b=>b.onclick=()=>moveLayer(+b.dataset.idx,-1));
   $$('#managedLayersList .move-down').forEach(b=>b.onclick=()=>moveLayer(+b.dataset.idx,1));
   $$('#managedLayersList .remove-layer').forEach(b=>b.onclick=()=>{
@@ -880,7 +882,7 @@ function renderGpxList() {
   const layerOptions = managedLayers.filter(l => !builtInNonGpx.has(l));
 
   $$('#gpxList .gpx-rename-select').forEach(sel => {
-    sel.innerHTML = layerOptions.map(l => `<option value="${l}">${l}</option>`).join('');
+    sel.innerHTML = layerOptions.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
   });
 
   $$('#gpxList .rename-gpx').forEach(b => b.onclick = () => {
@@ -940,7 +942,7 @@ function syncStreetOptions() {
   if (!streetSel) return;
   const current = streetSel.value;
   const streets = [...new Set(managedHouses.map(h => (h.street || '').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'he'));
-  streetSel.innerHTML = '<option value="">בחר רחוב...</option>' + streets.map(s=>`<option value="${s}">${s}</option>`).join('');
+  streetSel.innerHTML = '<option value="">בחר רחוב...</option>' + streets.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   if (streets.includes(current)) streetSel.value = current;
   window.updateHouseOptions();
 }
@@ -1000,7 +1002,7 @@ function renderHouses(searchTerm='') {
 }
 function renderInfoAdmin() {
   const wrap=safe('infoAdminList'); if(!wrap) return;
-  wrap.innerHTML=managedInfoButtons.length?managedInfoButtons.map((item,idx)=>`<div class="simple-item"><div class="item-main"><span>${item.title}</span><span class="item-sub">${item.url}</span></div><div class="item-actions"><button class="delete-btn remove-info" data-idx="${idx}" type="button">הסר</button></div></div>`).join(''):'<div class="simple-item"><span>אין כפתורים</span></div>';
+  wrap.innerHTML=managedInfoButtons.length?managedInfoButtons.map((item,idx)=>`<div class="simple-item"><div class="item-main"><span>${escapeHtml(item.title)}</span><span class="item-sub">${escapeHtml(item.url)}</span></div><div class="item-actions"><button class="delete-btn remove-info" data-idx="${idx}" type="button">הסר</button></div></div>`).join(''):'<div class="simple-item"><span>אין כפתורים</span></div>';
   $$('#infoAdminList .remove-info').forEach(b=>b.onclick=()=>{ managedInfoButtons=managedInfoButtons.filter((_,i)=>i!==+b.dataset.idx); persistAll(); renderInfoAdmin(); renderInfoView(); });
 }
 function renderEventTypes() {
@@ -1012,7 +1014,7 @@ function renderEventTypes() {
         <button class="et-order-btn" data-action="up" data-idx="${idx}" type="button" ${idx===0?'disabled':''}>▲</button>
         <button class="et-order-btn" data-action="down" data-idx="${idx}" type="button" ${idx===eventTypes.length-1?'disabled':''}>▼</button>
       </div>
-      <span class="et-name" id="et-name-${idx}">${name}</span>
+      <span class="et-name" id="et-name-${idx}">${escapeHtml(name)}</span>
       <div class="et-actions">
         <button class="et-edit-btn" data-idx="${idx}" type="button">עריכה</button>
         <button class="et-del-btn" data-idx="${idx}" type="button">הסר</button>
@@ -1997,7 +1999,7 @@ function renderTable(searchTerm='') {
 
     const sorted=[...reps].sort((a,b)=>a.time>b.time?-1:a.time<b.time?1:0);
     const hl=(value,term)=>{
-      const safeValue = value == null ? '' : String(value);
+      const safeValue = value == null ? '' : escapeHtml(String(value));
       if(!term) return safeValue;
       const escapedTerm = String(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const regex = new RegExp('(' + escapedTerm + ')', 'gi');
